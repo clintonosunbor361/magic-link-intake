@@ -17,7 +17,7 @@ type IntakePageProps = {
 export default async function IntakePage({ params, searchParams }: IntakePageProps) {
   const { token } = await params;
   const query = await searchParams;
-  const isValid = verifyToken(token);
+  const isValid = await verifyToken(token);
 
   if (!isValid) {
     return <InactiveLink />;

@@ -4,7 +4,7 @@ import { createMagicLinkToken } from "@/lib/magic-links";
 export const dynamic = "force-dynamic";
 
 export async function POST(request: Request) {
-  const { token } = createMagicLinkToken();
+  const { token } = await createMagicLinkToken();
   const url = new URL(`/intake/${token}`, request.url);
 
   return NextResponse.json({

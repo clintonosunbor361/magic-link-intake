@@ -22,7 +22,7 @@ export async function POST(request: NextRequest, { params }: RouteContext) {
     return NextResponse.redirect(url, { status: 303 });
   }
 
-  const result = consumeTokenWithSubmission(token, input);
+  const result = await consumeTokenWithSubmission(token, input);
 
   if (!result.ok) {
     return NextResponse.redirect(new URL("/intake/inactive", request.url), {
