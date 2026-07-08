@@ -11,5 +11,5 @@ type RouteContext = {
 
 export async function POST(request: NextRequest, { params }: RouteContext) {
   const { token } = await params;
-  return handleIntakeSubmit(request, token, "/intake");
+  return handleIntakeSubmit(request, token, "/i");
 }

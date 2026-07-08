@@ -14,7 +14,7 @@ type IntakePageProps = {
   }>;
 };
 
-export default async function IntakePage({ params, searchParams }: IntakePageProps) {
+export default async function ShortIntakePage({ params, searchParams }: IntakePageProps) {
   const { token } = await params;
   const query = await searchParams;
   const isValid = await verifyToken(token);
@@ -34,7 +34,7 @@ export default async function IntakePage({ params, searchParams }: IntakePagePro
         </h1>
         <IntakeForm
           token={token}
-          actionPath={`/intake/${encodeURIComponent(token)}/submit`}
+          actionPath={`/i/${encodeURIComponent(token)}/submit`}
           error={error}
         />
       </section>

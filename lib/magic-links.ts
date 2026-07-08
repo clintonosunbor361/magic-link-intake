@@ -57,7 +57,7 @@ const store =
 let redisClient: Redis | null | undefined;
 
 export function generateToken(): string {
-  return randomBytes(32).toString("hex");
+  return randomBytes(16).toString("base64url");
 }
 
 export function hashToken(token: string): string {

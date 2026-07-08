@@ -11,17 +11,18 @@ import {
 
 type IntakeFormProps = {
   token: string;
+  actionPath?: string;
   error?: string;
 };
 
-export function IntakeForm({ token, error }: IntakeFormProps) {
-  const [whatsappSame, setWhatsappSame] = useState(true);
+export function IntakeForm({ token, actionPath, error }: IntakeFormProps) {
+  const [whatsappSame, setWhatsappSame] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   return (
     <form
       method="post"
-      action={`/intake/${encodeURIComponent(token)}/submit`}
+      action={actionPath ?? `/intake/${encodeURIComponent(token)}/submit`}
       onSubmit={() => setIsSubmitting(true)}
       className="mt-8 space-y-6"
     >
@@ -96,19 +97,21 @@ export function IntakeForm({ token, error }: IntakeFormProps) {
           label="Contact channel"
           name="preferredContactChannel"
           options={CONTACT_CHANNELS}
+          placeholder="Select channel"
         />
-        <GlassDropdown label="Event type" name="eventType" options={EVENT_TYPES} />
-        <GlassDropdown label="Budget range" name="budgetRange" options={BUDGET_RANGES} />
+        <GlassDropdown
+          label="Event type"
+          name="eventType"
+          options={EVENT_TYPES}
+          placeholder="Select event type"
+        />
+        <GlassDropdown
+          label="Budget range"
+          name="budgetRange"
+          options={BUDGET_RANGES}
+          placeholder="Select budget range"
+        />
       </div>
-
-      <label className="block space-y-3">
-        <span className="label">What do you need help with?</span>
-        <textarea
-          className="field min-h-40 resize-y leading-6"
-          name="brief"
-          placeholder="Share outfit, occasion, date, styling needs, or anything useful."
-        />
-      </label>
 
       <div className="flex justify-end pt-4">
         <button type="submit" disabled={isSubmitting} className="primary-action w-full sm:w-auto">

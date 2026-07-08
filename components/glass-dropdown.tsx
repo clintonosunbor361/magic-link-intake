@@ -8,6 +8,7 @@ type GlassDropdownProps<T extends string> = {
   name: string;
   options: readonly T[];
   defaultValue?: T;
+  placeholder?: string;
 };
 
 export function GlassDropdown<T extends string>({
@@ -15,11 +16,12 @@ export function GlassDropdown<T extends string>({
   name,
   options,
   defaultValue,
+  placeholder = "Select an option",
 }: GlassDropdownProps<T>) {
   const id = useId();
   const rootRef = useRef<HTMLDivElement>(null);
   const [open, setOpen] = useState(false);
-  const [selected, setSelected] = useState<T>(defaultValue ?? options[0]);
+  const [selected, setSelected] = useState<string>(defaultValue ?? "");
   const [justSelected, setJustSelected] = useState(false);
 
   useEffect(() => {
@@ -72,8 +74,11 @@ export function GlassDropdown<T extends string>({
           justSelected ? "select-field-selected" : ""
         }`}
       >
-        <span id={`${id}-value`} className="truncate pr-10">
-          {selected}
+        <span
+          id={`${id}-value`}
+          className={`truncate pr-10 ${selected ? "" : "text-kuartz-muted"}`}
+        >
+          {selected || placeholder}
         </span>
         <ChevronDown
           className={`select-chevron ${open ? "select-chevron-open" : ""}`}
