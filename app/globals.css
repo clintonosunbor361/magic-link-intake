@@ -442,9 +442,9 @@ textarea {
   .nav-link-active { background: #d2ff67; color: #171b36; }
   .nav-link-active:hover, .nav-link-active:focus-visible { background: #d2ff67; color: #171b36; }
 
-  .eyebrow { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0.6875rem; font-weight: 700; letter-spacing: 0.18em; text-transform: uppercase; color: #777d8d; }
+  .eyebrow { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0.6875rem; font-weight: 700; letter-spacing: 0.18em; text-transform: uppercase; color: #50586c; }
   .page-title { margin-top: 0.65rem; max-width: 18ch; color: #171b36; font-size: clamp(2.25rem, 5vw, 4.4rem); font-weight: 650; line-height: 0.98; letter-spacing: -0.055em; }
-  .page-description { margin-top: 1rem; max-width: 60ch; color: #6e7482; font-size: 0.95rem; line-height: 1.7; }
+  .page-description { margin-top: 1rem; max-width: 60ch; color: #50586c; font-size: 0.95rem; line-height: 1.7; }
   .section-title { color: #171b36; font-size: 1.15rem; font-weight: 700; letter-spacing: -0.025em; }
 
   .form-group { display: grid; gap: 0.5rem; color: #272c45; font-size: 0.875rem; font-weight: 700; }

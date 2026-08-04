@@ -15,6 +15,13 @@
       "when": 1785842112870,
       "tag": "0001_thick_madrox",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1785844486011,
+      "tag": "0002_supabase_grants",
+      "breakpoints": true
     }
   ]
 }

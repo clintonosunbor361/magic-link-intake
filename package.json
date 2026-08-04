@@ -9,9 +9,14 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",
+    "test:db:local": "supabase db reset && DATABASE_URL=postgresql://postgres:postgres@127.0.0.1:54322/postgres npm run db:migrate && supabase test db",
+    "test:e2e:local": "supabase db reset && KUARTZ_E2E=1 npm run build && KUARTZ_E2E=1 playwright test",
+    "test:milestone0": "npm test && npm run test:db:local && npm run test:e2e:local && npm run typecheck && npm run build",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
-    "db:bootstrap": "tsx --env-file=.env.local scripts/bootstrap-super-admin.ts"
+    "db:bootstrap": "tsx --env-file=.env.local scripts/bootstrap-super-admin.ts",
+    "supabase:start": "supabase start",
+    "supabase:stop": "supabase stop"
   },
   "dependencies": {
     "@radix-ui/react-slot": "^1.3.3",
@@ -29,12 +34,19 @@
     "tailwind-merge": "^3.6.0"
   },
   "devDependencies": {
+    "@axe-core/playwright": "^4.12.1",
+    "@playwright/test": "^1.62.1",
+    "@testing-library/jest-dom": "^7.0.0",
+    "@testing-library/react": "^16.3.2",
+    "@testing-library/user-event": "^14.6.3",
     "@types/node": "^22.10.2",
     "@types/react": "^19.0.2",
     "@types/react-dom": "^19.0.2",
     "autoprefixer": "^10.4.20",
     "drizzle-kit": "^0.31.10",
+    "jsdom": "^29.1.1",
     "postcss": "^8.4.49",
+    "supabase": "^2.111.0",
     "tailwindcss": "^3.4.17",
     "tsx": "^4.23.5",
     "typescript": "^5.7.2",

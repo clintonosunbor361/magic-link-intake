@@ -28,11 +28,11 @@ export function AuthFrame({
       <section className="flex items-center px-5 py-12 sm:px-10 lg:px-16">
         <div className="mx-auto w-full max-w-md">
           <div className="lg:hidden"><Wordmark /></div>
-          <p className="mt-12 font-mono text-xs uppercase tracking-[0.2em] text-[#687084] lg:mt-0">{eyebrow}</p>
+          <p className="mt-12 font-mono text-xs uppercase tracking-[0.2em] text-[#50586c] lg:mt-0">{eyebrow}</p>
           <h1 className="mt-4 text-4xl font-semibold tracking-[-0.045em] text-[#171b36]">{title}</h1>
-          <p className="mt-4 max-w-[48ch] leading-7 text-[#687084]">{description}</p>
+          <p className="mt-4 max-w-[48ch] leading-7 text-[#50586c]">{description}</p>
           <div className="mt-9">{children}</div>
-          <p className="mt-8 text-sm text-[#687084]">
+          <p className="mt-8 text-sm text-[#50586c]">
             Need help? <Link className="font-semibold text-[#171b36] underline-offset-4 hover:underline" href="mailto:operations@kuartz.com">Contact operations</Link>
           </p>
         </div>
