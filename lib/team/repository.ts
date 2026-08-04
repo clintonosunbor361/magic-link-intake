@@ -1,15 +1,15 @@
 import "server-only";
 
-import { and, count, desc, eq, isNull } from "drizzle-orm";
+import { and, desc, eq, isNull } from "drizzle-orm";
 import { auditEntries, organizationMemberships, staffProfiles } from "@/db/schema";
 import { getDatabase } from "@/db";
 import type { StaffRole } from "@/lib/domain/access-control";
-import type { TeamRepository } from "@/lib/team/service";
+import type { StaffRepository } from "@/lib/team/service";
 
-export function createTeamRepository(): TeamRepository {
+export function createStaffRepository(): StaffRepository {
   const db = getDatabase();
   return {
-    async getMember(organizationId, memberId) {
+    async getStaffMember(organizationId, staffMemberId) {
       const [row] = await db
         .select({
           id: organizationMemberships.userId,
@@ -22,46 +22,48 @@ export function createTeamRepository(): TeamRepository {
         .where(
           and(
             eq(organizationMemberships.organizationId, organizationId),
-            eq(organizationMemberships.userId, memberId),
+            eq(organizationMemberships.userId, staffMemberId),
             isNull(organizationMemberships.archivedAt),
           ),
         )
         .limit(1);
       return row ?? null;
     },
-    async countActiveSuperAdmins(organizationId) {
-      const [row] = await db
-        .select({ value: count() })
-        .from(organizationMemberships)
-        .where(
-          and(
-            eq(organizationMemberships.organizationId, organizationId),
-            eq(organizationMemberships.role, "super_admin"),
-            isNull(organizationMemberships.archivedAt),
-          ),
-        );
-      return row?.value ?? 0;
-    },
     async changeRoleWithAudit(input) {
       await db.transaction(async (transaction) => {
+        if (input.previousRole === "super_admin" && input.role !== "super_admin") {
+          const activeMemberships = await transaction
+            .select({ role: organizationMemberships.role })
+            .from(organizationMemberships)
+            .where(
+              and(
+                eq(organizationMemberships.organizationId, input.organizationId),
+                isNull(organizationMemberships.archivedAt),
+              ),
+            )
+            .for("update");
+          if (activeMemberships.filter(({ role }) => role === "super_admin").length <= 1) {
+            throw new Error("The organization must keep at least one Super Admin.");
+          }
+        }
         const rows = await transaction
           .update(organizationMemberships)
           .set({ role: input.role, version: input.nextVersion, updatedAt: new Date() })
           .where(
             and(
               eq(organizationMemberships.organizationId, input.organizationId),
-              eq(organizationMemberships.userId, input.memberId),
+              eq(organizationMemberships.userId, input.staffMemberId),
               eq(organizationMemberships.version, input.expectedVersion),
             ),
           )
           .returning({ id: organizationMemberships.id });
-        if (!rows.length) throw new Error("This team member changed. Reload and try again.");
+        if (!rows.length) throw new Error("This Staff Member changed. Reload and try again.");
         await transaction.insert(auditEntries).values({
           organizationId: input.organizationId,
           actorId: input.actorId,
           action: input.action,
           entityType: "staff_membership",
-          entityId: input.memberId,
+          entityId: input.staffMemberId,
           summary: input.summary,
           metadata: input.metadata,
         });
@@ -70,7 +72,7 @@ export function createTeamRepository(): TeamRepository {
   };
 }
 
-export async function listTeamMembers(organizationId: string) {
+export async function listStaffMembers(organizationId: string) {
   return getDatabase()
     .select({
       userId: organizationMemberships.userId,
@@ -107,7 +109,7 @@ export async function listAuditEntries(organizationId: string, limit = 40) {
     .limit(limit);
 }
 
-export async function addInvitedTeamMember(input: {
+export async function addInvitedStaffMember(input: {
   organizationId: string;
   actorId: string;
   userId: string;

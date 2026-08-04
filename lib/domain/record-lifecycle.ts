@@ -1,13 +1,31 @@
 import type { StaffRole } from "@/lib/domain/access-control";
 
-export type LifecycleEntity =
-  | "enquiry"
-  | "client"
-  | "order"
-  | "payment"
-  | "audit_entry"
-  | "private_file";
+export const LIFECYCLE_ENTITIES = [
+  "enquiry",
+  "enquiry_note",
+  "enquiry_task",
+  "client",
+  "order",
+  "look",
+  "item",
+  "consultation_note",
+  "style_direction_file",
+  "file_revision",
+  "measurement_profile",
+  "vendor",
+  "vendor_assignment",
+  "invoice",
+  "client_payment",
+  "vendor_payment",
+  "accessory_item",
+  "fitting_session",
+  "vendor_rating",
+  "notification",
+  "audit_entry",
+  "private_file",
+] as const;
 
+export type LifecycleEntity = (typeof LIFECYCLE_ENTITIES)[number];
 export type RecordLifecyclePolicy = {
   archive: boolean;
   restore: boolean;
@@ -15,34 +33,34 @@ export type RecordLifecyclePolicy = {
   purgeAfterDays: number | null;
 };
 
-const RECOVERABLE_POLICY: RecordLifecyclePolicy = {
-  archive: true,
-  restore: true,
-  permanentDelete: false,
-  purgeAfterDays: null,
-};
-
-const POLICIES: Record<LifecycleEntity, RecordLifecyclePolicy> = {
-  enquiry: {
-    archive: true,
-    restore: true,
-    permanentDelete: true,
-    purgeAfterDays: null,
-  },
-  client: RECOVERABLE_POLICY,
-  order: RECOVERABLE_POLICY,
-  payment: RECOVERABLE_POLICY,
-  private_file: RECOVERABLE_POLICY,
-  audit_entry: {
-    archive: false,
-    restore: false,
-    permanentDelete: false,
-    purgeAfterDays: null,
-  },
-};
+const IMMUTABLE_EVIDENCE = new Set<LifecycleEntity>([
+  "invoice",
+  "client_payment",
+  "vendor_payment",
+  "audit_entry",
+]);
 
 export function getRecordLifecyclePolicy(entity: LifecycleEntity): RecordLifecyclePolicy {
-  return { ...POLICIES[entity] };
+  if (IMMUTABLE_EVIDENCE.has(entity)) {
+    return { archive: false, restore: false, permanentDelete: false, purgeAfterDays: null };
+  }
+  return {
+    archive: true,
+    restore: true,
+    permanentDelete: entity === "enquiry" || entity === "private_file",
+    purgeAfterDays: null,
+  };
+}
+
+export function mayArchive(entity: LifecycleEntity, role: StaffRole): boolean {
+  if (!getRecordLifecyclePolicy(entity).archive) return false;
+  return entity === "enquiry" || entity === "enquiry_note" || entity === "enquiry_task"
+    ? true
+    : role === "super_admin";
+}
+
+export function mayRestore(entity: LifecycleEntity, role: StaffRole): boolean {
+  return getRecordLifecyclePolicy(entity).restore && mayArchive(entity, role);
 }
 
 export function mayPermanentlyDelete(input: {
@@ -50,11 +68,15 @@ export function mayPermanentlyDelete(input: {
   role: StaffRole;
   archivedDays: number;
   converted?: boolean;
+  belongsToPurgeableEnquiry?: boolean;
 }): boolean {
-  return (
-    input.entity === "enquiry" &&
-    input.role === "super_admin" &&
-    input.archivedDays >= 30 &&
-    input.converted === false
-  );
+  if (input.role !== "super_admin" || input.archivedDays < 30) return false;
+  if (input.entity === "enquiry") return input.converted === false;
+  return input.entity === "private_file" && input.belongsToPurgeableEnquiry === true;
 }
+
+export const ARCHIVE_CASCADE = {
+  behavior: "visibility_only",
+  description:
+    "Archiving a parent hides its dependent records without changing their individual archive timestamps; restoring the parent restores their visibility.",
+} as const;

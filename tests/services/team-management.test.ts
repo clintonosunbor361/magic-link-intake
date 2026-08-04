@@ -4,8 +4,7 @@ import { changeStaffRole } from "@/lib/team/service";
 describe("changeStaffRole", () => {
   it("changes a role and records the actor-facing audit summary", async () => {
     const repository = {
-      countActiveSuperAdmins: vi.fn().mockResolvedValue(2),
-      getMember: vi.fn().mockResolvedValue({
+      getStaffMember: vi.fn().mockResolvedValue({
         id: "member-2",
         fullName: "Teni Adesina",
         role: "admin_assistant" as const,
@@ -21,7 +20,7 @@ describe("changeStaffRole", () => {
           organizationId: "org-1",
           role: "super_admin",
         },
-        memberId: "member-2",
+        staffMemberId: "member-2",
         role: "super_admin",
         expectedVersion: 1,
       },
@@ -32,8 +31,9 @@ describe("changeStaffRole", () => {
     expect(repository.changeRoleWithAudit).toHaveBeenCalledWith(
       expect.objectContaining({
         organizationId: "org-1",
-        memberId: "member-2",
+        staffMemberId: "member-2",
         role: "super_admin",
+        previousRole: "admin_assistant",
         expectedVersion: 1,
         nextVersion: 2,
         actorId: "member-1",
@@ -45,8 +45,7 @@ describe("changeStaffRole", () => {
 
   it("rejects an Admin Assistant without touching the repository", async () => {
     const repository = {
-      countActiveSuperAdmins: vi.fn(),
-      getMember: vi.fn(),
+      getStaffMember: vi.fn(),
       changeRoleWithAudit: vi.fn(),
     };
 
@@ -58,25 +57,49 @@ describe("changeStaffRole", () => {
             organizationId: "org-1",
             role: "admin_assistant",
           },
-          memberId: "member-2",
+          staffMemberId: "member-2",
           role: "super_admin",
           expectedVersion: 1,
         },
         repository,
       ),
     ).rejects.toThrow("Super Admin access is required.");
-    expect(repository.getMember).not.toHaveBeenCalled();
+    expect(repository.getStaffMember).not.toHaveBeenCalled();
   });
 
   it("preserves the final active Super Admin", async () => {
     const repository = {
-      countActiveSuperAdmins: vi.fn().mockResolvedValue(1),
-      getMember: vi.fn().mockResolvedValue({
+      getStaffMember: vi.fn().mockResolvedValue({
         id: "member-1",
         fullName: "Roti Akinola",
         role: "super_admin" as const,
         version: 3,
       }),
+      changeRoleWithAudit: vi.fn().mockRejectedValue(
+        new Error("The organization must keep at least one Super Admin."),
+      ),
+    };
+
+    await expect(
+      changeStaffRole(
+        {
+          actor: {
+            userId: "member-1",
+            organizationId: "org-1",
+            role: "super_admin",
+          },
+          staffMemberId: "member-1",
+          role: "admin_assistant",
+          expectedVersion: 3,
+        },
+        repository,
+      ),
+    ).rejects.toThrow("The organization must keep at least one Super Admin.");
+  });
+
+  it("does not reveal or mutate a Staff Member from another organization", async () => {
+    const repository = {
+      getStaffMember: vi.fn().mockResolvedValue(null),
       changeRoleWithAudit: vi.fn(),
     };
 
@@ -88,12 +111,13 @@ describe("changeStaffRole", () => {
             organizationId: "org-1",
             role: "super_admin",
           },
-          memberId: "member-1",
+          staffMemberId: "member-in-org-2",
           role: "admin_assistant",
-          expectedVersion: 3,
+          expectedVersion: 1,
         },
         repository,
       ),
-    ).rejects.toThrow("The organization must keep at least one Super Admin.");
+    ).rejects.toThrow("Staff Member was not found.");
+    expect(repository.changeRoleWithAudit).not.toHaveBeenCalled();
   });
 });

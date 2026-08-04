@@ -8,6 +8,13 @@
       "when": 1785840919301,
       "tag": "0000_far_black_crow",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1785842112870,
+      "tag": "0001_thick_madrox",
+      "breakpoints": true
     }
   ]
 }

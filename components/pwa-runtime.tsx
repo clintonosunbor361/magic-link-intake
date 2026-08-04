@@ -12,5 +12,5 @@ export function PwaRuntime() {
     window.addEventListener("offline", sync);
     return () => { window.removeEventListener("online", sync); window.removeEventListener("offline", sync); };
   }, []);
-  return offline ? <div className="offline-banner" role="status">You’re offline. Kuartz is read-only until the connection returns.</div> : null;
+  return offline ? <div className="offline-banner" role="status">You’re offline. Kuartz is unavailable until the connection returns.</div> : null;
 }

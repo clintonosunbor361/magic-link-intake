@@ -104,7 +104,7 @@ export const auditEntries = pgTable(
     organizationId: uuid("organization_id")
       .references(() => organizations.id)
       .notNull(),
-    actorId: uuid("actor_id"),
+    actorId: uuid("actor_id").references(() => staffProfiles.id),
     action: text("action").notNull(),
     entityType: text("entity_type").notNull(),
     entityId: uuid("entity_id").notNull(),
@@ -123,6 +123,7 @@ export const auditEntries = pgTable(
         where membership.organization_id = ${table.organizationId}
           and membership.user_id = auth.uid()
           and membership.archived_at is null
+          and membership.role = 'super_admin'
       )`,
     }),
   ],

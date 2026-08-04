@@ -449,14 +449,6 @@ textarea {
 
   .form-group { display: grid; gap: 0.5rem; color: #272c45; font-size: 0.875rem; font-weight: 700; }
   .form-group small { color: #818693; font-size: 0.75rem; font-weight: 500; }
-  .app-input { min-height: 3.1rem; width: 100%; border: 1px solid #cfcec7; border-radius: 0.8rem; background: rgba(255,255,255,0.72); padding: 0.75rem 0.9rem; color: #171b36; font-size: 0.9rem; outline: none; transition: border-color 160ms ease, box-shadow 160ms ease, background 160ms ease; }
-  .app-input:focus { border-color: #88925f; background: white; box-shadow: 0 0 0 4px rgba(210,255,103,0.22); }
-  .app-button, .secondary-button { display: inline-flex; min-height: 2.75rem; align-items: center; justify-content: center; border-radius: 0.8rem; padding: 0.7rem 1rem; font-size: 0.875rem; font-weight: 800; transition: transform 140ms ease, background 140ms ease; }
-  .app-button { background: #171b36; color: white; }
-  .app-button:hover { background: #242946; transform: translateY(-1px); }
-  .secondary-button { border: 1px solid #cfcec7; background: white; color: #171b36; }
-  .secondary-button:hover { background: #f8f8f4; transform: translateY(-1px); }
-  .app-button:active, .secondary-button:active { transform: scale(0.98); }
   .form-alert, .form-success { margin-bottom: 1.25rem; border-left: 3px solid #b95b59; background: rgba(255,255,255,0.7); padding: 0.85rem 1rem; color: #713c3b; font-size: 0.875rem; line-height: 1.5; }
   .form-success { border-left-color: #819d45; color: #44582a; }
   .offline-banner { position: fixed; inset: auto 1rem 1rem 1rem; z-index: 60; border: 1px solid rgba(255,255,255,.15); border-radius: .85rem; background: #171b36; padding: .8rem 1rem; color: white; text-align: center; font-size: .8rem; font-weight: 650; box-shadow: 0 12px 35px rgba(23,27,54,.22); }

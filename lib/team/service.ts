@@ -1,26 +1,26 @@
 import { assertCanManageTeam, type StaffRole } from "@/lib/domain/access-control";
 import { resolveVersionedUpdate } from "@/lib/domain/concurrency";
 
-type TeamActor = {
+type StaffActor = {
   userId: string;
   organizationId: string;
   role: StaffRole;
 };
 
-type TeamMember = {
+type StaffMember = {
   id: string;
   fullName: string;
   role: StaffRole;
   version: number;
 };
 
-export type TeamRepository = {
-  getMember(organizationId: string, memberId: string): Promise<TeamMember | null>;
-  countActiveSuperAdmins(organizationId: string): Promise<number>;
+export type StaffRepository = {
+  getStaffMember(organizationId: string, staffMemberId: string): Promise<StaffMember | null>;
   changeRoleWithAudit(input: {
     organizationId: string;
-    memberId: string;
+    staffMemberId: string;
     role: StaffRole;
+    previousRole: StaffRole;
     expectedVersion: number;
     nextVersion: number;
     actorId: string;
@@ -37,40 +37,37 @@ const ROLE_LABELS: Record<StaffRole, string> = {
 
 export async function changeStaffRole(
   input: {
-    actor: TeamActor;
-    memberId: string;
+    actor: StaffActor;
+    staffMemberId: string;
     role: StaffRole;
     expectedVersion: number;
   },
-  repository: TeamRepository,
+  repository: StaffRepository,
 ) {
   assertCanManageTeam(input.actor.role);
-  const member = await repository.getMember(input.actor.organizationId, input.memberId);
-  if (!member) throw new Error("Team member was not found.");
+  const staffMember = await repository.getStaffMember(
+    input.actor.organizationId,
+    input.staffMemberId,
+  );
+  if (!staffMember) throw new Error("Staff Member was not found.");
 
   const version = resolveVersionedUpdate({
     expectedVersion: input.expectedVersion,
-    currentVersion: member.version,
+    currentVersion: staffMember.version,
   });
-  if (!version.ok) throw new Error("This team member changed. Reload and try again.");
-
-  if (member.role === "super_admin" && input.role !== "super_admin") {
-    const count = await repository.countActiveSuperAdmins(input.actor.organizationId);
-    if (count <= 1) {
-      throw new Error("The organization must keep at least one Super Admin.");
-    }
-  }
+  if (!version.ok) throw new Error("This Staff Member changed. Reload and try again.");
 
   await repository.changeRoleWithAudit({
     organizationId: input.actor.organizationId,
-    memberId: input.memberId,
+    staffMemberId: input.staffMemberId,
     role: input.role,
+    previousRole: staffMember.role,
     expectedVersion: input.expectedVersion,
     nextVersion: version.nextVersion,
     actorId: input.actor.userId,
     action: "staff.role_changed",
-    summary: `Changed ${member.fullName} from ${ROLE_LABELS[member.role]} to ${ROLE_LABELS[input.role]}.`,
-    metadata: { previousRole: member.role, newRole: input.role },
+    summary: `Changed ${staffMember.fullName} from ${ROLE_LABELS[staffMember.role]} to ${ROLE_LABELS[input.role]}.`,
+    metadata: { previousRole: staffMember.role, newRole: input.role },
   });
 
   return { ok: true as const, nextVersion: version.nextVersion };

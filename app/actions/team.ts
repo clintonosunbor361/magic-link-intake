@@ -6,23 +6,19 @@ import { STAFF_ROLES, type StaffRole } from "@/lib/domain/access-control";
 import { requireSuperAdmin } from "@/lib/auth/session";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { changeStaffRole } from "@/lib/team/service";
-import { addInvitedTeamMember, createTeamRepository } from "@/lib/team/repository";
-
-function value(formData: FormData, key: string) {
-  const candidate = formData.get(key);
-  return typeof candidate === "string" ? candidate.trim() : "";
-}
+import { addInvitedStaffMember, createStaffRepository } from "@/lib/team/repository";
+import { readFormString } from "@/lib/forms/read-string";
 
 function roleValue(formData: FormData): StaffRole {
-  const candidate = value(formData, "role");
+  const candidate = readFormString(formData, "role");
   if (!STAFF_ROLES.includes(candidate as StaffRole)) throw new Error("Invalid staff role.");
   return candidate as StaffRole;
 }
 
-export async function inviteTeamMemberAction(formData: FormData) {
+export async function inviteStaffMemberAction(formData: FormData) {
   const actor = await requireSuperAdmin();
-  const fullName = value(formData, "fullName");
-  const email = value(formData, "email").toLowerCase();
+  const fullName = readFormString(formData, "fullName");
+  const email = readFormString(formData, "email").toLowerCase();
   const role = roleValue(formData);
   if (!fullName || !email) redirect("/settings/team?error=Name+and+email+are+required.");
 
@@ -35,7 +31,7 @@ export async function inviteTeamMemberAction(formData: FormData) {
   if (error || !data.user) redirect("/settings/team?error=The+invitation+could+not+be+sent.");
 
   try {
-    await addInvitedTeamMember({
+    await addInvitedStaffMember({
       organizationId: actor.organizationId,
       actorId: actor.userId,
       userId: data.user.id,
@@ -51,17 +47,17 @@ export async function inviteTeamMemberAction(formData: FormData) {
   redirect("/settings/team?invited=1");
 }
 
-export async function changeTeamMemberRoleAction(formData: FormData) {
+export async function changeStaffRoleAction(formData: FormData) {
   const actor = await requireSuperAdmin();
   try {
     await changeStaffRole(
       {
         actor,
-        memberId: value(formData, "memberId"),
+        staffMemberId: readFormString(formData, "staffMemberId"),
         role: roleValue(formData),
-        expectedVersion: Number(value(formData, "version")),
+        expectedVersion: Number(readFormString(formData, "version")),
       },
-      createTeamRepository(),
+      createStaffRepository(),
     );
   } catch (error) {
     const message = error instanceof Error ? error.message : "The role could not be changed.";

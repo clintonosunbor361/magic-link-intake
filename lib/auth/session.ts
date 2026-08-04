@@ -50,7 +50,11 @@ export async function getStaffSession(): Promise<StaffSession | null> {
 
 export async function requireStaffSession(): Promise<StaffSession> {
   const session = await getStaffSession();
-  if (!session) redirect("/auth/sign-in");
+  if (!session) {
+    const supabase = await createSupabaseServerClient();
+    const { data } = (await supabase?.auth.getClaims()) ?? { data: null };
+    redirect(data?.claims?.sub ? "/auth/unauthorized" : "/auth/sign-in");
+  }
   return session;
 }
 

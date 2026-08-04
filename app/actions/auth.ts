@@ -2,15 +2,11 @@
 
 import { redirect } from "next/navigation";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
-
-function readRequired(formData: FormData, key: string) {
-  const value = formData.get(key);
-  return typeof value === "string" ? value.trim() : "";
-}
+import { readFormString } from "@/lib/forms/read-string";
 
 export async function signInAction(formData: FormData) {
-  const email = readRequired(formData, "email");
-  const password = readRequired(formData, "password");
+  const email = readFormString(formData, "email");
+  const password = readFormString(formData, "password");
   if (!email || !password) redirect("/auth/sign-in?error=Enter+your+email+and+password.");
 
   const supabase = await createSupabaseServerClient();
@@ -27,7 +23,7 @@ export async function signOutAction() {
 }
 
 export async function requestPasswordResetAction(formData: FormData) {
-  const email = readRequired(formData, "email");
+  const email = readFormString(formData, "email");
   const supabase = await createSupabaseServerClient();
   if (!supabase) redirect("/setup");
   const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
@@ -38,7 +34,7 @@ export async function requestPasswordResetAction(formData: FormData) {
 }
 
 export async function updatePasswordAction(formData: FormData) {
-  const password = readRequired(formData, "password");
+  const password = readFormString(formData, "password");
   if (password.length < 10) {
     redirect("/auth/update-password?error=Use+at+least+10+characters.");
   }

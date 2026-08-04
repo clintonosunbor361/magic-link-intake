@@ -854,4 +854,8 @@ Approved August 4, 2026:
 
 1. A person may have multiple open Enquiries and a Client may have multiple simultaneous Active Orders. Phone/email and similar-name matches warn and require acknowledgement, but never auto-merge or block legitimate creation. Conversion may associate an Enquiry with an existing Client.
 2. Core operational records are archived indefinitely and can be restored. Financial records, audit entries, converted Enquiries, Clients, Orders, and their private-file history are never hard-deleted in Phase 1. A Super Admin may permanently delete only an unconverted Enquiry after a 30-day recovery period.
+   - Admin Assistants and Super Admins may archive and restore Enquiries and their lightweight follow-up records. Client, Order, production, and other major operational archives/restores are reserved for Super Admin.
+   - Invoices, payments, and audit entries are immutable evidence: they are corrected through domain actions such as voiding or reversal, not archive/delete.
+   - Archiving a parent hides its dependent records without rewriting each child’s archive history; restoring the parent restores their visibility.
+   - Private attachments remain recoverable with their parent. Attachments belonging only to an eligible unconverted Enquiry are purged when that Enquiry is permanently deleted after the recovery period; the audit tombstone remains.
 3. Operational lists use real-time subscriptions or polling for freshness. Writes use optimistic version checks; a conflict preserves submitted input and offers reload/reapply. Offline editing remains out of scope.
