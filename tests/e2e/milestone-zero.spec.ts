@@ -5,7 +5,7 @@ import { E2E_USERS } from "@/tests/e2e/global-setup";
 async function signIn(page: Page, user: (typeof E2E_USERS)[keyof typeof E2E_USERS]) {
   await page.goto("/auth/sign-in");
   await page.getByLabel("Email address").fill(user.email);
-  await page.getByLabel("Password").fill(user.password);
+  await page.getByLabel("Password", { exact: true }).fill(user.password);
   await page.getByRole("button", { name: "Sign in" }).click();
 }
 
@@ -21,7 +21,7 @@ test("signed-out staff routes redirect to sign in", async ({ page }) => {
   await expectNoSeriousAccessibilityViolations(page);
 });
 
-test("a Super Admin can reach the dashboard, team settings, and legacy intake", async ({ page, isMobile }) => {
+test("a Super Admin can reach the dashboard, team settings, and the Enquiries inbox", async ({ page, isMobile }) => {
   await signIn(page, E2E_USERS.superAdmin);
   await expect(page.getByRole("heading", { name: /Good morning, Roti/ })).toBeVisible();
   if (isMobile) await page.getByRole("button", { name: "Open navigation" }).click();
@@ -29,9 +29,8 @@ test("a Super Admin can reach the dashboard, team settings, and legacy intake", 
   await page.getByRole("link", { name: "Settings" }).click();
   await expect(page.getByRole("heading", { name: "Team and access" })).toBeVisible();
   await expect(page.getByText("Separate Atelier")).toHaveCount(0);
-  await page.goto("/intake-links");
-  await expect(page.getByRole("heading", { name: "Intake links" })).toBeVisible();
-  await expect(page.getByText("Legacy", { exact: true })).toBeVisible();
+  await page.goto("/enquiries");
+  await expect(page.getByRole("heading", { name: "Inbox" })).toBeVisible();
   await expectNoSeriousAccessibilityViolations(page);
 });
 

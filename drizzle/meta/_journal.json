@@ -22,6 +22,20 @@
       "when": 1785844486011,
       "tag": "0002_supabase_grants",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1785952374372,
+      "tag": "0003_cynical_franklin_storm",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1785952374373,
+      "tag": "0004_supabase_grants",
+      "breakpoints": true
     }
   ]
 }

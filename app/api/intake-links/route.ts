@@ -9,7 +9,10 @@ export async function POST(request: Request) {
   if (!session) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
-  const { token } = await createMagicLinkToken();
+  const { token } = await createMagicLinkToken({
+    organizationId: session.organizationId,
+    generatedByStaffId: session.userId,
+  });
   const url = new URL(`/i/${token}`, request.url);
 
   return NextResponse.json({

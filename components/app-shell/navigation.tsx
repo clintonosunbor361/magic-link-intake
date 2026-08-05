@@ -8,7 +8,6 @@ import {
   BriefcaseBusiness,
   Factory,
   House,
-  Link2,
   Menu,
   MessageSquareText,
   Settings,
@@ -21,7 +20,6 @@ import { Button } from "@/components/ui/button";
 const navigation = [
   { href: "/", label: "Overview", icon: House },
   { href: "/enquiries", label: "Enquiries", icon: MessageSquareText },
-  { href: "/intake-links", label: "Intake links", icon: Link2 },
   { href: "/clients", label: "Clients", icon: UsersRound },
   { href: "/orders", label: "Orders", icon: BriefcaseBusiness },
   { href: "/production", label: "Production", icon: Factory },
