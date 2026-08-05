@@ -35,12 +35,14 @@ export async function requestPasswordResetAction(formData: FormData) {
 
 export async function updatePasswordAction(formData: FormData) {
   const password = readFormString(formData, "password");
+  const context = readFormString(formData, "context");
+  const contextParam = context === "invite" ? "&context=invite" : "";
   if (password.length < 10) {
-    redirect("/auth/update-password?error=Use+at+least+10+characters.");
+    redirect(`/auth/update-password?error=Use+at+least+10+characters.${contextParam}`);
   }
   const supabase = await createSupabaseServerClient();
   if (!supabase) redirect("/setup");
   const { error } = await supabase.auth.updateUser({ password });
-  if (error) redirect("/auth/update-password?error=The+password+could+not+be+updated.");
+  if (error) redirect(`/auth/update-password?error=The+password+could+not+be+updated.${contextParam}`);
   redirect("/");
 }
