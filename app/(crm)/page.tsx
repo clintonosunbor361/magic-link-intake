@@ -2,13 +2,14 @@ import Link from "next/link";
 import { ArrowRight } from "lucide-react";
 import { requireStaffSession } from "@/lib/auth/session";
 import { EmptyState } from "@/components/ui/empty-state";
+import { Greeting } from "@/components/greeting";
 
 export default async function OverviewPage() {
   const session = await requireStaffSession();
   return (
     <div>
       <header className="grid gap-8 border-b border-[#d9d8d1] pb-9 md:grid-cols-[minmax(0,1fr)_auto] md:items-end">
-        <div><p className="eyebrow">Tuesday operations</p><h1 className="page-title">Good morning, {session.fullName.split(" ")[0]}.</h1><p className="page-description">Your workspace is ready. Operational modules will appear here as each Phase 1 milestone lands.</p></div>
+        <div><p className="eyebrow">Tuesday operations</p><h1 className="page-title"><Greeting name={session.fullName.split(" ")[0]} /></h1><p className="page-description">Your workspace is ready. Operational modules will appear here as each Phase 1 milestone lands.</p></div>
         <span className="inline-flex w-fit items-center gap-2 rounded-full border border-[#d9d8d1] bg-white/55 px-4 py-2 text-xs font-semibold text-[#596071]"><span className="h-2 w-2 rounded-full bg-[#93aa53]" />System foundation active</span>
       </header>
       <section className="mt-9 grid gap-8 lg:grid-cols-[minmax(0,1.35fr)_minmax(18rem,0.65fr)]">

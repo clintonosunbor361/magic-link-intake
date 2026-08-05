@@ -6,7 +6,7 @@ async function signIn(page: Page, user: (typeof E2E_USERS)[keyof typeof E2E_USER
   await page.getByLabel("Email address").fill(user.email);
   await page.getByLabel("Password", { exact: true }).fill(user.password);
   await page.getByRole("button", { name: "Sign in" }).click();
-  await expect(page.getByRole("heading", { name: /Good morning/ })).toBeVisible();
+  await expect(page.getByRole("heading", { name: /Good (morning|afternoon|evening)/ })).toBeVisible();
 }
 
 async function selectGlassDropdown(page: Page, label: string, option: string) {

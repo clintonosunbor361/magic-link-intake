@@ -23,7 +23,7 @@ test("signed-out staff routes redirect to sign in", async ({ page }) => {
 
 test("a Super Admin can reach the dashboard, team settings, and the Enquiries inbox", async ({ page, isMobile }) => {
   await signIn(page, E2E_USERS.superAdmin);
-  await expect(page.getByRole("heading", { name: /Good morning, Roti/ })).toBeVisible();
+  await expect(page.getByRole("heading", { name: /Good (morning|afternoon|evening), Roti/ })).toBeVisible();
   if (isMobile) await page.getByRole("button", { name: "Open navigation" }).click();
   await expect(page.getByRole("link", { name: "Settings" })).toBeVisible();
   await page.getByRole("link", { name: "Settings" }).click();
@@ -36,7 +36,7 @@ test("a Super Admin can reach the dashboard, team settings, and the Enquiries in
 
 test("an Admin Assistant cannot reach Super Admin settings", async ({ page }) => {
   await signIn(page, E2E_USERS.assistant);
-  await expect(page.getByRole("heading", { name: /Good morning, Teni/ })).toBeVisible();
+  await expect(page.getByRole("heading", { name: /Good (morning|afternoon|evening), Teni/ })).toBeVisible();
   await expect(page.getByRole("link", { name: "Settings" })).toHaveCount(0);
   await page.goto("/settings/team");
   await expect(page).toHaveURL(/\/$/);
