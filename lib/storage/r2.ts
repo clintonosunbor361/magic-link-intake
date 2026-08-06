@@ -27,13 +27,13 @@ function getR2Client(): S3Client {
   return client;
 }
 
-export async function putStyleDirectionObject(key: string, body: Buffer, contentType: string): Promise<void> {
+export async function putPrivateObject(key: string, body: Buffer, contentType: string): Promise<void> {
   await getR2Client().send(
     new PutObjectCommand({ Bucket: requireEnv("R2_BUCKET"), Key: key, Body: body, ContentType: contentType }),
   );
 }
 
-export async function deleteStyleDirectionObject(key: string): Promise<void> {
+export async function deletePrivateObject(key: string): Promise<void> {
   try {
     await getR2Client().send(new DeleteObjectCommand({ Bucket: requireEnv("R2_BUCKET"), Key: key }));
   } catch {
@@ -44,7 +44,7 @@ export async function deleteStyleDirectionObject(key: string): Promise<void> {
 
 // A local HMAC computation against the S3 signing algorithm, no network round-trip — cheap enough
 // to call fresh on every page render/request rather than caching a URL past its usefulness.
-export async function getSignedStyleDirectionViewUrl(
+export async function getSignedPrivateViewUrl(
   key: string,
   expiresInSeconds: number = DEFAULT_SIGNED_URL_TTL_SECONDS,
 ): Promise<string> {

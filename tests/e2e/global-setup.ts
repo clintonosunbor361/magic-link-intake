@@ -81,6 +81,40 @@ export default async function globalSetup() {
           ('30000000-0000-0000-0000-000000000003', 'Colour reference', 5),
           ('30000000-0000-0000-0000-000000000003', 'Other', 6)
       `;
+      await transaction`
+        insert into measurement_field_definitions (organization_id, name, unit, sort_order)
+        values
+          ('30000000-0000-0000-0000-000000000003', 'Neck', 'in', 0),
+          ('30000000-0000-0000-0000-000000000003', 'Shoulder', 'in', 1),
+          ('30000000-0000-0000-0000-000000000003', 'Chest', 'in', 2),
+          ('30000000-0000-0000-0000-000000000003', 'Waist', 'in', 3),
+          ('30000000-0000-0000-0000-000000000003', 'Hip', 'in', 4),
+          ('30000000-0000-0000-0000-000000000003', 'Sleeve length', 'in', 5),
+          ('30000000-0000-0000-0000-000000000003', 'Bicep', 'in', 6),
+          ('30000000-0000-0000-0000-000000000003', 'Wrist', 'in', 7),
+          ('30000000-0000-0000-0000-000000000003', 'Shirt length', 'in', 8),
+          ('30000000-0000-0000-0000-000000000003', 'Trouser length', 'in', 9),
+          ('30000000-0000-0000-0000-000000000003', 'Thigh', 'in', 10),
+          ('30000000-0000-0000-0000-000000000003', 'Agbada length', 'in', 11),
+          ('30000000-0000-0000-0000-000000000003', 'Head circumference', 'in', 12),
+          ('30000000-0000-0000-0000-000000000003', 'Shoe size', 'UK', 13)
+      `;
+      await transaction`
+        insert into item_type_measurement_requirements (organization_id, item_type_id, field_definition_id)
+        select '30000000-0000-0000-0000-000000000003', item_types.id, measurement_field_definitions.id
+        from (
+          values
+            ('Suit', 'Neck'), ('Suit', 'Shoulder'), ('Suit', 'Chest'), ('Suit', 'Waist'), ('Suit', 'Hip'),
+            ('Suit', 'Sleeve length'), ('Suit', 'Bicep'), ('Suit', 'Wrist'), ('Suit', 'Trouser length'), ('Suit', 'Thigh'),
+            ('Agbada', 'Neck'), ('Agbada', 'Shoulder'), ('Agbada', 'Chest'), ('Agbada', 'Sleeve length'), ('Agbada', 'Agbada length'),
+            ('Shirt', 'Neck'), ('Shirt', 'Shoulder'), ('Shirt', 'Chest'), ('Shirt', 'Sleeve length'), ('Shirt', 'Wrist'), ('Shirt', 'Shirt length'),
+            ('Trouser', 'Waist'), ('Trouser', 'Hip'), ('Trouser', 'Trouser length'), ('Trouser', 'Thigh'),
+            ('Cap', 'Head circumference'),
+            ('Shoes', 'Shoe size')
+        ) as pairs(item_type_name, field_name)
+        join item_types on item_types.organization_id = '30000000-0000-0000-0000-000000000003' and item_types.name = pairs.item_type_name
+        join measurement_field_definitions on measurement_field_definitions.organization_id = '30000000-0000-0000-0000-000000000003' and measurement_field_definitions.name = pairs.field_name
+      `;
     });
   } finally {
     await sql.end();

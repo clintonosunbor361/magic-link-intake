@@ -5,7 +5,9 @@ import postgres from "postgres";
 import {
   auditEntries,
   consultationNoteSources,
+  itemTypeMeasurementRequirements,
   itemTypes,
+  measurementFieldDefinitions,
   organizationMemberships,
   organizations,
   staffProfiles,
@@ -21,6 +23,33 @@ const DEFAULT_CONSULTATION_NOTE_SOURCES = [
   "Colour reference",
   "Other",
 ];
+
+const DEFAULT_MEASUREMENT_FIELD_DEFINITIONS: { name: string; unit: string }[] = [
+  { name: "Neck", unit: "in" },
+  { name: "Shoulder", unit: "in" },
+  { name: "Chest", unit: "in" },
+  { name: "Waist", unit: "in" },
+  { name: "Hip", unit: "in" },
+  { name: "Sleeve length", unit: "in" },
+  { name: "Bicep", unit: "in" },
+  { name: "Wrist", unit: "in" },
+  { name: "Shirt length", unit: "in" },
+  { name: "Trouser length", unit: "in" },
+  { name: "Thigh", unit: "in" },
+  { name: "Agbada length", unit: "in" },
+  { name: "Head circumference", unit: "in" },
+  { name: "Shoe size", unit: "UK" },
+];
+
+// Item type name -> required measurement field names. "Other" has no fixed measurement need.
+const DEFAULT_ITEM_TYPE_MEASUREMENT_REQUIREMENTS: Record<string, string[]> = {
+  Suit: ["Neck", "Shoulder", "Chest", "Waist", "Hip", "Sleeve length", "Bicep", "Wrist", "Trouser length", "Thigh"],
+  Agbada: ["Neck", "Shoulder", "Chest", "Sleeve length", "Agbada length"],
+  Shirt: ["Neck", "Shoulder", "Chest", "Sleeve length", "Wrist", "Shirt length"],
+  Trouser: ["Waist", "Hip", "Trouser length", "Thigh"],
+  Cap: ["Head circumference"],
+  Shoes: ["Shoe size"],
+};
 
 const required = (name: string) => {
   const result = process.env[name];
@@ -56,13 +85,16 @@ try {
       .insert(organizations)
       .values({ name: organizationName, slug: organizationSlug })
       .returning({ id: organizations.id });
-    await db.insert(itemTypes).values(
-      DEFAULT_ITEM_TYPES.map((name, index) => ({
-        organizationId: organization.id,
-        name,
-        sortOrder: index,
-      })),
-    );
+    const insertedItemTypes = await db
+      .insert(itemTypes)
+      .values(
+        DEFAULT_ITEM_TYPES.map((name, index) => ({
+          organizationId: organization.id,
+          name,
+          sortOrder: index,
+        })),
+      )
+      .returning({ id: itemTypes.id, name: itemTypes.name });
     await db.insert(consultationNoteSources).values(
       DEFAULT_CONSULTATION_NOTE_SOURCES.map((name, index) => ({
         organizationId: organization.id,
@@ -70,6 +102,28 @@ try {
         sortOrder: index,
       })),
     );
+    const insertedFieldDefinitions = await db
+      .insert(measurementFieldDefinitions)
+      .values(
+        DEFAULT_MEASUREMENT_FIELD_DEFINITIONS.map((field, index) => ({
+          organizationId: organization.id,
+          name: field.name,
+          unit: field.unit,
+          sortOrder: index,
+        })),
+      )
+      .returning({ id: measurementFieldDefinitions.id, name: measurementFieldDefinitions.name });
+
+    const itemTypeIdByName = new Map(insertedItemTypes.map((row) => [row.name, row.id]));
+    const fieldDefinitionIdByName = new Map(insertedFieldDefinitions.map((row) => [row.name, row.id]));
+    const requirementRows = Object.entries(DEFAULT_ITEM_TYPE_MEASUREMENT_REQUIREMENTS).flatMap(([itemTypeName, fieldNames]) =>
+      fieldNames.map((fieldName) => ({
+        organizationId: organization.id,
+        itemTypeId: itemTypeIdByName.get(itemTypeName)!,
+        fieldDefinitionId: fieldDefinitionIdByName.get(fieldName)!,
+      })),
+    );
+    await db.insert(itemTypeMeasurementRequirements).values(requirementRows);
   }
 
   const { data, error } = await auth.auth.admin.createUser({

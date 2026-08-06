@@ -7,7 +7,7 @@ export type CompressedImage = { buffer: Buffer; mimeType: string; extension: str
 // Resizes/re-encodes so uploads don't eat into R2's free-tier storage at full camera resolution.
 // HEIC/HEIF is decode-only in prebuilt sharp binaries, so it's always re-encoded as JPEG/WebP —
 // the stored mimeType/extension can differ from what was uploaded for those inputs.
-export async function compressStyleDirectionImage(buffer: Buffer): Promise<CompressedImage> {
+export async function compressImage(buffer: Buffer): Promise<CompressedImage> {
   let pipeline;
   let metadata;
   try {

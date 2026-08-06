@@ -11,6 +11,8 @@ describe("staff route policy", () => {
     "/intake/success",
     "/approve/token",
     "/approve/inactive",
+    "/confirm/token",
+    "/confirm/inactive",
   ])(
     "keeps %s public",
     (pathname) => {

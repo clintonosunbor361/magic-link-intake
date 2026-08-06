@@ -3,8 +3,8 @@ import "server-only";
 import { and, desc, eq, inArray, sql } from "drizzle-orm";
 import { getDatabase } from "@/db";
 import { auditEntries, looks, orders, styleDirectionFileRevisions, styleDirectionFiles } from "@/db/schema";
-import { compressStyleDirectionImage } from "@/lib/storage/image";
-import { deleteStyleDirectionObject, putStyleDirectionObject } from "@/lib/storage/r2";
+import { compressImage } from "@/lib/storage/image";
+import { deletePrivateObject, putPrivateObject } from "@/lib/storage/r2";
 import type { StyleDirectionFileRepository, StyleDirectionStorage } from "@/lib/style-direction-files/file-service";
 
 export function createStyleDirectionFileRepository(): StyleDirectionFileRepository {
@@ -153,9 +153,9 @@ export function createStyleDirectionFileRepository(): StyleDirectionFileReposito
 
 export function createStyleDirectionStorage(): StyleDirectionStorage {
   return {
-    putObject: putStyleDirectionObject,
-    deleteObject: deleteStyleDirectionObject,
-    compressImage: compressStyleDirectionImage,
+    putObject: putPrivateObject,
+    deleteObject: deletePrivateObject,
+    compressImage,
   };
 }
 

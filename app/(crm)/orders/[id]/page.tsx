@@ -25,9 +25,11 @@ import {
   reviseStyleDirectionFileAction,
   uploadStyleDirectionFileAction,
 } from "@/app/actions/style-direction-files";
+import { issueOrderConfirmationAction } from "@/app/actions/client-confirmations";
 import { requireStaffSession } from "@/lib/auth/session";
 import { mayArchive, mayRestore } from "@/lib/domain/record-lifecycle";
 import { getOrderWithLooksAndItems } from "@/lib/orders/repository";
+import { getMissingMeasurementsForOrder } from "@/lib/item-type-measurement-requirements/repository";
 import { listItemTypes } from "@/lib/item-types/repository";
 import { listConsultationNoteSources } from "@/lib/consultation-note-sources/repository";
 import { listConsultationNotesForOrder } from "@/lib/consultation-notes/repository";
@@ -36,12 +38,13 @@ import {
   listStyleDirectionFilesForOrder,
 } from "@/lib/style-direction-files/repository";
 import { formatStyleDirectionLabel, STYLE_DIRECTION_FILE_CATEGORIES } from "@/lib/style-direction-files/file-service";
-import { getSignedStyleDirectionViewUrl } from "@/lib/storage/r2";
+import { getSignedPrivateViewUrl } from "@/lib/storage/r2";
 import {
   listApprovalBatchesForOrder,
   listPendingApprovalFiles,
   listRevisionQueueFiles,
 } from "@/lib/style-direction-approvals/repository";
+import { listConfirmationsForSubject } from "@/lib/client-confirmations/repository";
 import { formatMinorUnits } from "@/lib/forms/money";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -69,15 +72,24 @@ export default async function OrderDetailPage({
   if (!order) notFound();
 
   const itemTypes = await listItemTypes(session.organizationId);
-  const [consultationNoteSources, consultationNotes, styleDirectionFiles, approvalBatches, pendingApprovalFiles, revisionQueueFiles] =
-    await Promise.all([
-      listConsultationNoteSources(session.organizationId),
-      listConsultationNotesForOrder(session.organizationId, order.id),
-      listStyleDirectionFilesForOrder(session.organizationId, order.id),
-      listApprovalBatchesForOrder(session.organizationId, order.id),
-      listPendingApprovalFiles(session.organizationId, order.id),
-      listRevisionQueueFiles(session.organizationId, order.id),
-    ]);
+  const [
+    consultationNoteSources,
+    consultationNotes,
+    styleDirectionFiles,
+    approvalBatches,
+    pendingApprovalFiles,
+    revisionQueueFiles,
+    missingMeasurementsByItemId,
+  ] = await Promise.all([
+    listConsultationNoteSources(session.organizationId),
+    listConsultationNotesForOrder(session.organizationId, order.id),
+    listStyleDirectionFilesForOrder(session.organizationId, order.id),
+    listApprovalBatchesForOrder(session.organizationId, order.id),
+    listPendingApprovalFiles(session.organizationId, order.id),
+    listRevisionQueueFiles(session.organizationId, order.id),
+    getMissingMeasurementsForOrder(session.organizationId, order.id),
+  ]);
+  const orderConfirmations = await listConfirmationsForSubject(session.organizationId, "order_detail", order.id);
   const styleDirectionRevisions = await listStyleDirectionFileRevisionsForFiles(
     session.organizationId,
     styleDirectionFiles.map((file) => file.id),
@@ -87,7 +99,7 @@ export default async function OrderDetailPage({
     ...styleDirectionRevisions.map((revision) => revision.r2ObjectKey),
   ];
   const signedUrlEntries = await Promise.all(
-    [...new Set(revisionKeys)].map(async (key) => [key, await getSignedStyleDirectionViewUrl(key)] as const),
+    [...new Set(revisionKeys)].map(async (key) => [key, await getSignedPrivateViewUrl(key)] as const),
   );
   const signedUrlByKey = new Map(signedUrlEntries);
   const isArchived = Boolean(order.archivedAt);
@@ -219,8 +231,15 @@ export default async function OrderDetailPage({
                     <h3 className="text-xs font-semibold uppercase tracking-wide text-[#50586c]">Items</h3>
                     <div className="mt-3 divide-y divide-[#eceae2]">
                       {look.items.length ? (
-                        look.items.map((item) => (
+                        look.items.map((item) => {
+                          const missingMeasurements = missingMeasurementsByItemId.get(item.id);
+                          return (
                           <div key={item.id} className="py-3">
+                            {missingMeasurements?.length ? (
+                              <p className="mb-2 text-xs font-semibold text-[#a4562d]">
+                                Missing measurements: {missingMeasurements.map((field) => field.fieldName).join(", ")}
+                              </p>
+                            ) : null}
                             <form action={updateItemAction} className="flex flex-wrap items-end gap-3">
                               <input type="hidden" name="orderId" value={order.id} />
                               <input type="hidden" name="itemId" value={item.id} />
@@ -273,7 +292,8 @@ export default async function OrderDetailPage({
                               ) : null}
                             </div>
                           </div>
-                        ))
+                          );
+                        })
                       ) : (
                         <p className="py-3 text-sm text-[#767b89]">No Items yet on this Look.</p>
                       )}
@@ -703,6 +723,32 @@ export default async function OrderDetailPage({
                 <p className="py-3 text-sm text-[#767b89]">No approval batches yet.</p>
               )}
             </div>
+          </div>
+
+          <div>
+            <h2 className="section-title">Order confirmations</h2>
+            <div className="mt-4 divide-y divide-[#eceae2]">
+              {orderConfirmations.length ? (
+                orderConfirmations.map((confirmation) => (
+                  <div key={confirmation.id} className="grid gap-1 py-3 text-sm sm:grid-cols-[1fr_auto]">
+                    <p className="text-[#171b36]">
+                      Created {dateFormatter.format(confirmation.createdAt)}
+                      {confirmation.deliveryMethod ? ` · ${confirmation.deliveryMethod === "email" ? "Emailed" : "Copied"}` : " · Not yet delivered"}
+                      {confirmation.decisionComment ? ` — "${confirmation.decisionComment}"` : ""}
+                    </p>
+                    <p className="font-semibold text-[#767b89]">{confirmation.status}</p>
+                  </div>
+                ))
+              ) : (
+                <p className="py-3 text-sm text-[#767b89]">No order confirmations sent yet.</p>
+              )}
+            </div>
+            <form action={issueOrderConfirmationAction} className="mt-4">
+              <input type="hidden" name="orderId" value={order.id} />
+              <Button type="submit" variant="outline">
+                Send order confirmation
+              </Button>
+            </form>
           </div>
         </div>
 

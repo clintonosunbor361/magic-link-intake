@@ -42,6 +42,12 @@ export default async function ItemTypesPage({
         <Link href="/settings/consultation-note-sources" className="text-[#50586c] hover:text-[#171b36]">
           Consultation note sources
         </Link>
+        <Link href="/settings/measurement-fields" className="text-[#50586c] hover:text-[#171b36]">
+          Measurement fields
+        </Link>
+        <Link href="/settings/measurement-requirements" className="text-[#50586c] hover:text-[#171b36]">
+          Measurement requirements
+        </Link>
       </nav>
 
       {params.error ? (

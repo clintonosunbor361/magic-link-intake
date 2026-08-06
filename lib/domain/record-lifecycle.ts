@@ -12,6 +12,7 @@ export const LIFECYCLE_ENTITIES = [
   "style_direction_file",
   "file_revision",
   "measurement_profile",
+  "measurement_profile_attachment",
   "vendor",
   "vendor_assignment",
   "invoice",

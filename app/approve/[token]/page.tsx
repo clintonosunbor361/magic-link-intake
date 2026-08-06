@@ -1,7 +1,7 @@
 import { InactiveLink } from "@/components/inactive-link";
 import { Wordmark } from "@/components/wordmark";
 import { getApprovalBatchForToken, type ApprovalBatchViewItem } from "@/lib/style-direction-approvals/repository";
-import { getSignedStyleDirectionViewUrl } from "@/lib/storage/r2";
+import { getSignedPrivateViewUrl } from "@/lib/storage/r2";
 import { formatStyleDirectionLabel } from "@/lib/style-direction-files/file-service";
 import { APPROVAL_DECISIONS } from "@/lib/style-direction-approvals/decision-service";
 
@@ -28,7 +28,7 @@ export default async function ApprovalPage({ params, searchParams }: ApprovalPag
 
   const isCompleted = batch.status === "Completed";
   const signedUrlEntries = await Promise.all(
-    batch.items.map(async (item) => [item.id, await getSignedStyleDirectionViewUrl(item.r2ObjectKey)] as const),
+    batch.items.map(async (item) => [item.id, await getSignedPrivateViewUrl(item.r2ObjectKey)] as const),
   );
   const signedUrlByItemId = new Map(signedUrlEntries);
 

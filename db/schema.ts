@@ -34,6 +34,13 @@ export const styleDirectionApprovalStatus = pgEnum("style_direction_approval_sta
   "rejected",
 ]);
 export const styleDirectionBatchDeliveryMethod = pgEnum("style_direction_batch_delivery_method", ["email", "copy_link"]);
+export const clientConfirmationSubjectType = pgEnum("client_confirmation_subject_type", ["measurement_profile", "order_detail"]);
+export const clientConfirmationDecisionStatus = pgEnum("client_confirmation_decision_status", [
+  "pending",
+  "confirmed",
+  "correction_requested",
+]);
+export const clientConfirmationDeliveryMethod = pgEnum("client_confirmation_delivery_method", ["email", "copy_link"]);
 
 const timestamps = {
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
@@ -624,6 +631,251 @@ export const styleDirectionApprovalBatchItems = pgTable(
   ],
 ).enableRLS();
 
+export const measurementFieldDefinitions = pgTable(
+  "measurement_field_definitions",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    organizationId: uuid("organization_id")
+      .references(() => organizations.id)
+      .notNull(),
+    name: text("name").notNull(),
+    unit: text("unit").notNull(),
+    sortOrder: integer("sort_order").default(0).notNull(),
+    version: integer("version").default(1).notNull(),
+    archivedAt: timestamp("archived_at", { withTimezone: true }),
+    ...timestamps,
+  },
+  (table) => [
+    index("measurement_field_definitions_org_sort_idx").on(table.organizationId, table.sortOrder),
+    pgPolicy("staff can view organization measurement field definitions", {
+      for: "select",
+      to: "authenticated",
+      using: sql`exists (
+        select 1 from organization_memberships membership
+        where membership.organization_id = ${table.organizationId}
+          and membership.user_id = auth.uid()
+          and membership.archived_at is null
+      )`,
+    }),
+  ],
+).enableRLS();
+
+export const measurementProfiles = pgTable(
+  "measurement_profiles",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    organizationId: uuid("organization_id")
+      .references(() => organizations.id)
+      .notNull(),
+    clientId: uuid("client_id")
+      .references(() => clients.id)
+      .notNull(),
+    version: integer("version").default(1).notNull(),
+    archivedAt: timestamp("archived_at", { withTimezone: true }),
+    ...timestamps,
+  },
+  (table) => [
+    uniqueIndex("measurement_profiles_org_client_uidx").on(table.organizationId, table.clientId),
+    pgPolicy("staff can view organization measurement profiles", {
+      for: "select",
+      to: "authenticated",
+      using: sql`exists (
+        select 1 from organization_memberships membership
+        where membership.organization_id = ${table.organizationId}
+          and membership.user_id = auth.uid()
+          and membership.archived_at is null
+      )`,
+    }),
+  ],
+).enableRLS();
+
+export const measurementValues = pgTable(
+  "measurement_values",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    organizationId: uuid("organization_id")
+      .references(() => organizations.id)
+      .notNull(),
+    measurementProfileId: uuid("measurement_profile_id")
+      .references(() => measurementProfiles.id)
+      .notNull(),
+    fieldDefinitionId: uuid("field_definition_id")
+      .references(() => measurementFieldDefinitions.id)
+      .notNull(),
+    value: text("value").notNull(),
+    createdByStaffId: uuid("created_by_staff_id")
+      .references(() => staffProfiles.id)
+      .notNull(),
+    lastEditedByStaffId: uuid("last_edited_by_staff_id").references(() => staffProfiles.id),
+    lastEditedAt: timestamp("last_edited_at", { withTimezone: true }),
+    version: integer("version").default(1).notNull(),
+    ...timestamps,
+  },
+  (table) => [
+    uniqueIndex("measurement_values_profile_field_uidx").on(table.measurementProfileId, table.fieldDefinitionId),
+    pgPolicy("staff can view organization measurement values", {
+      for: "select",
+      to: "authenticated",
+      using: sql`exists (
+        select 1 from organization_memberships membership
+        where membership.organization_id = ${table.organizationId}
+          and membership.user_id = auth.uid()
+          and membership.archived_at is null
+      )`,
+    }),
+  ],
+).enableRLS();
+
+export const measurementValueRevisions = pgTable(
+  "measurement_value_revisions",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    organizationId: uuid("organization_id")
+      .references(() => organizations.id)
+      .notNull(),
+    measurementValueId: uuid("measurement_value_id")
+      .references(() => measurementValues.id)
+      .notNull(),
+    fieldDefinitionId: uuid("field_definition_id")
+      .references(() => measurementFieldDefinitions.id)
+      .notNull(),
+    previousValue: text("previous_value"),
+    newValue: text("new_value").notNull(),
+    changedByStaffId: uuid("changed_by_staff_id")
+      .references(() => staffProfiles.id)
+      .notNull(),
+    note: text("note"),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => [
+    index("measurement_value_revisions_value_created_idx").on(table.measurementValueId, table.createdAt),
+    pgPolicy("staff can view organization measurement value revisions", {
+      for: "select",
+      to: "authenticated",
+      using: sql`exists (
+        select 1 from organization_memberships membership
+        where membership.organization_id = ${table.organizationId}
+          and membership.user_id = auth.uid()
+          and membership.archived_at is null
+      )`,
+    }),
+  ],
+).enableRLS();
+
+export const measurementProfileAttachments = pgTable(
+  "measurement_profile_attachments",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    organizationId: uuid("organization_id")
+      .references(() => organizations.id)
+      .notNull(),
+    measurementProfileId: uuid("measurement_profile_id")
+      .references(() => measurementProfiles.id)
+      .notNull(),
+    r2ObjectKey: text("r2_object_key").notNull(),
+    mimeType: text("mime_type").notNull(),
+    byteSize: integer("byte_size").notNull(),
+    uploadedByStaffId: uuid("uploaded_by_staff_id")
+      .references(() => staffProfiles.id)
+      .notNull(),
+    version: integer("version").default(1).notNull(),
+    archivedAt: timestamp("archived_at", { withTimezone: true }),
+    ...timestamps,
+  },
+  (table) => [
+    index("measurement_profile_attachments_profile_idx").on(table.measurementProfileId),
+    pgPolicy("staff can view organization measurement profile attachments", {
+      for: "select",
+      to: "authenticated",
+      using: sql`exists (
+        select 1 from organization_memberships membership
+        where membership.organization_id = ${table.organizationId}
+          and membership.user_id = auth.uid()
+          and membership.archived_at is null
+      )`,
+    }),
+  ],
+).enableRLS();
+
+export const itemTypeMeasurementRequirements = pgTable(
+  "item_type_measurement_requirements",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    organizationId: uuid("organization_id")
+      .references(() => organizations.id)
+      .notNull(),
+    itemTypeId: uuid("item_type_id")
+      .references(() => itemTypes.id)
+      .notNull(),
+    fieldDefinitionId: uuid("field_definition_id")
+      .references(() => measurementFieldDefinitions.id)
+      .notNull(),
+    version: integer("version").default(1).notNull(),
+    archivedAt: timestamp("archived_at", { withTimezone: true }),
+    ...timestamps,
+  },
+  (table) => [
+    uniqueIndex("item_type_measurement_requirements_type_field_uidx").on(table.itemTypeId, table.fieldDefinitionId),
+    pgPolicy("staff can view organization item type measurement requirements", {
+      for: "select",
+      to: "authenticated",
+      using: sql`exists (
+        select 1 from organization_memberships membership
+        where membership.organization_id = ${table.organizationId}
+          and membership.user_id = auth.uid()
+          and membership.archived_at is null
+      )`,
+    }),
+  ],
+).enableRLS();
+
+// subjectId is deliberately not a foreign key: it points at either measurement_profiles or
+// orders depending on subjectType (same polymorphic precedent as audit_entries.entityId).
+export const clientConfirmations = pgTable(
+  "client_confirmations",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    organizationId: uuid("organization_id")
+      .references(() => organizations.id)
+      .notNull(),
+    subjectType: clientConfirmationSubjectType("subject_type").notNull(),
+    subjectId: uuid("subject_id").notNull(),
+    tokenHash: text("token_hash").notNull(),
+    createdByStaffId: uuid("created_by_staff_id")
+      .references(() => staffProfiles.id)
+      .notNull(),
+    expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+    completedAt: timestamp("completed_at", { withTimezone: true }),
+    supersededAt: timestamp("superseded_at", { withTimezone: true }),
+    decisionStatus: clientConfirmationDecisionStatus("decision_status").default("pending").notNull(),
+    decisionComment: text("decision_comment"),
+    decidedAt: timestamp("decided_at", { withTimezone: true }),
+    deliveryMethod: clientConfirmationDeliveryMethod("delivery_method"),
+    deliveredAt: timestamp("delivered_at", { withTimezone: true }),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => [
+    uniqueIndex("client_confirmations_token_hash_uidx").on(table.tokenHash),
+    index("client_confirmations_subject_idx").on(table.subjectType, table.subjectId),
+    index("client_confirmations_subject_pending_idx").on(
+      table.subjectType,
+      table.subjectId,
+      table.completedAt,
+      table.supersededAt,
+    ),
+    pgPolicy("staff can view organization client confirmations", {
+      for: "select",
+      to: "authenticated",
+      using: sql`exists (
+        select 1 from organization_memberships membership
+        where membership.organization_id = ${table.organizationId}
+          and membership.user_id = auth.uid()
+          and membership.archived_at is null
+      )`,
+    }),
+  ],
+).enableRLS();
+
 export const enquiryNotes = pgTable(
   "enquiry_notes",
   {
@@ -745,6 +997,13 @@ export type StyleDirectionFile = typeof styleDirectionFiles.$inferSelect;
 export type StyleDirectionFileRevision = typeof styleDirectionFileRevisions.$inferSelect;
 export type StyleDirectionApprovalBatch = typeof styleDirectionApprovalBatches.$inferSelect;
 export type StyleDirectionApprovalBatchItem = typeof styleDirectionApprovalBatchItems.$inferSelect;
+export type MeasurementFieldDefinition = typeof measurementFieldDefinitions.$inferSelect;
+export type MeasurementProfile = typeof measurementProfiles.$inferSelect;
+export type MeasurementValue = typeof measurementValues.$inferSelect;
+export type MeasurementValueRevision = typeof measurementValueRevisions.$inferSelect;
+export type MeasurementProfileAttachment = typeof measurementProfileAttachments.$inferSelect;
+export type ItemTypeMeasurementRequirement = typeof itemTypeMeasurementRequirements.$inferSelect;
+export type ClientConfirmation = typeof clientConfirmations.$inferSelect;
 export type EnquiryNote = typeof enquiryNotes.$inferSelect;
 export type EnquiryTask = typeof enquiryTasks.$inferSelect;
 export type MagicLinkToken = typeof magicLinkTokens.$inferSelect;

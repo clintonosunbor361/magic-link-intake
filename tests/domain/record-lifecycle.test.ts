@@ -21,7 +21,7 @@ describe("Phase 1 record lifecycle", () => {
   });
 
   it("defines a lifecycle for every Phase 1 record family", () => {
-    expect(LIFECYCLE_ENTITIES).toHaveLength(22);
+    expect(LIFECYCLE_ENTITIES).toHaveLength(23);
     LIFECYCLE_ENTITIES.forEach((entity) => {
       expect(getRecordLifecyclePolicy(entity)).toEqual(
         expect.objectContaining({ archive: expect.any(Boolean), restore: expect.any(Boolean) }),

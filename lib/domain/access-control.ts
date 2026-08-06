@@ -35,3 +35,23 @@ export function assertCanManageConsultationNoteSources(role: StaffRole): void {
     throw new Error("Super Admin access is required.");
   }
 }
+
+export function canManageMeasurementFieldDefinitions(role: StaffRole): boolean {
+  return role === "super_admin";
+}
+
+export function assertCanManageMeasurementFieldDefinitions(role: StaffRole): void {
+  if (!canManageMeasurementFieldDefinitions(role)) {
+    throw new Error("Super Admin access is required.");
+  }
+}
+
+export function canManageMeasurementRequirements(role: StaffRole): boolean {
+  return role === "super_admin";
+}
+
+export function assertCanManageMeasurementRequirements(role: StaffRole): void {
+  if (!canManageMeasurementRequirements(role)) {
+    throw new Error("Super Admin access is required.");
+  }
+}

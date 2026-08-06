@@ -29,3 +29,18 @@ export async function sendApprovalBatchEmail(input: {
   });
   if (error) throw new Error("The email could not be sent.");
 }
+
+export async function sendConfirmationEmail(input: {
+  to: string;
+  confirmationUrl: string;
+  subjectLabel: string;
+  clientName: string;
+}): Promise<void> {
+  const { error } = await getResendClient().emails.send({
+    from: requireEnv("RESEND_FROM_EMAIL"),
+    to: input.to,
+    subject: `Please confirm your ${input.subjectLabel}`,
+    html: `<p>Hi ${input.clientName},</p><p>Please confirm your ${input.subjectLabel}:</p><p><a href="${input.confirmationUrl}">${input.confirmationUrl}</a></p><p>This link stays active for 7 days.</p>`,
+  });
+  if (error) throw new Error("The email could not be sent.");
+}
