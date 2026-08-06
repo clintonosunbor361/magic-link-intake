@@ -70,6 +70,17 @@ export default async function globalSetup() {
           ('30000000-0000-0000-0000-000000000003', 'Shoes', 5),
           ('30000000-0000-0000-0000-000000000003', 'Other', 6)
       `;
+      await transaction`
+        insert into consultation_note_sources (organization_id, name, sort_order)
+        values
+          ('30000000-0000-0000-0000-000000000003', 'In-person consultation', 0),
+          ('30000000-0000-0000-0000-000000000003', 'Phone call', 1),
+          ('30000000-0000-0000-0000-000000000003', 'WhatsApp', 2),
+          ('30000000-0000-0000-0000-000000000003', 'Email', 3),
+          ('30000000-0000-0000-0000-000000000003', 'Sketch reference', 4),
+          ('30000000-0000-0000-0000-000000000003', 'Colour reference', 5),
+          ('30000000-0000-0000-0000-000000000003', 'Other', 6)
+      `;
     });
   } finally {
     await sql.end();

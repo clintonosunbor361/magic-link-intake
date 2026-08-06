@@ -1,5 +1,6 @@
 import { sql } from "drizzle-orm";
 import {
+  type AnyPgColumn,
   boolean,
   date,
   index,
@@ -17,6 +18,22 @@ import {
 export const staffRole = pgEnum("staff_role", ["super_admin", "admin_assistant"]);
 export const enquiryChannel = pgEnum("enquiry_channel", ["external_form", "internal_staff"]);
 export const enquiryTaskStatus = pgEnum("enquiry_task_status", ["open", "done"]);
+// Fixed on purpose (unlike consultation_note_sources/item_types): nothing in the spec suggests
+// Kuartz ever adds categories beyond this list, so it isn't given a configurable-list admin screen.
+export const styleDirectionFileCategory = pgEnum("style_direction_file_category", [
+  "moodboard",
+  "sketch",
+  "fabric_reference",
+  "colour_reference",
+  "other",
+]);
+export const styleDirectionApprovalStatus = pgEnum("style_direction_approval_status", [
+  "pending",
+  "approved",
+  "with_revisions",
+  "rejected",
+]);
+export const styleDirectionBatchDeliveryMethod = pgEnum("style_direction_batch_delivery_method", ["email", "copy_link"]);
 
 const timestamps = {
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
@@ -350,6 +367,263 @@ export const items = pgTable(
   ],
 ).enableRLS();
 
+export const consultationNoteSources = pgTable(
+  "consultation_note_sources",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    organizationId: uuid("organization_id")
+      .references(() => organizations.id)
+      .notNull(),
+    name: text("name").notNull(),
+    sortOrder: integer("sort_order").default(0).notNull(),
+    version: integer("version").default(1).notNull(),
+    archivedAt: timestamp("archived_at", { withTimezone: true }),
+    ...timestamps,
+  },
+  (table) => [
+    index("consultation_note_sources_org_sort_idx").on(table.organizationId, table.sortOrder),
+    pgPolicy("staff can view organization consultation note sources", {
+      for: "select",
+      to: "authenticated",
+      using: sql`exists (
+        select 1 from organization_memberships membership
+        where membership.organization_id = ${table.organizationId}
+          and membership.user_id = auth.uid()
+          and membership.archived_at is null
+      )`,
+    }),
+  ],
+).enableRLS();
+
+export const consultationNotes = pgTable(
+  "consultation_notes",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    organizationId: uuid("organization_id")
+      .references(() => organizations.id)
+      .notNull(),
+    orderId: uuid("order_id")
+      .references(() => orders.id)
+      .notNull(),
+    lookId: uuid("look_id").references(() => looks.id),
+    sourceId: uuid("source_id")
+      .references(() => consultationNoteSources.id)
+      .notNull(),
+    body: text("body").notNull(),
+    occurredAt: timestamp("occurred_at", { withTimezone: true }),
+    createdByStaffId: uuid("created_by_staff_id")
+      .references(() => staffProfiles.id)
+      .notNull(),
+    lastEditedByStaffId: uuid("last_edited_by_staff_id").references(() => staffProfiles.id),
+    lastEditedAt: timestamp("last_edited_at", { withTimezone: true }),
+    version: integer("version").default(1).notNull(),
+    archivedAt: timestamp("archived_at", { withTimezone: true }),
+    ...timestamps,
+  },
+  (table) => [
+    index("consultation_notes_order_idx").on(table.orderId),
+    index("consultation_notes_look_idx").on(table.lookId),
+    pgPolicy("staff can view organization consultation notes", {
+      for: "select",
+      to: "authenticated",
+      using: sql`exists (
+        select 1 from organization_memberships membership
+        where membership.organization_id = ${table.organizationId}
+          and membership.user_id = auth.uid()
+          and membership.archived_at is null
+      )`,
+    }),
+  ],
+).enableRLS();
+
+export const consultationNoteRevisions = pgTable(
+  "consultation_note_revisions",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    organizationId: uuid("organization_id")
+      .references(() => organizations.id)
+      .notNull(),
+    consultationNoteId: uuid("consultation_note_id")
+      .references(() => consultationNotes.id)
+      .notNull(),
+    body: text("body").notNull(),
+    sourceId: uuid("source_id")
+      .references(() => consultationNoteSources.id)
+      .notNull(),
+    occurredAt: timestamp("occurred_at", { withTimezone: true }),
+    authorStaffId: uuid("author_staff_id")
+      .references(() => staffProfiles.id)
+      .notNull(),
+    authoredAt: timestamp("authored_at", { withTimezone: true }).notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => [
+    index("consultation_note_revisions_note_created_idx").on(table.consultationNoteId, table.createdAt),
+    pgPolicy("staff can view organization consultation note revisions", {
+      for: "select",
+      to: "authenticated",
+      using: sql`exists (
+        select 1 from organization_memberships membership
+        where membership.organization_id = ${table.organizationId}
+          and membership.user_id = auth.uid()
+          and membership.archived_at is null
+      )`,
+    }),
+  ],
+).enableRLS();
+
+export const styleDirectionFiles = pgTable(
+  "style_direction_files",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    organizationId: uuid("organization_id")
+      .references(() => organizations.id)
+      .notNull(),
+    orderId: uuid("order_id")
+      .references(() => orders.id)
+      .notNull(),
+    lookId: uuid("look_id").references(() => looks.id),
+    category: styleDirectionFileCategory("category").notNull(),
+    requiresClientApproval: boolean("requires_client_approval").default(false).notNull(),
+    // Only meaningful when requiresClientApproval is true; stays null for internal-reference-only files.
+    approvalStatus: styleDirectionApprovalStatus("approval_status"),
+    currentRevisionId: uuid("current_revision_id").references(
+      (): AnyPgColumn => styleDirectionFileRevisions.id,
+    ),
+    version: integer("version").default(1).notNull(),
+    archivedAt: timestamp("archived_at", { withTimezone: true }),
+    ...timestamps,
+  },
+  (table) => [
+    index("style_direction_files_order_idx").on(table.orderId),
+    index("style_direction_files_look_idx").on(table.lookId),
+    index("style_direction_files_pending_idx").on(table.orderId, table.requiresClientApproval, table.approvalStatus),
+    pgPolicy("staff can view organization style direction files", {
+      for: "select",
+      to: "authenticated",
+      using: sql`exists (
+        select 1 from organization_memberships membership
+        where membership.organization_id = ${table.organizationId}
+          and membership.user_id = auth.uid()
+          and membership.archived_at is null
+      )`,
+    }),
+  ],
+).enableRLS();
+
+export const styleDirectionFileRevisions = pgTable(
+  "style_direction_file_revisions",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    organizationId: uuid("organization_id")
+      .references(() => organizations.id)
+      .notNull(),
+    styleDirectionFileId: uuid("style_direction_file_id")
+      .references(() => styleDirectionFiles.id)
+      .notNull(),
+    revisionNumber: integer("revision_number").notNull(),
+    r2ObjectKey: text("r2_object_key").notNull(),
+    mimeType: text("mime_type").notNull(),
+    byteSize: integer("byte_size").notNull(),
+    uploadedByStaffId: uuid("uploaded_by_staff_id")
+      .references(() => staffProfiles.id)
+      .notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => [
+    uniqueIndex("style_direction_file_revisions_file_number_uidx").on(table.styleDirectionFileId, table.revisionNumber),
+    index("style_direction_file_revisions_file_created_idx").on(table.styleDirectionFileId, table.createdAt),
+    pgPolicy("staff can view organization style direction file revisions", {
+      for: "select",
+      to: "authenticated",
+      using: sql`exists (
+        select 1 from organization_memberships membership
+        where membership.organization_id = ${table.organizationId}
+          and membership.user_id = auth.uid()
+          and membership.archived_at is null
+      )`,
+    }),
+  ],
+).enableRLS();
+
+export const styleDirectionApprovalBatches = pgTable(
+  "style_direction_approval_batches",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    organizationId: uuid("organization_id")
+      .references(() => organizations.id)
+      .notNull(),
+    orderId: uuid("order_id")
+      .references(() => orders.id)
+      .notNull(),
+    tokenHash: text("token_hash").notNull(),
+    createdByStaffId: uuid("created_by_staff_id")
+      .references(() => staffProfiles.id)
+      .notNull(),
+    expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+    completedAt: timestamp("completed_at", { withTimezone: true }),
+    supersededAt: timestamp("superseded_at", { withTimezone: true }),
+    deliveryMethod: styleDirectionBatchDeliveryMethod("delivery_method"),
+    deliveredAt: timestamp("delivered_at", { withTimezone: true }),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => [
+    uniqueIndex("style_direction_approval_batches_token_hash_uidx").on(table.tokenHash),
+    index("style_direction_approval_batches_order_idx").on(table.orderId),
+    index("style_direction_approval_batches_order_pending_idx").on(table.orderId, table.completedAt, table.supersededAt),
+    pgPolicy("staff can view organization approval batches", {
+      for: "select",
+      to: "authenticated",
+      using: sql`exists (
+        select 1 from organization_memberships membership
+        where membership.organization_id = ${table.organizationId}
+          and membership.user_id = auth.uid()
+          and membership.archived_at is null
+      )`,
+    }),
+  ],
+).enableRLS();
+
+export const styleDirectionApprovalBatchItems = pgTable(
+  "style_direction_approval_batch_items",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    organizationId: uuid("organization_id")
+      .references(() => organizations.id)
+      .notNull(),
+    batchId: uuid("batch_id")
+      .references(() => styleDirectionApprovalBatches.id)
+      .notNull(),
+    styleDirectionFileId: uuid("style_direction_file_id")
+      .references(() => styleDirectionFiles.id)
+      .notNull(),
+    styleDirectionFileRevisionId: uuid("style_direction_file_revision_id")
+      .references(() => styleDirectionFileRevisions.id)
+      .notNull(),
+    decisionStatus: styleDirectionApprovalStatus("decision_status").default("pending").notNull(),
+    decisionComment: text("decision_comment"),
+    decidedAt: timestamp("decided_at", { withTimezone: true }),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => [
+    uniqueIndex("style_direction_approval_batch_items_batch_revision_uidx").on(
+      table.batchId,
+      table.styleDirectionFileRevisionId,
+    ),
+    index("style_direction_approval_batch_items_file_idx").on(table.styleDirectionFileId),
+    pgPolicy("staff can view organization approval batch items", {
+      for: "select",
+      to: "authenticated",
+      using: sql`exists (
+        select 1 from organization_memberships membership
+        where membership.organization_id = ${table.organizationId}
+          and membership.user_id = auth.uid()
+          and membership.archived_at is null
+      )`,
+    }),
+  ],
+).enableRLS();
+
 export const enquiryNotes = pgTable(
   "enquiry_notes",
   {
@@ -464,6 +738,13 @@ export type Order = typeof orders.$inferSelect;
 export type Look = typeof looks.$inferSelect;
 export type ItemType = typeof itemTypes.$inferSelect;
 export type Item = typeof items.$inferSelect;
+export type ConsultationNoteSource = typeof consultationNoteSources.$inferSelect;
+export type ConsultationNote = typeof consultationNotes.$inferSelect;
+export type ConsultationNoteRevision = typeof consultationNoteRevisions.$inferSelect;
+export type StyleDirectionFile = typeof styleDirectionFiles.$inferSelect;
+export type StyleDirectionFileRevision = typeof styleDirectionFileRevisions.$inferSelect;
+export type StyleDirectionApprovalBatch = typeof styleDirectionApprovalBatches.$inferSelect;
+export type StyleDirectionApprovalBatchItem = typeof styleDirectionApprovalBatchItems.$inferSelect;
 export type EnquiryNote = typeof enquiryNotes.$inferSelect;
 export type EnquiryTask = typeof enquiryTasks.$inferSelect;
 export type MagicLinkToken = typeof magicLinkTokens.$inferSelect;

@@ -17,7 +17,9 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
-const navigation = [
+type NavItem = { href: string; label: string; icon: typeof House; activePrefix?: string };
+
+const navigation: NavItem[] = [
   { href: "/", label: "Overview", icon: House },
   { href: "/enquiries", label: "Enquiries", icon: MessageSquareText },
   { href: "/clients", label: "Clients", icon: UsersRound },
@@ -31,7 +33,7 @@ export function Navigation({ canManageTeam }: { canManageTeam: boolean }) {
   const [open, setOpen] = useState(false);
   const triggerRef = useRef<HTMLButtonElement>(null);
   const links = canManageTeam
-    ? [...navigation, { href: "/settings/team", label: "Settings", icon: Settings }]
+    ? [...navigation, { href: "/settings/team", activePrefix: "/settings", label: "Settings", icon: Settings }]
     : navigation;
 
   useEffect(() => {
@@ -57,8 +59,8 @@ export function Navigation({ canManageTeam }: { canManageTeam: boolean }) {
           <Button variant="ghost" className="text-white/70 hover:bg-white/10 hover:text-white lg:hidden" type="button" onClick={() => setOpen(false)} aria-label="Close navigation"><X size={20} /></Button>
         </div>
         <nav className="mt-7 flex-1 space-y-1 px-3">
-          {links.map(({ href, label, icon: Icon }) => {
-            const active = href === "/" ? pathname === href : pathname.startsWith(href);
+          {links.map(({ href, label, icon: Icon, activePrefix }) => {
+            const active = href === "/" ? pathname === href : pathname.startsWith(activePrefix ?? href);
             return <Link key={href} href={href} onClick={() => setOpen(false)} className={`nav-link ${active ? "nav-link-active" : ""}`}><Icon size={18} strokeWidth={1.8} /><span>{label}</span></Link>;
           })}
         </nav>

@@ -1,4 +1,4 @@
-const PUBLIC_PREFIXES = ["/auth", "/setup", "/offline", "/i", "/intake"];
+const PUBLIC_PREFIXES = ["/auth", "/setup", "/offline", "/i", "/intake", "/approve"];
 
 function isPublicPath(pathname: string): boolean {
   return PUBLIC_PREFIXES.some(

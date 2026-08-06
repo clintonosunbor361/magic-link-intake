@@ -50,6 +50,48 @@
       "when": 1785966779652,
       "tag": "0006_supabase_grants",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1786003848367,
+      "tag": "0007_spotty_sphinx",
+      "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1786003848368,
+      "tag": "0008_supabase_grants",
+      "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1786004516077,
+      "tag": "0009_wild_sue_storm",
+      "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1786004516078,
+      "tag": "0010_supabase_grants",
+      "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1786005174053,
+      "tag": "0011_legal_landau",
+      "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1786005174054,
+      "tag": "0012_supabase_grants",
+      "breakpoints": true
     }
   ]
 }

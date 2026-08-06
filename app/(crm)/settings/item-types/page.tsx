@@ -39,6 +39,9 @@ export default async function ItemTypesPage({
         <Link href="/settings/item-types" className="text-[#171b36] underline">
           Item types
         </Link>
+        <Link href="/settings/consultation-note-sources" className="text-[#50586c] hover:text-[#171b36]">
+          Consultation note sources
+        </Link>
       </nav>
 
       {params.error ? (

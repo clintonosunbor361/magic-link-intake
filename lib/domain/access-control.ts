@@ -25,3 +25,13 @@ export function assertCanManageItemTypes(role: StaffRole): void {
     throw new Error("Super Admin access is required.");
   }
 }
+
+export function canManageConsultationNoteSources(role: StaffRole): boolean {
+  return role === "super_admin";
+}
+
+export function assertCanManageConsultationNoteSources(role: StaffRole): void {
+  if (!canManageConsultationNoteSources(role)) {
+    throw new Error("Super Admin access is required.");
+  }
+}

@@ -2,7 +2,16 @@ import { describe, expect, it } from "vitest";
 import { decideRouteAccess } from "@/lib/auth/route-policy";
 
 describe("staff route policy", () => {
-  it.each(["/auth/sign-in", "/setup", "/offline", "/i/token", "/intake/token", "/intake/success"])(
+  it.each([
+    "/auth/sign-in",
+    "/setup",
+    "/offline",
+    "/i/token",
+    "/intake/token",
+    "/intake/success",
+    "/approve/token",
+    "/approve/inactive",
+  ])(
     "keeps %s public",
     (pathname) => {
       expect(decideRouteAccess({ pathname, configured: true, signedIn: false })).toBe("allow");

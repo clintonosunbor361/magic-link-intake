@@ -1,0 +1,5 @@
+# Build a Style-Direction-specific magic link now, generalize later
+
+Milestone 3's approval batches need a client-facing, multi-decision, resendable, invalidate-on-replace link — a materially different shape from Milestone 1's single-use `magicLinkTokens` (one token, one enquiry, consumed once). Milestone 4 will need the same shape twice more (measurement and Order-detail confirmation), so the repetition is already known, not hypothetical.
+
+`style_direction_approval_batches`/`style_direction_approval_batch_items` are built specific to this feature rather than as a generalized `client_links` primitive. Generalizing correctly from a single concrete use case tends to guess the wrong shape; the second occurrence (Milestone 4) is the right moment to extract the shared pattern, once there are two real implementations to generalize from instead of one plus a guess. `generateToken`/`hashToken` (the one genuinely reusable piece) were extracted to `lib/tokens.ts` now, shared by both `lib/magic-links.ts` and the new approval-batch flow.

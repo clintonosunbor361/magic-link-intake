@@ -4,6 +4,7 @@ import { createClient } from "@supabase/supabase-js";
 import postgres from "postgres";
 import {
   auditEntries,
+  consultationNoteSources,
   itemTypes,
   organizationMemberships,
   organizations,
@@ -11,6 +12,15 @@ import {
 } from "../db/schema";
 
 const DEFAULT_ITEM_TYPES = ["Suit", "Agbada", "Shirt", "Trouser", "Cap", "Shoes", "Other"];
+const DEFAULT_CONSULTATION_NOTE_SOURCES = [
+  "In-person consultation",
+  "Phone call",
+  "WhatsApp",
+  "Email",
+  "Sketch reference",
+  "Colour reference",
+  "Other",
+];
 
 const required = (name: string) => {
   const result = process.env[name];
@@ -48,6 +58,13 @@ try {
       .returning({ id: organizations.id });
     await db.insert(itemTypes).values(
       DEFAULT_ITEM_TYPES.map((name, index) => ({
+        organizationId: organization.id,
+        name,
+        sortOrder: index,
+      })),
+    );
+    await db.insert(consultationNoteSources).values(
+      DEFAULT_CONSULTATION_NOTE_SOURCES.map((name, index) => ({
         organizationId: organization.id,
         name,
         sortOrder: index,

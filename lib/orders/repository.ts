@@ -305,6 +305,8 @@ export async function getOrder(organizationId: string, orderId: string) {
       archivedAt: orders.archivedAt,
       createdAt: orders.createdAt,
       clientFullName: clients.fullName,
+      clientEmail: clients.email,
+      clientWhatsappPhone: clients.whatsappPhone,
     })
     .from(orders)
     .innerJoin(clients, eq(clients.id, orders.clientId))

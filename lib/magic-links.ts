@@ -1,11 +1,11 @@
 import "server-only";
 
-import { createHash, randomBytes } from "node:crypto";
 import { and, desc, eq, gt, isNull } from "drizzle-orm";
 import { getDatabase } from "@/db";
 import { enquiries, magicLinkTokens } from "@/db/schema";
 import { normalizeEmail, normalizeName, normalizePhone } from "@/lib/enquiries/duplicate-match";
 import type { IntakeSubmissionInput } from "@/lib/intake-options";
+import { generateToken, hashToken } from "@/lib/tokens";
 
 const TOKEN_TTL_MS = 7 * 24 * 60 * 60 * 1000;
 
@@ -25,14 +25,6 @@ export type IntakeSubmission = IntakeSubmissionInput & {
   tokenHash: string;
   submittedAt: number;
 };
-
-export function generateToken(): string {
-  return randomBytes(16).toString("base64url");
-}
-
-export function hashToken(token: string): string {
-  return createHash("sha256").update(token, "utf8").digest("hex");
-}
 
 export async function createMagicLinkToken(
   actor: { organizationId: string; generatedByStaffId: string },
