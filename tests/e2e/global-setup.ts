@@ -59,6 +59,17 @@ export default async function globalSetup() {
         insert into audit_entries (organization_id, actor_id, action, entity_type, entity_id, summary)
         values ('30000000-0000-0000-0000-000000000003', ${userIds[E2E_USERS.superAdmin.email]}, 'organization.bootstrapped', 'organization', '30000000-0000-0000-0000-000000000003', 'Created the test organization.')
       `;
+      await transaction`
+        insert into item_types (organization_id, name, sort_order)
+        values
+          ('30000000-0000-0000-0000-000000000003', 'Suit', 0),
+          ('30000000-0000-0000-0000-000000000003', 'Agbada', 1),
+          ('30000000-0000-0000-0000-000000000003', 'Shirt', 2),
+          ('30000000-0000-0000-0000-000000000003', 'Trouser', 3),
+          ('30000000-0000-0000-0000-000000000003', 'Cap', 4),
+          ('30000000-0000-0000-0000-000000000003', 'Shoes', 5),
+          ('30000000-0000-0000-0000-000000000003', 'Other', 6)
+      `;
     });
   } finally {
     await sql.end();

@@ -1,6 +1,6 @@
 import type { DuplicateCandidate, DuplicateMatch } from "@/lib/enquiries/duplicate-match";
 import { findDuplicateMatches, normalizeEmail, normalizeName, normalizePhone } from "@/lib/enquiries/duplicate-match";
-import { resolveVersionedUpdate } from "@/lib/domain/concurrency";
+import { resolveVersionedTransition } from "@/lib/domain/concurrency";
 import { mayArchive, mayRestore } from "@/lib/domain/record-lifecycle";
 import type { StaffRole } from "@/lib/domain/access-control";
 
@@ -88,27 +88,23 @@ export async function restoreEnquiry(
   return setArchivedState(input, false, repository);
 }
 
-async function setArchivedState(
+function setArchivedState(
   input: { actor: { organizationId: string; role: StaffRole }; enquiryId: string; expectedVersion: number },
   archived: boolean,
   repository: EnquiryRepository,
 ) {
-  const enquiry = await repository.getEnquiryLifecycle(input.actor.organizationId, input.enquiryId);
-  if (!enquiry) throw new Error("Enquiry was not found.");
-
-  const version = resolveVersionedUpdate({
+  return resolveVersionedTransition({
     expectedVersion: input.expectedVersion,
-    currentVersion: enquiry.version,
+    fetchCurrent: () => repository.getEnquiryLifecycle(input.actor.organizationId, input.enquiryId),
+    notFoundMessage: "Enquiry was not found.",
+    staleMessage: "This Enquiry changed. Reload and try again.",
+    persist: (nextVersion) =>
+      repository.setArchivedState({
+        organizationId: input.actor.organizationId,
+        enquiryId: input.enquiryId,
+        archived,
+        expectedVersion: input.expectedVersion,
+        nextVersion,
+      }),
   });
-  if (!version.ok) throw new Error("This Enquiry changed. Reload and try again.");
-
-  await repository.setArchivedState({
-    organizationId: input.actor.organizationId,
-    enquiryId: input.enquiryId,
-    archived,
-    expectedVersion: input.expectedVersion,
-    nextVersion: version.nextVersion,
-  });
-
-  return { ok: true as const, nextVersion: version.nextVersion };
 }

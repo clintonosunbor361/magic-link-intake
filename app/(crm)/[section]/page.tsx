@@ -2,8 +2,6 @@ import { notFound } from "next/navigation";
 import { EmptyState } from "@/components/ui/empty-state";
 
 const sections: Record<string, { title: string; description: string }> = {
-  clients: { title: "Clients", description: "Client profiles and order history arrive with the Client and Order milestones." },
-  orders: { title: "Orders", description: "Looks, Items, approvals, measurements, and delivery will converge here." },
   production: { title: "Production", description: "Vendor assignments, deadlines, briefs, and status tracking are queued for Phase 1." },
   finance: { title: "Finance", description: "Client invoices and Vendor payment positions will be available here." },
   notifications: { title: "Notifications", description: "Deadline and operational reminders will appear here." },

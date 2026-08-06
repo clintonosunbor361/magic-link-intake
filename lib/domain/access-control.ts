@@ -15,3 +15,13 @@ export function assertCanManageTeam(role: StaffRole): void {
     throw new Error("Super Admin access is required.");
   }
 }
+
+export function canManageItemTypes(role: StaffRole): boolean {
+  return role === "super_admin";
+}
+
+export function assertCanManageItemTypes(role: StaffRole): void {
+  if (!canManageItemTypes(role)) {
+    throw new Error("Super Admin access is required.");
+  }
+}

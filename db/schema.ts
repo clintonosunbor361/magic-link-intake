@@ -287,6 +287,69 @@ export const looks = pgTable(
   ],
 ).enableRLS();
 
+export const itemTypes = pgTable(
+  "item_types",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    organizationId: uuid("organization_id")
+      .references(() => organizations.id)
+      .notNull(),
+    name: text("name").notNull(),
+    sortOrder: integer("sort_order").default(0).notNull(),
+    version: integer("version").default(1).notNull(),
+    archivedAt: timestamp("archived_at", { withTimezone: true }),
+    ...timestamps,
+  },
+  (table) => [
+    index("item_types_org_sort_idx").on(table.organizationId, table.sortOrder),
+    pgPolicy("staff can view organization item types", {
+      for: "select",
+      to: "authenticated",
+      using: sql`exists (
+        select 1 from organization_memberships membership
+        where membership.organization_id = ${table.organizationId}
+          and membership.user_id = auth.uid()
+          and membership.archived_at is null
+      )`,
+    }),
+  ],
+).enableRLS();
+
+export const items = pgTable(
+  "items",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    organizationId: uuid("organization_id")
+      .references(() => organizations.id)
+      .notNull(),
+    lookId: uuid("look_id")
+      .references(() => looks.id)
+      .notNull(),
+    itemTypeId: uuid("item_type_id")
+      .references(() => itemTypes.id)
+      .notNull(),
+    customLabel: text("custom_label"),
+    quantity: integer("quantity").default(1).notNull(),
+    version: integer("version").default(1).notNull(),
+    archivedAt: timestamp("archived_at", { withTimezone: true }),
+    ...timestamps,
+  },
+  (table) => [
+    index("items_look_idx").on(table.lookId),
+    index("items_org_created_idx").on(table.organizationId, table.createdAt),
+    pgPolicy("staff can view organization items", {
+      for: "select",
+      to: "authenticated",
+      using: sql`exists (
+        select 1 from organization_memberships membership
+        where membership.organization_id = ${table.organizationId}
+          and membership.user_id = auth.uid()
+          and membership.archived_at is null
+      )`,
+    }),
+  ],
+).enableRLS();
+
 export const enquiryNotes = pgTable(
   "enquiry_notes",
   {
@@ -399,6 +462,8 @@ export type Client = typeof clients.$inferSelect;
 export type Enquiry = typeof enquiries.$inferSelect;
 export type Order = typeof orders.$inferSelect;
 export type Look = typeof looks.$inferSelect;
+export type ItemType = typeof itemTypes.$inferSelect;
+export type Item = typeof items.$inferSelect;
 export type EnquiryNote = typeof enquiryNotes.$inferSelect;
 export type EnquiryTask = typeof enquiryTasks.$inferSelect;
 export type MagicLinkToken = typeof magicLinkTokens.$inferSelect;

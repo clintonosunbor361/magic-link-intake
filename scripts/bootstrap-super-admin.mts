@@ -4,10 +4,13 @@ import { createClient } from "@supabase/supabase-js";
 import postgres from "postgres";
 import {
   auditEntries,
+  itemTypes,
   organizationMemberships,
   organizations,
   staffProfiles,
 } from "../db/schema";
+
+const DEFAULT_ITEM_TYPES = ["Suit", "Agbada", "Shirt", "Trouser", "Cap", "Shoes", "Other"];
 
 const required = (name: string) => {
   const result = process.env[name];
@@ -43,6 +46,13 @@ try {
       .insert(organizations)
       .values({ name: organizationName, slug: organizationSlug })
       .returning({ id: organizations.id });
+    await db.insert(itemTypes).values(
+      DEFAULT_ITEM_TYPES.map((name, index) => ({
+        organizationId: organization.id,
+        name,
+        sortOrder: index,
+      })),
+    );
   }
 
   const { data, error } = await auth.auth.admin.createUser({

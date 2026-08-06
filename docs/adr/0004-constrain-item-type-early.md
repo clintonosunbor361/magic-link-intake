@@ -1,0 +1,3 @@
+# Constrain Item type to a configurable list ahead of measurements
+
+Milestone 2 introduces the `items` table before Milestone 4 (Measurements) exists to give item type any behavioral meaning. Item type is constrained to a configurable list seeded with the known measurement templates (Suit, Agbada, Shirt, Trouser, Cap, Shoes, Other) rather than left as freeform text, so Milestone 4 can attach measurement requirements to types that already exist cleanly. Super Admin manages the list; Admin Assistant selects from it, matching every other configurable dropdown in the spec (production status, accessory type, vendor specialty).
