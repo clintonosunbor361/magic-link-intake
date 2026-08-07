@@ -53,6 +53,10 @@ export const organizations = pgTable(
     id: uuid("id").defaultRandom().primaryKey(),
     name: text("name").notNull(),
     slug: text("slug").notNull(),
+    // Business dates (production deadlines, urgency bands, notification windows) resolve in this
+    // zone so a badge, a filter query, and a viewer-less cron all agree on what "today" is.
+    // Instants (created_at, link expiry) stay UTC and are formatted in the viewer's locale.
+    timezone: text("timezone").default("Africa/Lagos").notNull(),
     version: integer("version").default(1).notNull(),
     archivedAt: timestamp("archived_at", { withTimezone: true }),
     ...timestamps,
@@ -982,6 +986,333 @@ export const magicLinkTokens = pgTable(
   ],
 ).enableRLS();
 
+export const vendors = pgTable(
+  "vendors",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    organizationId: uuid("organization_id")
+      .references(() => organizations.id)
+      .notNull(),
+    name: text("name").notNull(),
+    // Quick-create from the assignment picker supplies name only; phone/email/address are filled
+    // in later from the Vendor detail page, so every contact field stays nullable.
+    phone: text("phone"),
+    email: text("email"),
+    address: text("address"),
+    version: integer("version").default(1).notNull(),
+    archivedAt: timestamp("archived_at", { withTimezone: true }),
+    ...timestamps,
+  },
+  (table) => [
+    index("vendors_org_name_idx").on(table.organizationId, table.name),
+    pgPolicy("staff can view organization vendors", {
+      for: "select",
+      to: "authenticated",
+      using: sql`exists (
+        select 1 from organization_memberships membership
+        where membership.organization_id = ${table.organizationId}
+          and membership.user_id = auth.uid()
+          and membership.archived_at is null
+      )`,
+    }),
+  ],
+).enableRLS();
+
+export const vendorSpecialties = pgTable(
+  "vendor_specialties",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    organizationId: uuid("organization_id")
+      .references(() => organizations.id)
+      .notNull(),
+    name: text("name").notNull(),
+    sortOrder: integer("sort_order").default(0).notNull(),
+    version: integer("version").default(1).notNull(),
+    archivedAt: timestamp("archived_at", { withTimezone: true }),
+    ...timestamps,
+  },
+  (table) => [
+    index("vendor_specialties_org_sort_idx").on(table.organizationId, table.sortOrder),
+    pgPolicy("staff can view organization vendor specialties", {
+      for: "select",
+      to: "authenticated",
+      using: sql`exists (
+        select 1 from organization_memberships membership
+        where membership.organization_id = ${table.organizationId}
+          and membership.user_id = auth.uid()
+          and membership.archived_at is null
+      )`,
+    }),
+  ],
+).enableRLS();
+
+// Archiving a specialty removes it from selection but deliberately leaves these rows intact, so a
+// Vendor's history doesn't lose the tag it was actually chosen under.
+export const vendorSpecialtyAssignments = pgTable(
+  "vendor_specialty_assignments",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    organizationId: uuid("organization_id")
+      .references(() => organizations.id)
+      .notNull(),
+    vendorId: uuid("vendor_id")
+      .references(() => vendors.id)
+      .notNull(),
+    vendorSpecialtyId: uuid("vendor_specialty_id")
+      .references(() => vendorSpecialties.id)
+      .notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => [
+    uniqueIndex("vendor_specialty_assignments_vendor_specialty_uidx").on(table.vendorId, table.vendorSpecialtyId),
+    index("vendor_specialty_assignments_specialty_idx").on(table.vendorSpecialtyId),
+    pgPolicy("staff can view organization vendor specialty assignments", {
+      for: "select",
+      to: "authenticated",
+      using: sql`exists (
+        select 1 from organization_memberships membership
+        where membership.organization_id = ${table.organizationId}
+          and membership.user_id = auth.uid()
+          and membership.archived_at is null
+      )`,
+    }),
+  ],
+).enableRLS();
+
+export const productionStatuses = pgTable(
+  "production_statuses",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    organizationId: uuid("organization_id")
+      .references(() => organizations.id)
+      .notNull(),
+    name: text("name").notNull(),
+    sortOrder: integer("sort_order").default(0).notNull(),
+    // At least one live status must carry this flag; it drives completed-vs-open job counts on the
+    // Vendor picker and the M7 rating prompt.
+    isCompleted: boolean("is_completed").default(false).notNull(),
+    version: integer("version").default(1).notNull(),
+    archivedAt: timestamp("archived_at", { withTimezone: true }),
+    ...timestamps,
+  },
+  (table) => [
+    index("production_statuses_org_sort_idx").on(table.organizationId, table.sortOrder),
+    pgPolicy("staff can view organization production statuses", {
+      for: "select",
+      to: "authenticated",
+      using: sql`exists (
+        select 1 from organization_memberships membership
+        where membership.organization_id = ${table.organizationId}
+          and membership.user_id = auth.uid()
+          and membership.archived_at is null
+      )`,
+    }),
+  ],
+).enableRLS();
+
+// Reassignment archives the current row and inserts a new one rather than mutating vendor_id, so a
+// Vendor's status history, production notes, brief exports, and (from Milestone 6) payment records
+// can never silently reattach to the Vendor who replaced them. The partial unique index is what
+// enforces "one live Vendor per Item" in Phase 1 — service code does not have to.
+export const vendorAssignments = pgTable(
+  "vendor_assignments",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    organizationId: uuid("organization_id")
+      .references(() => organizations.id)
+      .notNull(),
+    itemId: uuid("item_id")
+      .references(() => items.id)
+      .notNull(),
+    vendorId: uuid("vendor_id")
+      .references(() => vendors.id)
+      .notNull(),
+    productionStatusId: uuid("production_status_id")
+      .references(() => productionStatuses.id)
+      .notNull(),
+    deadline: date("deadline").notNull(),
+    agreedVendorCostMinor: integer("agreed_vendor_cost_minor"),
+    // Export metadata only — Phase 1 stores neither the PDF nor a brief snapshot. "Exported yes/no"
+    // is derived from briefLastExportedAt being non-null.
+    briefLastExportedAt: timestamp("brief_last_exported_at", { withTimezone: true }),
+    briefLastExportedByStaffId: uuid("brief_last_exported_by_staff_id").references(() => staffProfiles.id),
+    assignedByStaffId: uuid("assigned_by_staff_id")
+      .references(() => staffProfiles.id)
+      .notNull(),
+    version: integer("version").default(1).notNull(),
+    archivedAt: timestamp("archived_at", { withTimezone: true }),
+    ...timestamps,
+  },
+  (table) => [
+    uniqueIndex("vendor_assignments_live_item_uidx")
+      .on(table.itemId)
+      .where(sql`archived_at is null`),
+    index("vendor_assignments_org_deadline_idx").on(table.organizationId, table.deadline),
+    index("vendor_assignments_vendor_idx").on(table.vendorId),
+    index("vendor_assignments_status_idx").on(table.productionStatusId),
+    pgPolicy("staff can view organization vendor assignments", {
+      for: "select",
+      to: "authenticated",
+      using: sql`exists (
+        select 1 from organization_memberships membership
+        where membership.organization_id = ${table.organizationId}
+          and membership.user_id = auth.uid()
+          and membership.archived_at is null
+      )`,
+    }),
+  ],
+).enableRLS();
+
+// previousStatusId is null for the row written when an assignment is first created.
+export const productionStatusHistory = pgTable(
+  "production_status_history",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    organizationId: uuid("organization_id")
+      .references(() => organizations.id)
+      .notNull(),
+    vendorAssignmentId: uuid("vendor_assignment_id")
+      .references(() => vendorAssignments.id)
+      .notNull(),
+    previousStatusId: uuid("previous_status_id").references(() => productionStatuses.id),
+    newStatusId: uuid("new_status_id")
+      .references(() => productionStatuses.id)
+      .notNull(),
+    note: text("note"),
+    changedByStaffId: uuid("changed_by_staff_id")
+      .references(() => staffProfiles.id)
+      .notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => [
+    index("production_status_history_assignment_idx").on(table.vendorAssignmentId, table.createdAt),
+    pgPolicy("staff can view organization production status history", {
+      for: "select",
+      to: "authenticated",
+      using: sql`exists (
+        select 1 from organization_memberships membership
+        where membership.organization_id = ${table.organizationId}
+          and membership.user_id = auth.uid()
+          and membership.archived_at is null
+      )`,
+    }),
+  ],
+).enableRLS();
+
+// Internal only: never rendered on client-facing pages and never included in Vendor Brief PDFs.
+export const productionNotes = pgTable(
+  "production_notes",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    organizationId: uuid("organization_id")
+      .references(() => organizations.id)
+      .notNull(),
+    vendorAssignmentId: uuid("vendor_assignment_id")
+      .references(() => vendorAssignments.id)
+      .notNull(),
+    note: text("note").notNull(),
+    createdByStaffId: uuid("created_by_staff_id")
+      .references(() => staffProfiles.id)
+      .notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => [
+    index("production_notes_assignment_idx").on(table.vendorAssignmentId, table.createdAt),
+    pgPolicy("staff can view organization production notes", {
+      for: "select",
+      to: "authenticated",
+      using: sql`exists (
+        select 1 from organization_memberships membership
+        where membership.organization_id = ${table.organizationId}
+          and membership.user_id = auth.uid()
+          and membership.archived_at is null
+      )`,
+    }),
+  ],
+).enableRLS();
+
+// Grain is one rating per (Order, Vendor) — the spec creates prompts "for vendors involved" in a
+// completed Order, not per Item, and per-Item ratings would weight a Vendor's average by how many
+// garments they happened to make on one job. There is deliberately no stored `overall`: it is the
+// mean of the three criteria, computed in summarizeVendorRatings, so it cannot disagree with them.
+export const vendorRatings = pgTable(
+  "vendor_ratings",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    organizationId: uuid("organization_id")
+      .references(() => organizations.id)
+      .notNull(),
+    orderId: uuid("order_id")
+      .references(() => orders.id)
+      .notNull(),
+    vendorId: uuid("vendor_id")
+      .references(() => vendors.id)
+      .notNull(),
+    quality: integer("quality").notNull(),
+    timeliness: integer("timeliness").notNull(),
+    communication: integer("communication").notNull(),
+    ratedByStaffId: uuid("rated_by_staff_id")
+      .references(() => staffProfiles.id)
+      .notNull(),
+    version: integer("version").default(1).notNull(),
+    archivedAt: timestamp("archived_at", { withTimezone: true }),
+    ...timestamps,
+  },
+  (table) => [
+    uniqueIndex("vendor_ratings_order_vendor_uidx").on(table.orderId, table.vendorId),
+    index("vendor_ratings_vendor_idx").on(table.vendorId),
+    pgPolicy("staff can view organization vendor ratings", {
+      for: "select",
+      to: "authenticated",
+      using: sql`exists (
+        select 1 from organization_memberships membership
+        where membership.organization_id = ${table.organizationId}
+          and membership.user_id = auth.uid()
+          and membership.archived_at is null
+      )`,
+    }),
+  ],
+).enableRLS();
+
+// A rating is a judgement, not financial evidence, so it is editable — with an explicit
+// previous/new pair per criterion, matching measurement_value_revisions rather than the
+// snapshot-only shape used by consultation notes.
+export const vendorRatingRevisions = pgTable(
+  "vendor_rating_revisions",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    organizationId: uuid("organization_id")
+      .references(() => organizations.id)
+      .notNull(),
+    vendorRatingId: uuid("vendor_rating_id")
+      .references(() => vendorRatings.id)
+      .notNull(),
+    previousQuality: integer("previous_quality").notNull(),
+    previousTimeliness: integer("previous_timeliness").notNull(),
+    previousCommunication: integer("previous_communication").notNull(),
+    newQuality: integer("new_quality").notNull(),
+    newTimeliness: integer("new_timeliness").notNull(),
+    newCommunication: integer("new_communication").notNull(),
+    changedByStaffId: uuid("changed_by_staff_id")
+      .references(() => staffProfiles.id)
+      .notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => [
+    index("vendor_rating_revisions_rating_idx").on(table.vendorRatingId, table.createdAt),
+    pgPolicy("staff can view organization vendor rating revisions", {
+      for: "select",
+      to: "authenticated",
+      using: sql`exists (
+        select 1 from organization_memberships membership
+        where membership.organization_id = ${table.organizationId}
+          and membership.user_id = auth.uid()
+          and membership.archived_at is null
+      )`,
+    }),
+  ],
+).enableRLS();
+
 export type OrganizationMembership = typeof organizationMemberships.$inferSelect;
 export type AuditEntry = typeof auditEntries.$inferSelect;
 export type Client = typeof clients.$inferSelect;
@@ -1007,3 +1338,12 @@ export type ClientConfirmation = typeof clientConfirmations.$inferSelect;
 export type EnquiryNote = typeof enquiryNotes.$inferSelect;
 export type EnquiryTask = typeof enquiryTasks.$inferSelect;
 export type MagicLinkToken = typeof magicLinkTokens.$inferSelect;
+export type Vendor = typeof vendors.$inferSelect;
+export type VendorSpecialty = typeof vendorSpecialties.$inferSelect;
+export type VendorSpecialtyAssignment = typeof vendorSpecialtyAssignments.$inferSelect;
+export type ProductionStatus = typeof productionStatuses.$inferSelect;
+export type VendorAssignment = typeof vendorAssignments.$inferSelect;
+export type ProductionStatusHistoryEntry = typeof productionStatusHistory.$inferSelect;
+export type ProductionNote = typeof productionNotes.$inferSelect;
+export type VendorRating = typeof vendorRatings.$inferSelect;
+export type VendorRatingRevision = typeof vendorRatingRevisions.$inferSelect;

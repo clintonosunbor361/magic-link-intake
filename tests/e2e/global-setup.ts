@@ -115,6 +115,33 @@ export default async function globalSetup() {
         join item_types on item_types.organization_id = '30000000-0000-0000-0000-000000000003' and item_types.name = pairs.item_type_name
         join measurement_field_definitions on measurement_field_definitions.organization_id = '30000000-0000-0000-0000-000000000003' and measurement_field_definitions.name = pairs.field_name
       `;
+      // Mirrors the vendor specialty and production status defaults in
+      // scripts/bootstrap-super-admin.mts. Both organizations get statuses so cross-org isolation
+      // tests can assign in either one.
+      await transaction`
+        insert into vendor_specialties (organization_id, name, sort_order)
+        values
+          ('30000000-0000-0000-0000-000000000003', 'Suit', 0),
+          ('30000000-0000-0000-0000-000000000003', 'Agbada', 1),
+          ('30000000-0000-0000-0000-000000000003', 'Shirt', 2),
+          ('30000000-0000-0000-0000-000000000003', 'Trouser', 3),
+          ('30000000-0000-0000-0000-000000000003', 'Cap', 4),
+          ('30000000-0000-0000-0000-000000000003', 'Shoes', 5),
+          ('30000000-0000-0000-0000-000000000003', 'Accessories', 6),
+          ('30000000-0000-0000-0000-000000000003', 'Embroidery', 7),
+          ('40000000-0000-0000-0000-000000000004', 'Suit', 0)
+      `;
+      await transaction`
+        insert into production_statuses (organization_id, name, sort_order, is_completed)
+        values
+          ('30000000-0000-0000-0000-000000000003', 'Not Started', 0, false),
+          ('30000000-0000-0000-0000-000000000003', 'In Production', 1, false),
+          ('30000000-0000-0000-0000-000000000003', 'Issue / Delay', 2, false),
+          ('30000000-0000-0000-0000-000000000003', 'Ready for Fitting', 3, false),
+          ('30000000-0000-0000-0000-000000000003', 'Completed', 4, true),
+          ('40000000-0000-0000-0000-000000000004', 'Not Started', 0, false),
+          ('40000000-0000-0000-0000-000000000004', 'Completed', 1, true)
+      `;
     });
   } finally {
     await sql.end();

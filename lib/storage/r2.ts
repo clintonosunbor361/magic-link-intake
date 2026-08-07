@@ -33,6 +33,18 @@ export async function putPrivateObject(key: string, body: Buffer, contentType: s
   );
 }
 
+// Vendor Brief export embeds image bytes directly into the PDF rather than linking to them: the
+// brief is sent outside the app over WhatsApp, where a signed URL would both expire long before the
+// brief stops being useful and hand a vendor a way into private storage.
+export async function getPrivateObjectBytes(key: string): Promise<Buffer> {
+  const response = await getR2Client().send(
+    new GetObjectCommand({ Bucket: requireEnv("R2_BUCKET"), Key: key }),
+  );
+  const body = response.Body;
+  if (!body) throw new Error("The stored file could not be read.");
+  return Buffer.from(await body.transformToByteArray());
+}
+
 export async function deletePrivateObject(key: string): Promise<void> {
   try {
     await getR2Client().send(new DeleteObjectCommand({ Bucket: requireEnv("R2_BUCKET"), Key: key }));

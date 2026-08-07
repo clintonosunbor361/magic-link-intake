@@ -10,7 +10,9 @@ import {
   measurementFieldDefinitions,
   organizationMemberships,
   organizations,
+  productionStatuses,
   staffProfiles,
+  vendorSpecialties,
 } from "../db/schema";
 
 const DEFAULT_ITEM_TYPES = ["Suit", "Agbada", "Shirt", "Trouser", "Cap", "Shoes", "Other"];
@@ -22,6 +24,27 @@ const DEFAULT_CONSULTATION_NOTE_SOURCES = [
   "Sketch reference",
   "Colour reference",
   "Other",
+];
+
+const DEFAULT_VENDOR_SPECIALTIES = [
+  "Suit",
+  "Agbada",
+  "Shirt",
+  "Trouser",
+  "Cap",
+  "Shoes",
+  "Accessories",
+  "Embroidery",
+];
+
+// The first entry is where new assignments start; exactly one entry carries completed semantics,
+// which is what the "at least one completed status" invariant protects.
+const DEFAULT_PRODUCTION_STATUSES: { name: string; isCompleted: boolean }[] = [
+  { name: "Not Started", isCompleted: false },
+  { name: "In Production", isCompleted: false },
+  { name: "Issue / Delay", isCompleted: false },
+  { name: "Ready for Fitting", isCompleted: false },
+  { name: "Completed", isCompleted: true },
 ];
 
 const DEFAULT_MEASUREMENT_FIELD_DEFINITIONS: { name: string; unit: string }[] = [
@@ -99,6 +122,21 @@ try {
       DEFAULT_CONSULTATION_NOTE_SOURCES.map((name, index) => ({
         organizationId: organization.id,
         name,
+        sortOrder: index,
+      })),
+    );
+    await db.insert(vendorSpecialties).values(
+      DEFAULT_VENDOR_SPECIALTIES.map((name, index) => ({
+        organizationId: organization.id,
+        name,
+        sortOrder: index,
+      })),
+    );
+    await db.insert(productionStatuses).values(
+      DEFAULT_PRODUCTION_STATUSES.map((status, index) => ({
+        organizationId: organization.id,
+        name: status.name,
+        isCompleted: status.isCompleted,
         sortOrder: index,
       })),
     );

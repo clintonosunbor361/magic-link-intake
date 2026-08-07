@@ -111,6 +111,16 @@ export async function listClients(
   };
 }
 
+/** Minimal id/name pairs for filter and picker dropdowns. */
+export async function listClientOptions(organizationId: string) {
+  const db = getDatabase();
+  return db
+    .select({ id: clients.id, fullName: clients.fullName })
+    .from(clients)
+    .where(and(eq(clients.organizationId, organizationId), isNull(clients.archivedAt)))
+    .orderBy(clients.fullName);
+}
+
 export async function getClient(organizationId: string, clientId: string) {
   const db = getDatabase();
   const [row] = await db

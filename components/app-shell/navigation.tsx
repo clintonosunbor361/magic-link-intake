@@ -7,6 +7,7 @@ import {
   Bell,
   BriefcaseBusiness,
   Factory,
+  Hammer,
   House,
   Menu,
   MessageSquareText,
@@ -24,6 +25,10 @@ const navigation: NavItem[] = [
   { href: "/enquiries", label: "Enquiries", icon: MessageSquareText },
   { href: "/clients", label: "Clients", icon: UsersRound },
   { href: "/orders", label: "Orders", icon: BriefcaseBusiness },
+  // Vendors sits between Orders and Production because that is the workflow order: you assign a
+  // Vendor, then you track what they are making. It is top-level rather than under Settings because
+  // Admin Assistants create and search Vendors, and Settings is Super-Admin-only.
+  { href: "/vendors", label: "Vendors", icon: Hammer },
   { href: "/production", label: "Production", icon: Factory },
   { href: "/finance", label: "Finance", icon: WalletCards },
 ];

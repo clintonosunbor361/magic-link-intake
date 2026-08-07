@@ -46,6 +46,11 @@ import {
 } from "@/lib/style-direction-approvals/repository";
 import { listConfirmationsForSubject } from "@/lib/client-confirmations/repository";
 import { formatMinorUnits } from "@/lib/forms/money";
+import { businessToday } from "@/lib/domain/business-date";
+import { getOrganizationTimezone } from "@/lib/organizations/repository";
+import { getLiveAssignmentDetailForItem } from "@/lib/production/assignment-repository";
+import { listVendorsWithStats } from "@/lib/vendors/repository";
+import { ItemAssignmentDrawer, LookBulkAssignForm } from "@/components/production/assignment-drawer";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { NativeSelect } from "@/components/ui/native-select";
@@ -62,11 +67,11 @@ export default async function OrderDetailPage({
   searchParams,
 }: {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ error?: string }>;
+  searchParams: Promise<{ error?: string; notice?: string }>;
 }) {
   const session = await requireStaffSession();
   const { id } = await params;
-  const { error } = await searchParams;
+  const { error, notice } = await searchParams;
 
   const order = await getOrderWithLooksAndItems(session.organizationId, id);
   if (!order) notFound();
@@ -104,6 +109,21 @@ export default async function OrderDetailPage({
   const signedUrlByKey = new Map(signedUrlEntries);
   const isArchived = Boolean(order.archivedAt);
 
+  // Vendor assignment context. Assignments are looked up per Item rather than in one grouped query
+  // because this page already renders Items individually, and the count here is small by design.
+  const [vendors, timezone] = await Promise.all([
+    listVendorsWithStats(session.organizationId),
+    getOrganizationTimezone(session.organizationId),
+  ]);
+  const today = businessToday(timezone);
+  const allItemIds = order.looks.flatMap((look) => look.items.map((item) => item.id));
+  const assignmentEntries = await Promise.all(
+    allItemIds.map(
+      async (itemId) => [itemId, await getLiveAssignmentDetailForItem(session.organizationId, itemId)] as const,
+    ),
+  );
+  const assignmentByItemId = new Map(assignmentEntries);
+
   return (
     <div>
       <header className="border-b border-[#d9d8d1] pb-8">
@@ -120,6 +140,16 @@ export default async function OrderDetailPage({
       {error ? (
         <p className="form-alert mt-6" role="alert">
           {error}
+        </p>
+      ) : null}
+
+      {/* Bulk assignment reports what it skipped here — a skip is never silent. */}
+      {notice ? (
+        <p
+          className="mt-6 border-l-[3px] border-[#88925f] bg-white/70 px-4 py-3.5 text-sm leading-6 text-[#3f4a24]"
+          role="status"
+        >
+          {notice}
         </p>
       ) : null}
       {isArchived ? <p className="form-alert mt-6">This Order is archived.</p> : null}
@@ -291,6 +321,16 @@ export default async function OrderDetailPage({
                                 </form>
                               ) : null}
                             </div>
+                            {!item.archivedAt ? (
+                              <ItemAssignmentDrawer
+                                orderId={order.id}
+                                itemId={item.id}
+                                itemLabel={item.customLabel ?? item.itemTypeName}
+                                assignment={assignmentByItemId.get(item.id) ?? null}
+                                vendors={vendors}
+                                today={today}
+                              />
+                            ) : null}
                           </div>
                           );
                         })
@@ -298,6 +338,16 @@ export default async function OrderDetailPage({
                         <p className="py-3 text-sm text-[#767b89]">No Items yet on this Look.</p>
                       )}
                     </div>
+
+                    <LookBulkAssignForm
+                      orderId={order.id}
+                      lookId={look.id}
+                      lookName={look.name}
+                      unassignedCount={
+                        look.items.filter((item) => !item.archivedAt && !assignmentByItemId.get(item.id)).length
+                      }
+                      vendors={vendors}
+                    />
 
                     <form
                       action={createItemAction}

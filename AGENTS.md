@@ -108,7 +108,9 @@ Record important actions in the audit log, including payment mutations, override
 - Production views group Client -> Order -> Look -> Item and support the filters in the spec; do not add a Kanban view in Phase 1.
 - Derive urgency from dates rather than adding a manual priority field.
 - Client-facing magic-link pages expose only the records and actions authorized by that link and never allow uploads.
-- Keep internal consultation and production notes out of client views and vendor brief PDFs.
+- Keep production notes out of client views and vendor brief PDFs. Consultation Notes are
+  brief-eligible per the spec's note rules, but nothing is included by default: the exporter picks
+  which notes appear on each PDF.
 - Maintain accessible labels, keyboard focus, semantic controls, useful empty/error states, and reduced-motion behavior.
 
 ## Testing priorities
