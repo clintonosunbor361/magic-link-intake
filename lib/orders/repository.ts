@@ -301,6 +301,8 @@ export async function getOrder(organizationId: string, orderId: string) {
       primaryOwnerStaffId: orders.primaryOwnerStaffId,
       ffDiscount: orders.ffDiscount,
       ffDiscountAmountMinor: orders.ffDiscountAmountMinor,
+      completedAt: orders.completedAt,
+      completionOverrideReason: orders.completionOverrideReason,
       version: orders.version,
       archivedAt: orders.archivedAt,
       createdAt: orders.createdAt,

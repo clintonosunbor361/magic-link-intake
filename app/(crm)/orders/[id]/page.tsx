@@ -26,8 +26,13 @@ import {
   uploadStyleDirectionFileAction,
 } from "@/app/actions/style-direction-files";
 import { issueOrderConfirmationAction } from "@/app/actions/client-confirmations";
+import { completeOrderAction } from "@/app/actions/order-completion";
 import { requireStaffSession } from "@/lib/auth/session";
+import { canOverrideCompletionGate } from "@/lib/domain/access-control";
 import { mayArchive, mayRestore } from "@/lib/domain/record-lifecycle";
+import { blocksOrderCompletion, computeOrderBalance } from "@/lib/finance/balances";
+import { deriveInvoiceStatus, INVOICE_STATUS_LABELS } from "@/lib/finance/invoice";
+import { getInvoiceForOrder, listVendorsAwaitingRating } from "@/lib/finance/repository";
 import { getOrderWithLooksAndItems } from "@/lib/orders/repository";
 import { getMissingMeasurementsForOrder } from "@/lib/item-type-measurement-requirements/repository";
 import { listItemTypes } from "@/lib/item-types/repository";
@@ -123,6 +128,20 @@ export default async function OrderDetailPage({
     ),
   );
   const assignmentByItemId = new Map(assignmentEntries);
+
+  // Finance position. The balance shown here is the same computation the completion gate enforces
+  // server-side, so the button and the rule can never disagree about whether this Order is settled.
+  const [invoice, vendorsAwaitingRating] = await Promise.all([
+    getInvoiceForOrder(session.organizationId, order.id),
+    listVendorsAwaitingRating(session.organizationId, order.id),
+  ]);
+  const balance = computeOrderBalance({
+    invoicedMinor: invoice ? invoice.totalMinor : null,
+    paidMinor: invoice?.paidMinor ?? 0,
+  });
+  const invoiceStatus = invoice ? deriveInvoiceStatus({ lifecycle: invoice.lifecycle, balance }) : null;
+  const isCompleted = Boolean(order.completedAt);
+  const completionBlocked = blocksOrderCompletion(balance);
 
   return (
     <div>
@@ -802,7 +821,100 @@ export default async function OrderDetailPage({
           </div>
         </div>
 
-        <aside className="space-y-4">
+        <aside className="space-y-9">
+          <div>
+            <div className="flex items-end justify-between gap-4">
+              <h2 className="section-title">Invoice</h2>
+              <Link href={`/orders/${order.id}/invoice`} className="text-sm font-semibold text-[#171b36] underline">
+                {invoice ? "Open" : "Create"}
+              </Link>
+            </div>
+            <dl className="mt-4 space-y-2 border-t border-[#d9d8d1] pt-4 text-sm">
+              {balance.state === "not_invoiced" ? (
+                <p className="text-[#767b89]">Not invoiced yet.</p>
+              ) : (
+                <>
+                  <div className="flex justify-between">
+                    <dt className="text-[#50586c]">Status</dt>
+                    <dd className="font-semibold text-[#171b36]">
+                      {invoiceStatus ? INVOICE_STATUS_LABELS[invoiceStatus] : "—"}
+                    </dd>
+                  </div>
+                  <div className="flex justify-between">
+                    <dt className="text-[#50586c]">Invoiced</dt>
+                    <dd className="text-[#171b36]">₦{formatMinorUnits(balance.invoicedMinor)}</dd>
+                  </div>
+                  <div className="flex justify-between">
+                    <dt className="text-[#50586c]">Paid</dt>
+                    <dd className="text-[#171b36]">₦{formatMinorUnits(balance.paidMinor)}</dd>
+                  </div>
+                  <div className="flex justify-between border-t border-[#d9d8d1] pt-2">
+                    <dt className="font-semibold text-[#171b36]">Balance</dt>
+                    <dd className="font-semibold text-[#171b36]">₦{formatMinorUnits(balance.balanceMinor)}</dd>
+                  </div>
+                </>
+              )}
+            </dl>
+          </div>
+
+          <div>
+            <h2 className="section-title">Delivery and completion</h2>
+            {isCompleted ? (
+              <div className="mt-4 border-t border-[#d9d8d1] pt-4">
+                <p className="text-sm text-[#171b36]">
+                  Completed {order.completedAt ? dateFormatter.format(order.completedAt) : ""}.
+                </p>
+                {order.completionOverrideReason ? (
+                  <p className="mt-2 text-sm leading-6 text-[#8c1d1d]">
+                    Completed with an outstanding balance. Reason: {order.completionOverrideReason}
+                  </p>
+                ) : null}
+                {/* The rating prompts ticket 30 surfaces. Capture itself already exists on its own
+                    page; completion is what makes it due. */}
+                {vendorsAwaitingRating.length ? (
+                  <div className="mt-4 border-l-[3px] border-[#88925f] bg-white/70 px-4 py-3.5">
+                    <p className="text-sm leading-6 text-[#3f4a24]">
+                      Rate the {vendorsAwaitingRating.length} Vendor
+                      {vendorsAwaitingRating.length === 1 ? "" : "s"} who worked on this Order.
+                    </p>
+                    <Link
+                      href={`/orders/${order.id}/vendor-ratings`}
+                      className="mt-2 inline-block text-sm font-semibold text-[#171b36] underline"
+                    >
+                      Rate Vendors
+                    </Link>
+                  </div>
+                ) : null}
+              </div>
+            ) : (
+              <form action={completeOrderAction} className="mt-4 space-y-4 border-t border-[#d9d8d1] pt-4">
+                <input type="hidden" name="orderId" value={order.id} />
+                <p className="text-sm leading-6 text-[#50586c]">
+                  {completionBlocked
+                    ? balance.state === "not_invoiced"
+                      ? "This Order has not been invoiced, so nothing can have been settled."
+                      : `₦${formatMinorUnits(balance.balanceMinor)} is still outstanding.`
+                    : "The client balance is settled."}
+                </p>
+                {completionBlocked && canOverrideCompletionGate(session.role) ? (
+                  <label className="form-group">
+                    <span>Override reason</span>
+                    <Input name="overrideReason" required placeholder="Why this Order is completing unsettled" />
+                  </label>
+                ) : null}
+                {completionBlocked && !canOverrideCompletionGate(session.role) ? (
+                  <p className="rounded-[0.8rem] border border-[#f0b4b4] bg-[#fdf0f0] px-3 py-2.5 text-sm leading-6 text-[#8c1d1d]">
+                    A Super Admin must override the outstanding balance to complete this Order.
+                  </p>
+                ) : (
+                  <Button className="w-full" type="submit" variant={completionBlocked ? "outline" : "default"}>
+                    Mark delivered and complete
+                  </Button>
+                )}
+              </form>
+            )}
+          </div>
+
           {!isArchived && mayArchive("order", session.role) ? (
             <form action={archiveOrderAction}>
               <input type="hidden" name="orderId" value={order.id} />

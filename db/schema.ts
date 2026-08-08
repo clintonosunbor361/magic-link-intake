@@ -41,6 +41,9 @@ export const clientConfirmationDecisionStatus = pgEnum("client_confirmation_deci
   "correction_requested",
 ]);
 export const clientConfirmationDeliveryMethod = pgEnum("client_confirmation_delivery_method", ["email", "copy_link"]);
+// Only the three staff-driven states are stored. Part Paid and Paid are derived from the balance in
+// deriveInvoiceStatus, so a label can never disagree with the money it describes.
+export const invoiceLifecycleStatus = pgEnum("invoice_lifecycle_status", ["draft", "sent", "void"]);
 
 const timestamps = {
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
@@ -263,6 +266,12 @@ export const orders = pgTable(
       .notNull(),
     ffDiscount: boolean("ff_discount").default(false).notNull(),
     ffDiscountAmountMinor: integer("ff_discount_amount_minor"),
+    // Delivery and completion are one event, not two: the spec only ever says
+    // "delivered/completed" of an Order. completionOverrideReason is non-null exactly when a Super
+    // Admin completed an Order that still carried a positive client balance.
+    completedAt: timestamp("completed_at", { withTimezone: true }),
+    completedByStaffId: uuid("completed_by_staff_id").references(() => staffProfiles.id),
+    completionOverrideReason: text("completion_override_reason"),
     version: integer("version").default(1).notNull(),
     archivedAt: timestamp("archived_at", { withTimezone: true }),
     ...timestamps,
@@ -1313,6 +1322,168 @@ export const vendorRatingRevisions = pgTable(
   ],
 ).enableRLS();
 
+// One Invoice per Order in Phase 1, enforced by the unique index on order_id rather than by service
+// code. `sequence` is the org-scoped counter; the human-readable number (INV-0001) is formatted from
+// it in formatInvoiceNumber and deliberately not stored, so the two cannot drift apart.
+//
+// There is no archivedAt: an Invoice is immutable evidence under the Milestone 0 lifecycle policy
+// and is corrected by voiding, never by archiving or deleting.
+export const invoices = pgTable(
+  "invoices",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    organizationId: uuid("organization_id")
+      .references(() => organizations.id)
+      .notNull(),
+    orderId: uuid("order_id")
+      .references(() => orders.id)
+      .notNull(),
+    sequence: integer("sequence").notNull(),
+    status: invoiceLifecycleStatus("status").default("draft").notNull(),
+    issueDate: date("issue_date").notNull(),
+    dueDate: date("due_date"),
+    notes: text("notes").default("").notNull(),
+    paymentInstructions: text("payment_instructions").default("").notNull(),
+    sentAt: timestamp("sent_at", { withTimezone: true }),
+    voidedAt: timestamp("voided_at", { withTimezone: true }),
+    voidReason: text("void_reason"),
+    createdByStaffId: uuid("created_by_staff_id")
+      .references(() => staffProfiles.id)
+      .notNull(),
+    version: integer("version").default(1).notNull(),
+    ...timestamps,
+  },
+  (table) => [
+    uniqueIndex("invoices_order_uidx").on(table.orderId),
+    uniqueIndex("invoices_org_sequence_uidx").on(table.organizationId, table.sequence),
+    pgPolicy("staff can view organization invoices", {
+      for: "select",
+      to: "authenticated",
+      using: sql`exists (
+        select 1 from organization_memberships membership
+        where membership.organization_id = ${table.organizationId}
+          and membership.user_id = auth.uid()
+          and membership.archived_at is null
+      )`,
+    }),
+  ],
+).enableRLS();
+
+// Line amount is quantity × unit price, computed in computeLineAmountMinor rather than stored — the
+// same reasoning as vendor_ratings having no `overall` column.
+export const invoiceLineItems = pgTable(
+  "invoice_line_items",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    organizationId: uuid("organization_id")
+      .references(() => organizations.id)
+      .notNull(),
+    invoiceId: uuid("invoice_id")
+      .references(() => invoices.id)
+      .notNull(),
+    description: text("description").notNull(),
+    quantity: integer("quantity").notNull(),
+    unitPriceMinor: integer("unit_price_minor").notNull(),
+    sortOrder: integer("sort_order").default(0).notNull(),
+    ...timestamps,
+  },
+  (table) => [
+    index("invoice_line_items_invoice_idx").on(table.invoiceId, table.sortOrder),
+    pgPolicy("staff can view organization invoice line items", {
+      for: "select",
+      to: "authenticated",
+      using: sql`exists (
+        select 1 from organization_memberships membership
+        where membership.organization_id = ${table.organizationId}
+          and membership.user_id = auth.uid()
+          and membership.archived_at is null
+      )`,
+    }),
+  ],
+).enableRLS();
+
+// Payments are immutable evidence. "Deleting" one voids it: the row and its history stay, and only
+// live payments count toward the balance — which is what ticket 28's "valid payments" means.
+export const clientPayments = pgTable(
+  "client_payments",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    organizationId: uuid("organization_id")
+      .references(() => organizations.id)
+      .notNull(),
+    invoiceId: uuid("invoice_id")
+      .references(() => invoices.id)
+      .notNull(),
+    amountMinor: integer("amount_minor").notNull(),
+    paidOn: date("paid_on").notNull(),
+    reference: text("reference").default("").notNull(),
+    recordedByStaffId: uuid("recorded_by_staff_id")
+      .references(() => staffProfiles.id)
+      .notNull(),
+    voidedAt: timestamp("voided_at", { withTimezone: true }),
+    voidedByStaffId: uuid("voided_by_staff_id").references(() => staffProfiles.id),
+    voidReason: text("void_reason"),
+    version: integer("version").default(1).notNull(),
+    ...timestamps,
+  },
+  (table) => [
+    index("client_payments_invoice_idx").on(table.invoiceId, table.paidOn),
+    pgPolicy("staff can view organization client payments", {
+      for: "select",
+      to: "authenticated",
+      using: sql`exists (
+        select 1 from organization_memberships membership
+        where membership.organization_id = ${table.organizationId}
+          and membership.user_id = auth.uid()
+          and membership.archived_at is null
+      )`,
+    }),
+  ],
+).enableRLS();
+
+// Vendor payments hang off the assignment, matching where agreed_vendor_cost_minor already lives.
+// The optional receipt is a private R2 object reached through a short-lived signed URL; the bytes
+// never touch Postgres and the key is never exposed to a client page.
+export const vendorPayments = pgTable(
+  "vendor_payments",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    organizationId: uuid("organization_id")
+      .references(() => organizations.id)
+      .notNull(),
+    vendorAssignmentId: uuid("vendor_assignment_id")
+      .references(() => vendorAssignments.id)
+      .notNull(),
+    amountMinor: integer("amount_minor").notNull(),
+    paidOn: date("paid_on").notNull(),
+    reference: text("reference").default("").notNull(),
+    receiptR2ObjectKey: text("receipt_r2_object_key"),
+    receiptMimeType: text("receipt_mime_type"),
+    receiptByteSize: integer("receipt_byte_size"),
+    recordedByStaffId: uuid("recorded_by_staff_id")
+      .references(() => staffProfiles.id)
+      .notNull(),
+    voidedAt: timestamp("voided_at", { withTimezone: true }),
+    voidedByStaffId: uuid("voided_by_staff_id").references(() => staffProfiles.id),
+    voidReason: text("void_reason"),
+    version: integer("version").default(1).notNull(),
+    ...timestamps,
+  },
+  (table) => [
+    index("vendor_payments_assignment_idx").on(table.vendorAssignmentId, table.paidOn),
+    pgPolicy("staff can view organization vendor payments", {
+      for: "select",
+      to: "authenticated",
+      using: sql`exists (
+        select 1 from organization_memberships membership
+        where membership.organization_id = ${table.organizationId}
+          and membership.user_id = auth.uid()
+          and membership.archived_at is null
+      )`,
+    }),
+  ],
+).enableRLS();
+
 export type OrganizationMembership = typeof organizationMemberships.$inferSelect;
 export type AuditEntry = typeof auditEntries.$inferSelect;
 export type Client = typeof clients.$inferSelect;
@@ -1347,3 +1518,7 @@ export type ProductionStatusHistoryEntry = typeof productionStatusHistory.$infer
 export type ProductionNote = typeof productionNotes.$inferSelect;
 export type VendorRating = typeof vendorRatings.$inferSelect;
 export type VendorRatingRevision = typeof vendorRatingRevisions.$inferSelect;
+export type Invoice = typeof invoices.$inferSelect;
+export type InvoiceLineItem = typeof invoiceLineItems.$inferSelect;
+export type ClientPayment = typeof clientPayments.$inferSelect;
+export type VendorPayment = typeof vendorPayments.$inferSelect;

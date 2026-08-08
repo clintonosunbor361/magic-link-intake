@@ -115,3 +115,20 @@ export function assertCanRateVendors(role: StaffRole): void {
 export function canOverrideBriefBlocker(role: StaffRole): boolean {
   return role === "super_admin";
 }
+
+// Every financial action — creating and editing Invoices, sending, voiding, and recording, editing
+// or voiding a payment on either side — is reserved for Super Admin by product decision. This is
+// stricter than reserving only edits and deletes: an Admin Assistant does no money entry at all.
+export function canManageFinance(role: StaffRole): boolean {
+  return role === "super_admin";
+}
+
+export function assertCanManageFinance(role: StaffRole): void {
+  if (!canManageFinance(role)) {
+    throw new Error("Super Admin access is required for financial records.");
+  }
+}
+
+export function canOverrideCompletionGate(role: StaffRole): boolean {
+  return role === "super_admin";
+}

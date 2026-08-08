@@ -148,6 +148,20 @@
       "when": 1786124522139,
       "tag": "0020_supabase_grants",
       "breakpoints": true
+    },
+    {
+      "idx": 21,
+      "version": "7",
+      "when": 1786231321501,
+      "tag": "0021_last_tenebrous",
+      "breakpoints": true
+    },
+    {
+      "idx": 21,
+      "version": "7",
+      "when": 1786231321502,
+      "tag": "0022_supabase_grants",
+      "breakpoints": true
     }
   ]
 }

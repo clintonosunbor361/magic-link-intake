@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { addProductionNoteAction, changeProductionStatusAction } from "@/app/actions/vendor-assignments";
+import { recordVendorPaymentAction, voidVendorPaymentAction } from "@/app/actions/payments";
 import { UrgencyBadge } from "@/components/production/urgency-badge";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
@@ -8,9 +9,12 @@ import { Input } from "@/components/ui/input";
 import { NativeSelect } from "@/components/ui/native-select";
 import { requireStaffSession } from "@/lib/auth/session";
 import { businessToday } from "@/lib/domain/business-date";
+import { canManageFinance } from "@/lib/domain/access-control";
 import { computeVendorPaymentPosition } from "@/lib/finance/balances";
+import { listVendorPayments, sumLiveVendorPaymentsMinor } from "@/lib/finance/repository";
 import { formatMinorUnits } from "@/lib/forms/money";
 import { getOrganizationTimezone } from "@/lib/organizations/repository";
+import { getSignedPrivateViewUrl } from "@/lib/storage/r2";
 import { listProductionStatuses } from "@/lib/production-statuses/repository";
 import { getAssignmentDetail } from "@/lib/production/assignment-repository";
 import { listProductionNotes, listStatusHistory } from "@/lib/production/status-change-repository";
@@ -34,17 +38,29 @@ export default async function AssignmentDetailPage({
   const timezone = await getOrganizationTimezone(session.organizationId);
   const today = businessToday(timezone);
 
-  const [statuses, history, notes, briefContext] = await Promise.all([
+  const [statuses, history, notes, briefContext, payments, paidMinor] = await Promise.all([
     listProductionStatuses(session.organizationId),
     listStatusHistory(session.organizationId, assignmentId),
     listProductionNotes(session.organizationId, assignmentId),
     getVendorBriefContext(session.organizationId, assignmentId),
+    listVendorPayments(session.organizationId, assignmentId),
+    sumLiveVendorPaymentsMinor(session.organizationId, assignmentId),
   ]);
 
+  // Receipts are private objects reached through short-lived signed URLs, computed per render rather
+  // than stored anywhere a client page could reach.
+  const receiptUrlEntries = await Promise.all(
+    payments
+      .filter((payment) => payment.receiptR2ObjectKey)
+      .map(async (payment) => [payment.id, await getSignedPrivateViewUrl(payment.receiptR2ObjectKey as string)] as const),
+  );
+  const receiptUrlByPaymentId = new Map(receiptUrlEntries);
+
+  const canManage = canManageFinance(session.role);
   const urgency = describeUrgency({ deadline: assignment.deadline, today });
   const position = computeVendorPaymentPosition({
     agreedCostMinor: assignment.agreedVendorCostMinor,
-    paidMinor: 0,
+    paidMinor,
   });
   const blocker = briefContext ? computeBriefBlocker(briefContext.sources) : null;
   const returnTo = `/production/${assignmentId}`;
@@ -133,6 +149,63 @@ export default async function AssignmentDetailPage({
           </div>
 
           <div>
+            <h2 className="section-title">Vendor payments</h2>
+            <p className="mt-2 text-sm text-[#50586c]">
+              Balance is the agreed cost minus payments recorded here. Voided payments stop counting
+              but stay on the record.
+            </p>
+            {payments.length ? (
+              <ol className="mt-4 divide-y divide-[#d9d8d1] border-y border-[#d9d8d1]">
+                {payments.map((payment) => (
+                  <li key={payment.id} className="py-4">
+                    <div className="flex flex-wrap items-baseline justify-between gap-2">
+                      <p className={`text-sm font-semibold ${payment.voidedAt ? "text-[#767b89] line-through" : "text-[#171b36]"}`}>
+                        ₦{formatMinorUnits(payment.amountMinor)}
+                      </p>
+                      <p className="text-xs text-[#767b89]">
+                        {payment.paidOn} · {payment.recordedByName}
+                      </p>
+                    </div>
+                    {payment.reference ? <p className="mt-1 text-sm text-[#50586c]">{payment.reference}</p> : null}
+                    {receiptUrlByPaymentId.get(payment.id) ? (
+                      <a
+                        href={receiptUrlByPaymentId.get(payment.id)}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="mt-2 inline-block text-sm font-semibold text-[#171b36] underline underline-offset-4"
+                      >
+                        View receipt
+                      </a>
+                    ) : null}
+                    {payment.voidedAt ? (
+                      <p className="mt-1 text-xs text-[#8c1d1d]">Voided — {payment.voidReason}</p>
+                    ) : canManage ? (
+                      <form action={voidVendorPaymentAction} className="mt-3 flex flex-wrap items-end gap-2">
+                        <input type="hidden" name="assignmentId" value={assignment.id} />
+                        <input type="hidden" name="paymentId" value={payment.id} />
+                        <input type="hidden" name="version" value={payment.version} />
+                        <label className="form-group flex-1">
+                          <span className="text-xs">Void reason</span>
+                          <Input name="reason" required placeholder="Why this payment is being reversed" />
+                        </label>
+                        <Button type="submit" variant="outline">
+                          Void
+                        </Button>
+                      </form>
+                    ) : null}
+                  </li>
+                ))}
+              </ol>
+            ) : (
+              <EmptyState
+                className="mt-4"
+                title="No Vendor payments yet"
+                description="Record each payment to this Vendor, with its receipt where you have one."
+              />
+            )}
+          </div>
+
+          <div>
             <h2 className="section-title">Production notes</h2>
             <p className="mt-2 text-sm text-[#50586c]">
               Internal only. These never appear on client pages or in Vendor Brief PDFs.
@@ -197,6 +270,47 @@ export default async function AssignmentDetailPage({
               </Button>
             </form>
           </div>
+
+          {canManage ? (
+            <div>
+              <h2 className="section-title">Record a Vendor payment</h2>
+              <form
+                action={recordVendorPaymentAction}
+                encType="multipart/form-data"
+                className="mt-4 space-y-4 border-t border-[#d9d8d1] pt-5"
+              >
+                <input type="hidden" name="assignmentId" value={assignment.id} />
+                <label className="form-group">
+                  <span>Amount (₦)</span>
+                  <Input name="amount" required inputMode="decimal" />
+                </label>
+                <label className="form-group">
+                  <span>Paid on</span>
+                  <Input type="date" name="paidOn" defaultValue={today} required />
+                </label>
+                <label className="form-group">
+                  <span>
+                    Reference <span className="font-normal text-[#50586c]">(optional)</span>
+                  </span>
+                  <Input name="reference" maxLength={200} />
+                </label>
+                <label className="form-group">
+                  <span>
+                    Receipt <span className="font-normal text-[#50586c]">(optional)</span>
+                  </span>
+                  <input
+                    type="file"
+                    name="receipt"
+                    accept="image/jpeg,image/png,image/webp,application/pdf"
+                    className="text-sm text-[#50586c] file:mr-3 file:cursor-pointer file:rounded-[0.6rem] file:border file:border-[#cfcec7] file:bg-white file:px-3 file:py-1.5 file:text-sm file:font-semibold file:text-[#171b36]"
+                  />
+                </label>
+                <Button className="w-full" type="submit">
+                  Record payment
+                </Button>
+              </form>
+            </div>
+          ) : null}
 
           <div>
             <h2 className="section-title">Vendor Brief</h2>
