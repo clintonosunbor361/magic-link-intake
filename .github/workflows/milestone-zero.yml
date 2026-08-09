@@ -25,6 +25,8 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
+      - name: Install Chromium for PDF renderer tests
+        run: npx playwright install chromium
       - run: npm test
       - run: npm run typecheck
       - run: npm run build
