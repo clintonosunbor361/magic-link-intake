@@ -9,6 +9,7 @@ import {
   invoiceLineItems,
   invoices,
   items,
+  itemTypes,
   looks,
   orders,
   staffProfiles,
@@ -16,6 +17,7 @@ import {
   vendorPayments,
   vendors,
 } from "@/db/schema";
+import { computeOrderBalance, computeVendorPaymentPosition } from "@/lib/finance/balances";
 import { computeInvoiceTotalMinor, formatInvoiceNumber, type InvoiceLifecycleStatus } from "@/lib/finance/invoice";
 import type { InvoiceRepository } from "@/lib/finance/invoice-service";
 import type { ClientPaymentRepository, VendorPaymentRepository, VendorPaymentStorage } from "@/lib/finance/payment-service";
@@ -684,6 +686,92 @@ export async function sumLiveVendorPaymentsMinor(organizationId: string, assignm
       ),
     );
   return row?.total ?? 0;
+}
+
+/**
+ * Every live Order's client balance position, for the finance overview and the dashboard's
+ * outstanding-balances metric. Totals and paid figures are summed from live rows here for the same
+ * reason they are everywhere else: neither is stored, so neither can drift.
+ */
+export async function listOrderBalances(organizationId: string) {
+  const db = getDatabase();
+
+  const rows = await db
+    .select({
+      orderId: orders.id,
+      orderTitle: orders.title,
+      clientId: clients.id,
+      clientName: clients.fullName,
+      completedAt: orders.completedAt,
+      invoiceId: invoices.id,
+      invoiceSequence: invoices.sequence,
+      invoiceStatus: invoices.status,
+    })
+    .from(orders)
+    .innerJoin(clients, eq(clients.id, orders.clientId))
+    .leftJoin(invoices, eq(invoices.orderId, orders.id))
+    .where(and(eq(orders.organizationId, organizationId), isNull(orders.archivedAt)))
+    .orderBy(asc(orders.createdAt));
+
+  const positions = await Promise.all(
+    rows.map(async (row) => {
+      const invoicedMinor = row.invoiceId ? await sumInvoiceTotalMinor(row.invoiceId) : null;
+      const paidMinor = row.invoiceId ? await sumLiveClientPaymentsMinor(organizationId, row.invoiceId) : 0;
+      return {
+        ...row,
+        invoiceNumber: row.invoiceSequence === null ? null : formatInvoiceNumber(row.invoiceSequence),
+        balance: computeOrderBalance({ invoicedMinor, paidMinor }),
+      };
+    }),
+  );
+
+  return positions;
+}
+
+/**
+ * Vendor payment positions per live assignment. Mirrors the compact figure the production workspace
+ * already shows per item, gathered here so the money can be read in one place.
+ */
+export async function listVendorPaymentPositions(organizationId: string) {
+  const db = getDatabase();
+
+  const rows = await db
+    .select({
+      assignmentId: vendorAssignments.id,
+      vendorId: vendors.id,
+      vendorName: vendors.name,
+      agreedCostMinor: vendorAssignments.agreedVendorCostMinor,
+      deadline: vendorAssignments.deadline,
+      itemLabel: items.customLabel,
+      itemTypeName: itemTypes.name,
+      orderId: orders.id,
+      orderTitle: orders.title,
+    })
+    .from(vendorAssignments)
+    .innerJoin(vendors, eq(vendors.id, vendorAssignments.vendorId))
+    .innerJoin(items, eq(items.id, vendorAssignments.itemId))
+    .innerJoin(itemTypes, eq(itemTypes.id, items.itemTypeId))
+    .innerJoin(looks, eq(looks.id, items.lookId))
+    .innerJoin(orders, eq(orders.id, looks.orderId))
+    .where(
+      and(
+        eq(vendorAssignments.organizationId, organizationId),
+        isNull(vendorAssignments.archivedAt),
+        isNull(orders.archivedAt),
+      ),
+    )
+    .orderBy(asc(vendorAssignments.deadline));
+
+  return Promise.all(
+    rows.map(async (row) => ({
+      ...row,
+      label: row.itemLabel ?? row.itemTypeName,
+      position: computeVendorPaymentPosition({
+        agreedCostMinor: row.agreedCostMinor,
+        paidMinor: await sumLiveVendorPaymentsMinor(organizationId, row.assignmentId),
+      }),
+    })),
+  );
 }
 
 /** Distinct Vendors with work on this Order — the rating prompts surfaced after completion. */

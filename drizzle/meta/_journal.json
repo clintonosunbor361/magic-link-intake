@@ -176,6 +176,20 @@
       "when": 1786233707847,
       "tag": "0024_supabase_grants",
       "breakpoints": true
+    },
+    {
+      "idx": 25,
+      "version": "7",
+      "when": 1786278185571,
+      "tag": "0025_round_network",
+      "breakpoints": true
+    },
+    {
+      "idx": 26,
+      "version": "7",
+      "when": 1786278185572,
+      "tag": "0026_supabase_grants",
+      "breakpoints": true
     }
   ]
 }

@@ -59,6 +59,25 @@ export const fittingSessionStatus = pgEnum("fitting_session_status", [
   "missed",
   "cancelled",
 ]);
+// The four deadline sources the spec names. sourceId is polymorphic (same precedent as
+// audit_entries.entityId and client_confirmations.subjectId) and so is deliberately not a foreign
+// key — the four parents live in four different tables.
+export const notificationSourceType = pgEnum("notification_source_type", [
+  "enquiry_task",
+  "vendor_assignment",
+  "accessory_item",
+  "fitting_session",
+]);
+// The spec's reminder triggers: 7, 3 and 1 days before, plus an overdue alert.
+export const notificationTrigger = pgEnum("notification_trigger", ["days_7", "days_3", "days_1", "overdue"]);
+// Email state is tracked apart from the notification itself so a Resend failure can never destroy
+// the dashboard record — the row exists either way, and only this column changes.
+export const notificationEmailState = pgEnum("notification_email_state", [
+  "pending",
+  "sent",
+  "failed",
+  "skipped",
+]);
 
 const timestamps = {
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
@@ -1719,6 +1738,66 @@ export const fittingSessionHistory = pgTable(
   ],
 ).enableRLS();
 
+// One row per (source record, trigger, due date). The unique index is the whole idempotency
+// mechanism: the cron inserts with onConflictDoNothing, so re-running it — on a retry, a redeploy,
+// or twice in one day — cannot produce a duplicate. No "already sent" bookkeeping is needed
+// anywhere else.
+//
+// dueDate is part of the key on purpose. A deadline that moves re-arms its triggers for the new
+// date, which matters most for Accessories, whose dates are inherited from a Look and shift
+// whenever that Look moves. Keying on (source, trigger) alone would mean a rescheduled deadline
+// never warned again.
+export const notifications = pgTable(
+  "notifications",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    organizationId: uuid("organization_id")
+      .references(() => organizations.id)
+      .notNull(),
+    sourceType: notificationSourceType("source_type").notNull(),
+    sourceId: uuid("source_id").notNull(),
+    trigger: notificationTrigger("trigger").notNull(),
+    dueDate: date("due_date").notNull(),
+    // The person who can act: the task's assignee, or the Order's primary owner for production,
+    // accessory and fitting sources. Only they are emailed; the dashboard shows everything to
+    // everyone.
+    recipientStaffId: uuid("recipient_staff_id").references(() => staffProfiles.id),
+    title: text("title").notNull(),
+    body: text("body").default("").notNull(),
+    // Where the notification points. Stored rather than derived because the source row may later be
+    // archived, and a dead link is worse than a stale one.
+    href: text("href").notNull(),
+    readAt: timestamp("read_at", { withTimezone: true }),
+    emailState: notificationEmailState("email_state").default("pending").notNull(),
+    emailAttempts: integer("email_attempts").default(0).notNull(),
+    emailLastError: text("email_last_error"),
+    emailSentAt: timestamp("email_sent_at", { withTimezone: true }),
+    archivedAt: timestamp("archived_at", { withTimezone: true }),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => [
+    uniqueIndex("notifications_source_trigger_due_uidx").on(
+      table.sourceType,
+      table.sourceId,
+      table.trigger,
+      table.dueDate,
+    ),
+    index("notifications_org_created_idx").on(table.organizationId, table.createdAt),
+    index("notifications_org_unread_idx").on(table.organizationId, table.readAt),
+    index("notifications_email_state_idx").on(table.emailState),
+    pgPolicy("staff can view organization notifications", {
+      for: "select",
+      to: "authenticated",
+      using: sql`exists (
+        select 1 from organization_memberships membership
+        where membership.organization_id = ${table.organizationId}
+          and membership.user_id = auth.uid()
+          and membership.archived_at is null
+      )`,
+    }),
+  ],
+).enableRLS();
+
 export type OrganizationMembership = typeof organizationMemberships.$inferSelect;
 export type AuditEntry = typeof auditEntries.$inferSelect;
 export type Client = typeof clients.$inferSelect;
@@ -1763,3 +1842,4 @@ export type AccessoryItem = typeof accessoryItems.$inferSelect;
 export type FittingSession = typeof fittingSessions.$inferSelect;
 export type FittingSessionNote = typeof fittingSessionNotes.$inferSelect;
 export type FittingSessionHistoryEntry = typeof fittingSessionHistory.$inferSelect;
+export type Notification = typeof notifications.$inferSelect;

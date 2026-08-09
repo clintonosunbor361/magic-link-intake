@@ -30,6 +30,24 @@ export async function sendApprovalBatchEmail(input: {
   if (error) throw new Error("The email could not be sent.");
 }
 
+// The only staff-facing email in Phase 1 — every other template addresses a client. It goes to the
+// person responsible for the deadline, and links straight to the record rather than the dashboard.
+export async function sendDeadlineEmail(input: {
+  to: string;
+  staffName: string;
+  title: string;
+  body: string;
+  url: string;
+}): Promise<void> {
+  const { error } = await getResendClient().emails.send({
+    from: requireEnv("RESEND_FROM_EMAIL"),
+    to: input.to,
+    subject: input.title,
+    html: `<p>Hi ${input.staffName},</p><p>${input.body}</p><p><a href="${input.url}">Open in Kuartz</a></p>`,
+  });
+  if (error) throw new Error("The email could not be sent.");
+}
+
 export async function sendConfirmationEmail(input: {
   to: string;
   confirmationUrl: string;
