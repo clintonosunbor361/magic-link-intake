@@ -21,6 +21,16 @@ test("signed-out staff routes redirect to sign in", async ({ page }) => {
   await expectNoSeriousAccessibilityViolations(page);
 });
 
+test("invalid credentials stay on a clean sign-in URL", async ({ page }) => {
+  await page.goto("/auth/sign-in");
+  await page.getByLabel("Email address").fill("missing@kuartz.test");
+  await page.getByLabel("Password", { exact: true }).fill("not-the-password");
+  await page.getByRole("button", { name: "Sign in" }).click();
+
+  await expect(page).toHaveURL(/\/auth\/sign-in$/);
+  await expect(page.getByRole("alert")).toHaveText("The email or password is incorrect.");
+});
+
 test("a Super Admin can reach the dashboard, team settings, and the Enquiries inbox", async ({ page, isMobile }) => {
   await signIn(page, E2E_USERS.superAdmin);
   await expect(page.getByRole("heading", { name: /Good (morning|afternoon|evening), Roti/ })).toBeVisible();
@@ -53,9 +63,17 @@ test("mobile navigation closes with Escape and restores focus", async ({ page, i
   await signIn(page, E2E_USERS.superAdmin);
   const trigger = page.getByRole("button", { name: "Open navigation" });
   await trigger.click();
-  await expect(page.getByRole("complementary", { name: "Primary navigation" })).toBeVisible();
+  await expect(page.getByRole("dialog", { name: "Primary navigation" })).toBeVisible();
   await page.keyboard.press("Escape");
   await expect(trigger).toBeFocused();
+});
+
+test("the workspace remains operable in mobile landscape without page overflow", async ({ page }) => {
+  await page.setViewportSize({ width: 667, height: 375 });
+  await signIn(page, E2E_USERS.superAdmin);
+  await page.getByRole("button", { name: "Open navigation" }).click();
+  await expect(page.getByRole("dialog", { name: "Primary navigation" })).toBeVisible();
+  await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth)).toBe(true);
 });
 
 test("reduced-motion preference suppresses transitions", async ({ browser }) => {

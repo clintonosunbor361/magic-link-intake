@@ -27,7 +27,7 @@ import { getOrderWithLooksAndItems } from "@/lib/orders/repository";
 
 const dateTimeFormatter = new Intl.DateTimeFormat("en-NG", { dateStyle: "medium", timeStyle: "short" });
 const textareaClass =
-  "min-h-[3.5rem] w-full rounded-[0.8rem] border border-[#cfcec7] bg-white/70 px-3.5 py-3 text-sm text-[#171b36] outline-none focus:border-[#88925f] focus:bg-white focus:ring-4 focus:ring-[#d2ff67]/20";
+  "min-h-[3.5rem] w-full rounded-[0.8rem] border border-kuartz-control bg-white/70 px-3.5 py-3 text-sm text-kuartz-ink outline-none focus:border-[#88925f] focus:bg-white focus:ring-4 focus:ring-kuartz-lime/20";
 
 function toDateTimeLocalValue(date: Date): string {
   return date.toISOString().slice(0, 16);
@@ -63,12 +63,12 @@ export default async function OrderFittingsPage({
     <div>
       <Link
         href={`/orders/${id}`}
-        className="text-sm font-semibold text-[#50586c] underline-offset-4 transition-colors duration-200 hover:text-[#171b36] hover:underline"
+        className="text-sm font-semibold text-kuartz-secondary underline-offset-4 transition-colors duration-200 hover:text-kuartz-ink hover:underline"
       >
         ← {order.title}
       </Link>
 
-      <header className="mt-4 border-b border-[#d9d8d1] pb-8">
+      <header className="mt-4 border-b border-kuartz-line pb-8">
         <p className="eyebrow">Fittings</p>
         <h1 className="page-title">Fitting sessions</h1>
         <p className="page-description">
@@ -89,14 +89,14 @@ export default async function OrderFittingsPage({
             detail.map(({ fitting, notes, history, confirmations }) => {
               const terminal = isTerminalFittingStatus(fitting.status);
               return (
-                <div key={fitting.id} className="border-t border-[#d9d8d1] pt-5">
+                <div key={fitting.id} className="border-t border-kuartz-line pt-5">
                   <div className="flex flex-wrap items-baseline justify-between gap-2">
                     <h2 className="section-title">{dateTimeFormatter.format(fitting.scheduledAt)}</h2>
-                    <span className="rounded-full border border-[#d9d8d1] bg-[#f6f6f3] px-2.5 py-0.5 text-xs font-semibold text-[#50586c]">
+                    <span className="rounded-full border border-kuartz-line bg-[#f6f6f3] px-2.5 py-0.5 text-xs font-semibold text-kuartz-secondary">
                       {FITTING_STATUS_LABELS[fitting.status]}
                     </span>
                   </div>
-                  <p className="mt-1 text-sm text-[#767b89]">
+                  <p className="mt-1 text-sm text-kuartz-muted">
                     {fitting.lookName ?? "Whole Order"}
                     {fitting.location ? ` · ${fitting.location}` : ""}
                   </p>
@@ -108,7 +108,7 @@ export default async function OrderFittingsPage({
                         <input type="hidden" name="orderId" value={id} />
                         <input type="hidden" name="sessionId" value={fitting.id} />
                         <input type="hidden" name="version" value={fitting.version} />
-                        <h3 className="text-sm font-semibold text-[#272c45]">Reschedule</h3>
+                        <h3 className="text-sm font-semibold text-kuartz-body">Reschedule</h3>
                         <label className="form-group">
                           <span className="text-xs">New date and time</span>
                           <Input
@@ -120,13 +120,13 @@ export default async function OrderFittingsPage({
                         </label>
                         <label className="form-group">
                           <span className="text-xs">
-                            Location <span className="font-normal text-[#50586c]">(optional)</span>
+                            Location <span className="font-normal text-kuartz-secondary">(optional)</span>
                           </span>
                           <Input name="location" defaultValue={fitting.location} maxLength={160} />
                         </label>
                         <label className="form-group">
                           <span className="text-xs">
-                            Reason <span className="font-normal text-[#50586c]">(optional)</span>
+                            Reason <span className="font-normal text-kuartz-secondary">(optional)</span>
                           </span>
                           <Input name="note" maxLength={300} />
                         </label>
@@ -139,7 +139,7 @@ export default async function OrderFittingsPage({
                         <input type="hidden" name="orderId" value={id} />
                         <input type="hidden" name="sessionId" value={fitting.id} />
                         <input type="hidden" name="version" value={fitting.version} />
-                        <h3 className="text-sm font-semibold text-[#272c45]">Change status</h3>
+                        <h3 className="text-sm font-semibold text-kuartz-body">Change status</h3>
                         <label className="form-group">
                           <span className="text-xs">New status</span>
                           <NativeSelect name="newStatus" defaultValue="completed">
@@ -152,7 +152,7 @@ export default async function OrderFittingsPage({
                         </label>
                         <label className="form-group">
                           <span className="text-xs">
-                            Note <span className="font-normal text-[#50586c]">(optional)</span>
+                            Note <span className="font-normal text-kuartz-secondary">(optional)</span>
                           </span>
                           <Input name="note" maxLength={300} />
                         </label>
@@ -170,7 +170,7 @@ export default async function OrderFittingsPage({
                     <label className="form-group">
                       <span>
                         Client-facing summary{" "}
-                        <span className="font-normal text-[#50586c]">— the only text the client sees</span>
+                        <span className="font-normal text-kuartz-secondary">— the only text the client sees</span>
                       </span>
                       <textarea name="clientSummary" defaultValue={fitting.clientSummary} className={textareaClass} />
                     </label>
@@ -180,23 +180,23 @@ export default async function OrderFittingsPage({
                   </form>
 
                   <div className="mt-6">
-                    <h3 className="text-sm font-semibold text-[#272c45]">Internal notes</h3>
-                    <p className="mt-1 text-xs text-[#767b89]">
+                    <h3 className="text-sm font-semibold text-kuartz-body">Internal notes</h3>
+                    <p className="mt-1 text-xs text-kuartz-muted">
                       Alterations and anything else the team should know. Never shown to the client.
                     </p>
                     {notes.length ? (
-                      <ol className="mt-3 divide-y divide-[#eceae2] border-y border-[#eceae2]">
+                      <ol className="mt-3 divide-y divide-kuartz-lineSoft border-y border-kuartz-lineSoft">
                         {notes.map((note) => (
                           <li key={note.id} className="py-3">
-                            <p className="text-sm leading-6 text-[#272c45]">{note.note}</p>
-                            <p className="mt-1 text-xs text-[#767b89]">
+                            <p className="text-sm leading-6 text-kuartz-body">{note.note}</p>
+                            <p className="mt-1 text-xs text-kuartz-muted">
                               {note.createdByName} · {note.createdAt.toISOString().slice(0, 16).replace("T", " ")}
                             </p>
                           </li>
                         ))}
                       </ol>
                     ) : (
-                      <p className="mt-3 text-sm text-[#767b89]">No notes yet.</p>
+                      <p className="mt-3 text-sm text-kuartz-muted">No notes yet.</p>
                     )}
                     <form action={addFittingNoteAction} className="mt-3 flex flex-wrap items-end gap-2">
                       <input type="hidden" name="orderId" value={id} />
@@ -212,18 +212,18 @@ export default async function OrderFittingsPage({
                   </div>
 
                   <div className="mt-6">
-                    <h3 className="text-sm font-semibold text-[#272c45]">Client confirmation</h3>
+                    <h3 className="text-sm font-semibold text-kuartz-body">Client confirmation</h3>
                     {confirmations.length ? (
-                      <div className="mt-2 divide-y divide-[#eceae2]">
+                      <div className="mt-2 divide-y divide-kuartz-lineSoft">
                         {confirmations.map((confirmation) => (
-                          <p key={confirmation.id} className="py-2 text-sm text-[#171b36]">
+                          <p key={confirmation.id} className="py-2 text-sm text-kuartz-ink">
                             {confirmation.status}
                             {confirmation.decisionComment ? ` — "${confirmation.decisionComment}"` : ""}
                           </p>
                         ))}
                       </div>
                     ) : (
-                      <p className="mt-2 text-sm text-[#767b89]">Not sent yet.</p>
+                      <p className="mt-2 text-sm text-kuartz-muted">Not sent yet.</p>
                     )}
                     {fitting.status === "completed" && !fitting.archivedAt ? (
                       <form action={issueFittingConfirmationAction} className="mt-3">
@@ -238,21 +238,21 @@ export default async function OrderFittingsPage({
 
                   {history.length ? (
                     <details className="mt-6">
-                      <summary className="cursor-pointer text-sm font-semibold text-[#50586c]">History</summary>
-                      <ol className="mt-3 divide-y divide-[#eceae2] border-y border-[#eceae2]">
+                      <summary className="cursor-pointer text-sm font-semibold text-kuartz-secondary">History</summary>
+                      <ol className="mt-3 divide-y divide-kuartz-lineSoft border-y border-kuartz-lineSoft">
                         {history.map((entry) => (
                           <li key={entry.id} className="py-3 text-sm">
-                            <p className="text-[#171b36]">
+                            <p className="text-kuartz-ink">
                               {entry.previousStatus === null
                                 ? `Scheduled for ${dateTimeFormatter.format(entry.newScheduledAt)}`
                                 : entry.previousStatus !== entry.newStatus
                                   ? `${FITTING_STATUS_LABELS[entry.previousStatus]} → ${FITTING_STATUS_LABELS[entry.newStatus]}`
                                   : `Moved from ${entry.previousScheduledAt ? dateTimeFormatter.format(entry.previousScheduledAt) : "—"} to ${dateTimeFormatter.format(entry.newScheduledAt)}`}
                             </p>
-                            <p className="mt-1 text-xs text-[#767b89]">
+                            <p className="mt-1 text-xs text-kuartz-muted">
                               {entry.changedByName} · {entry.createdAt.toISOString().slice(0, 16).replace("T", " ")}
                             </p>
-                            {entry.note ? <p className="mt-1 text-sm text-[#50586c]">{entry.note}</p> : null}
+                            {entry.note ? <p className="mt-1 text-sm text-kuartz-secondary">{entry.note}</p> : null}
                           </li>
                         ))}
                       </ol>
@@ -292,7 +292,7 @@ export default async function OrderFittingsPage({
 
         <aside>
           <h2 className="section-title">Schedule a Fitting</h2>
-          <form action={scheduleFittingAction} className="mt-4 space-y-4 border-t border-[#d9d8d1] pt-5">
+          <form action={scheduleFittingAction} className="mt-4 space-y-4 border-t border-kuartz-line pt-5">
             <input type="hidden" name="orderId" value={id} />
             <label className="form-group">
               <span>Date and time</span>
@@ -300,7 +300,7 @@ export default async function OrderFittingsPage({
             </label>
             <label className="form-group">
               <span>
-                Look <span className="font-normal text-[#50586c]">(optional)</span>
+                Look <span className="font-normal text-kuartz-secondary">(optional)</span>
               </span>
               <NativeSelect name="lookId" defaultValue="">
                 <option value="">Whole Order</option>
@@ -313,7 +313,7 @@ export default async function OrderFittingsPage({
             </label>
             <label className="form-group">
               <span>
-                Location <span className="font-normal text-[#50586c]">(optional)</span>
+                Location <span className="font-normal text-kuartz-secondary">(optional)</span>
               </span>
               <Input name="location" maxLength={160} />
             </label>
@@ -321,7 +321,7 @@ export default async function OrderFittingsPage({
               Schedule Fitting
             </Button>
           </form>
-          <p className="mt-3 text-xs leading-5 text-[#767b89]">
+          <p className="mt-3 text-xs leading-5 text-kuartz-muted">
             A repeat fitting is simply another session — schedule as many as the Order needs.
           </p>
         </aside>

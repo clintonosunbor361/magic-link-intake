@@ -28,7 +28,7 @@ export default async function AccessoryTypesPage({
 
   return (
     <div>
-      <header className="border-b border-[#d9d8d1] pb-8">
+      <header className="border-b border-kuartz-line pb-8">
         <p className="eyebrow">Organization settings</p>
         <h1 className="page-title">Accessory types</h1>
         <p className="page-description">
@@ -49,7 +49,7 @@ export default async function AccessoryTypesPage({
         <div>
           <h2 className="section-title">Configured types</h2>
           {types.length ? (
-            <div role="list" className="mt-4 divide-y divide-[#d9d8d1] border-y border-[#d9d8d1]">
+            <div role="list" className="mt-4 divide-y divide-kuartz-line border-y border-kuartz-line">
               {types.map((type) => (
                 <div
                   key={type.id}
@@ -58,8 +58,8 @@ export default async function AccessoryTypesPage({
                   className="grid gap-4 py-5 md:grid-cols-[minmax(0,1fr)_auto] md:items-center"
                 >
                   <div>
-                    <p className="font-semibold text-[#171b36]">{type.name}</p>
-                    {type.archivedAt ? <p className="mt-1 text-sm text-[#767b89]">Archived</p> : null}
+                    <p className="font-semibold text-kuartz-ink">{type.name}</p>
+                    {type.archivedAt ? <p className="mt-1 text-sm text-kuartz-muted">Archived</p> : null}
                   </div>
                   <form action={type.archivedAt ? restoreAccessoryTypeAction : archiveAccessoryTypeAction}>
                     <input type="hidden" name="accessoryTypeId" value={type.id} />
@@ -86,7 +86,7 @@ export default async function AccessoryTypesPage({
 
         <aside>
           <h2 className="section-title">Add a type</h2>
-          <form action={createAccessoryTypeAction} className="mt-4 space-y-4 border-t border-[#d9d8d1] pt-5">
+          <form action={createAccessoryTypeAction} className="mt-4 space-y-4 border-t border-kuartz-line pt-5">
             <input type="hidden" name="sortOrder" value={nextSortOrder} />
             <label className="form-group">
               <span>Name</span>

@@ -80,11 +80,11 @@ export function BriefBuilder({
       <div className="space-y-8">
         <div>
           <h2 className="section-title">What to include</h2>
-          <p className="mt-2 text-sm leading-6 text-[#50586c]">
+          <p className="mt-2 text-sm leading-6 text-kuartz-secondary">
             Choose this fresh for every export. Nothing is remembered between briefs.
           </p>
 
-          <fieldset className="mt-4 space-y-2.5 border-t border-[#d9d8d1] pt-5">
+          <fieldset className="mt-4 space-y-2.5 border-t border-kuartz-line pt-5">
             <legend className="sr-only">Details</legend>
             <Checkbox
               label="Client name"
@@ -107,7 +107,7 @@ export function BriefBuilder({
         {sources.measurements.length ? (
           <fieldset>
             <legend className="section-title">Measurements</legend>
-            <div className="mt-4 space-y-2.5 border-t border-[#d9d8d1] pt-5">
+            <div className="mt-4 space-y-2.5 border-t border-kuartz-line pt-5">
               {sources.measurements.map((measurement) => (
                 <Checkbox
                   key={measurement.fieldDefinitionId}
@@ -128,10 +128,10 @@ export function BriefBuilder({
         {sources.notes.length ? (
           <fieldset>
             <legend className="section-title">Consultation notes</legend>
-            <p className="mt-2 text-sm leading-6 text-[#50586c]">
+            <p className="mt-2 text-sm leading-6 text-kuartz-secondary">
               Nothing is included by default — tick only what this Vendor needs.
             </p>
-            <div className="mt-4 space-y-2.5 border-t border-[#d9d8d1] pt-5">
+            <div className="mt-4 space-y-2.5 border-t border-kuartz-line pt-5">
               {sources.notes.map((note) => (
                 <Checkbox
                   key={note.id}
@@ -148,11 +148,11 @@ export function BriefBuilder({
         {sources.images.length ? (
           <fieldset>
             <legend className="section-title">References</legend>
-            <p className="mt-2 text-sm leading-6 text-[#50586c]">
+            <p className="mt-2 text-sm leading-6 text-kuartz-secondary">
               Up to {MAX_BRIEF_IMAGES} images are embedded in the PDF so the Vendor gets one
               self-contained file.
             </p>
-            <div className="mt-4 space-y-2.5 border-t border-[#d9d8d1] pt-5">
+            <div className="mt-4 space-y-2.5 border-t border-kuartz-line pt-5">
               {sources.images.map((image) => {
                 const checked = selection.imageRevisionIds.includes(image.revisionId);
                 return (
@@ -171,7 +171,7 @@ export function BriefBuilder({
                 );
               })}
               {imageLimitReached ? (
-                <p className="text-xs font-semibold text-[#767b89]" role="status">
+                <p className="text-xs font-semibold text-kuartz-muted" role="status">
                   Limit of {MAX_BRIEF_IMAGES} images reached.
                 </p>
               ) : null}
@@ -184,17 +184,17 @@ export function BriefBuilder({
         <div>
           <div className="flex flex-wrap items-baseline justify-between gap-2">
             <h2 className="section-title">Preview</h2>
-            <p className="text-xs font-semibold uppercase tracking-wider text-[#767b89]">
+            <p className="text-xs font-semibold uppercase tracking-wider text-kuartz-muted">
               Edits apply to this PDF only
             </p>
           </div>
 
-          <article className="mt-4 rounded-[1rem] border border-[#d9d8d1] bg-white/70 p-5 sm:p-7">
+          <article className="mt-4 rounded-[1rem] border border-kuartz-line bg-white/70 p-5 sm:p-7">
             <p className="eyebrow">Vendor Brief</p>
-            <h3 className="mt-2 text-2xl font-semibold tracking-tight text-[#171b36]">
+            <h3 className="mt-2 text-2xl font-semibold tracking-tight text-kuartz-ink">
               {preview.itemLabel ?? preview.itemTypeName}
             </h3>
-            <p className="mt-1 text-sm text-[#50586c]">
+            <p className="mt-1 text-sm text-kuartz-secondary">
               For {preview.vendorName}
               {preview.vendorPhone ? ` · ${preview.vendorPhone}` : ""}
             </p>
@@ -210,7 +210,7 @@ export function BriefBuilder({
 
             {preview.measurements.length ? (
               <section className="mt-6 border-t border-[#e6e5df] pt-5">
-                <h4 className="text-xs font-semibold uppercase tracking-wider text-[#767b89]">Measurements</h4>
+                <h4 className="text-xs font-semibold uppercase tracking-wider text-kuartz-muted">Measurements</h4>
                 <ul className="mt-3 divide-y divide-[#eceae4]">
                   {sources.measurements
                     .filter((measurement) => selection.measurementFieldIds.includes(measurement.fieldDefinitionId))
@@ -219,7 +219,7 @@ export function BriefBuilder({
                         key={measurement.fieldDefinitionId}
                         className="flex flex-wrap items-center justify-between gap-3 py-2.5"
                       >
-                        <label className="text-sm text-[#272c45]" htmlFor={`m-${measurement.fieldDefinitionId}`}>
+                        <label className="text-sm text-kuartz-body" htmlFor={`m-${measurement.fieldDefinitionId}`}>
                           {measurement.label}
                         </label>
                         <span className="flex items-center gap-2">
@@ -237,7 +237,7 @@ export function BriefBuilder({
                               })
                             }
                           />
-                          <span className="text-sm text-[#767b89]">{measurement.unit}</span>
+                          <span className="text-sm text-kuartz-muted">{measurement.unit}</span>
                         </span>
                       </li>
                     ))}
@@ -247,17 +247,17 @@ export function BriefBuilder({
 
             {preview.notes.length ? (
               <section className="mt-6 border-t border-[#e6e5df] pt-5">
-                <h4 className="text-xs font-semibold uppercase tracking-wider text-[#767b89]">Consultation notes</h4>
+                <h4 className="text-xs font-semibold uppercase tracking-wider text-kuartz-muted">Consultation notes</h4>
                 <ul className="mt-3 space-y-4">
                   {sources.notes
                     .filter((note) => selection.noteIds.includes(note.id))
                     .map((note) => (
                       <li key={note.id}>
-                        <p className="text-xs text-[#767b89]">
+                        <p className="text-xs text-kuartz-muted">
                           {note.sourceLabel} · {note.recordedOn}
                         </p>
                         <textarea
-                          className="mt-1 min-h-[4.5rem] w-full rounded-[0.8rem] border border-[#cfcec7] bg-white/70 px-3.5 py-2.5 text-sm leading-6 text-[#171b36] outline-none transition-[border-color,box-shadow,background] focus:border-[#88925f] focus:bg-white focus:ring-4 focus:ring-[#d2ff67]/20"
+                          className="mt-1 min-h-[4.5rem] w-full rounded-[0.8rem] border border-kuartz-control bg-white/70 px-3.5 py-2.5 text-sm leading-6 text-kuartz-ink outline-none transition-[border-color,box-shadow,background] focus:border-[#88925f] focus:bg-white focus:ring-4 focus:ring-kuartz-lime/20"
                           defaultValue={note.body}
                           aria-label={`Note from ${note.sourceLabel}`}
                           onChange={(event) =>
@@ -276,10 +276,10 @@ export function BriefBuilder({
             <section className="mt-6 border-t border-[#e6e5df] pt-5">
               <label className="form-group">
                 <span>
-                  Additional instructions <span className="font-normal text-[#50586c]">(optional)</span>
+                  Additional instructions <span className="font-normal text-kuartz-secondary">(optional)</span>
                 </span>
                 <textarea
-                  className="min-h-[5rem] w-full rounded-[0.8rem] border border-[#cfcec7] bg-white/70 px-3.5 py-2.5 text-sm leading-6 text-[#171b36] outline-none transition-[border-color,box-shadow,background] focus:border-[#88925f] focus:bg-white focus:ring-4 focus:ring-[#d2ff67]/20"
+                  className="min-h-[5rem] w-full rounded-[0.8rem] border border-kuartz-control bg-white/70 px-3.5 py-2.5 text-sm leading-6 text-kuartz-ink outline-none transition-[border-color,box-shadow,background] focus:border-[#88925f] focus:bg-white focus:ring-4 focus:ring-kuartz-lime/20"
                   value={edits.additionalInstructions}
                   onChange={(event) => setEdits({ ...edits, additionalInstructions: event.target.value })}
                 />
@@ -287,7 +287,7 @@ export function BriefBuilder({
             </section>
 
             {preview.images.length ? (
-              <p className="mt-6 border-t border-[#e6e5df] pt-5 text-sm text-[#50586c]">
+              <p className="mt-6 border-t border-[#e6e5df] pt-5 text-sm text-kuartz-secondary">
                 {preview.images.length} {preview.images.length === 1 ? "reference" : "references"} will be
                 embedded on a second page.
               </p>
@@ -295,7 +295,7 @@ export function BriefBuilder({
           </article>
         </div>
 
-        <div className="border-t border-[#d9d8d1] pt-6">
+        <div className="border-t border-kuartz-line pt-6">
           {blocker ? (
             <div className="rounded-[0.8rem] border border-[#f0b4b4] bg-[#fdf0f0] px-4 py-3.5">
               <p className="text-sm font-semibold text-[#8c1d1d]">
@@ -337,7 +337,7 @@ export function BriefBuilder({
           >
             {exporting ? "Preparing PDF…" : "Export PDF"}
           </Button>
-          <p className="mt-2 text-xs text-[#767b89]" role="status" aria-live="polite">
+          <p className="mt-2 text-xs text-kuartz-muted" role="status" aria-live="polite">
             {exporting
               ? "Fetching references and rendering — this can take a few seconds."
               : "The PDF is generated on demand and never stored."}
@@ -363,7 +363,7 @@ function Checkbox({
 }) {
   return (
     <label
-      className={`flex items-start gap-2.5 text-sm font-medium ${disabled ? "text-[#a3a7b2]" : "cursor-pointer text-[#272c45]"}`}
+      className={`flex items-start gap-2.5 text-sm font-medium ${disabled ? "text-[#a3a7b2]" : "cursor-pointer text-kuartz-body"}`}
     >
       <input
         type="checkbox"
@@ -375,7 +375,7 @@ function Checkbox({
       <span>
         {label}
         {description ? (
-          <span className="mt-0.5 block font-normal leading-6 text-[#767b89]">{description}</span>
+          <span className="mt-0.5 block font-normal leading-6 text-kuartz-muted">{description}</span>
         ) : null}
       </span>
     </label>
@@ -385,8 +385,8 @@ function Checkbox({
 function Fact({ label, value }: { label: string; value: string }) {
   return (
     <div>
-      <dt className="text-xs font-semibold uppercase tracking-wider text-[#767b89]">{label}</dt>
-      <dd className="mt-1 text-[#171b36]">{value}</dd>
+      <dt className="text-xs font-semibold uppercase tracking-wider text-kuartz-muted">{label}</dt>
+      <dd className="mt-1 text-kuartz-ink">{value}</dd>
     </div>
   );
 }

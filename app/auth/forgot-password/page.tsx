@@ -14,7 +14,7 @@ export default async function ForgotPasswordPage({ searchParams }: { searchParam
           <Button className="w-full" type="submit">Send recovery link</Button>
         </form>
       )}
-      <Link href="/auth/sign-in" className="mt-6 inline-block text-sm font-semibold text-[#50586c] hover:text-[#171b36]">Back to sign in</Link>
+      <Link href="/auth/sign-in" className="mt-6 inline-block text-sm font-semibold text-kuartz-secondary hover:text-kuartz-ink">Back to sign in</Link>
     </AuthFrame>
   );
 }

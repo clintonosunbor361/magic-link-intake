@@ -69,7 +69,7 @@ export function DuplicateCheckFields() {
           />
         </label>
         <label className="form-group">
-          <span>Email <span className="font-normal text-[#50586c]">(optional)</span></span>
+          <span>Email <span className="font-normal text-kuartz-secondary">(optional)</span></span>
           <Input
             name="email"
             type="email"
@@ -92,8 +92,8 @@ export function DuplicateCheckFields() {
       {matches ? (
         matches.length ? (
           <div className="space-y-2 rounded-[0.8rem] border border-[#d9aaa7] bg-[#f7e5e3] p-4">
-            <p className="text-sm font-semibold text-[#7e403d]">Possible existing contacts found:</p>
-            <ul className="space-y-1 text-sm text-[#7e403d]">
+            <p className="text-sm font-semibold text-kuartz-danger">Possible existing contacts found:</p>
+            <ul className="space-y-1 text-sm text-kuartz-danger">
               {matches.map((match) => (
                 <li key={`${match.candidate.kind}-${match.candidate.id}`}>
                   {match.candidate.fullName} · {match.candidate.primaryPhone}
@@ -107,7 +107,7 @@ export function DuplicateCheckFields() {
                 </li>
               ))}
             </ul>
-            <label className="flex items-center gap-2 text-sm font-semibold text-[#7e403d]">
+            <label className="flex items-center gap-2 text-sm font-semibold text-kuartz-danger">
               <input
                 type="checkbox"
                 name="acknowledgedDuplicates"

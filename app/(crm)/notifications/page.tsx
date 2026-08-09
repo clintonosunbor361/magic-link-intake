@@ -35,7 +35,7 @@ export default async function NotificationsPage({
 
   return (
     <div>
-      <header className="border-b border-[#d9d8d1] pb-8">
+      <header className="border-b border-kuartz-line pb-8">
         <p className="eyebrow">Notifications</p>
         <h1 className="page-title">Deadline reminders</h1>
         <p className="page-description">
@@ -51,8 +51,8 @@ export default async function NotificationsPage({
             aria-current={unreadOnly ? "page" : undefined}
             className={
               unreadOnly
-                ? "text-[#171b36] underline decoration-2 underline-offset-4"
-                : "text-[#50586c] transition-colors duration-200 hover:text-[#171b36]"
+                ? "text-kuartz-ink underline decoration-2 underline-offset-4"
+                : "text-kuartz-secondary transition-colors duration-200 hover:text-kuartz-ink"
             }
           >
             Unread
@@ -62,8 +62,8 @@ export default async function NotificationsPage({
             aria-current={!unreadOnly ? "page" : undefined}
             className={
               !unreadOnly
-                ? "text-[#171b36] underline decoration-2 underline-offset-4"
-                : "text-[#50586c] transition-colors duration-200 hover:text-[#171b36]"
+                ? "text-kuartz-ink underline decoration-2 underline-offset-4"
+                : "text-kuartz-secondary transition-colors duration-200 hover:text-kuartz-ink"
             }
           >
             All
@@ -81,7 +81,7 @@ export default async function NotificationsPage({
       </div>
 
       {rows.length ? (
-        <section className="mt-6 divide-y divide-[#d9d8d1] border-y border-[#d9d8d1]">
+        <section className="mt-6 divide-y divide-kuartz-line border-y border-kuartz-line">
           {rows.map((row) => {
             const band = computeUrgencyBand({ deadline: row.dueDate, today });
             return (
@@ -92,7 +92,7 @@ export default async function NotificationsPage({
               >
                 <div>
                   <div className="flex flex-wrap items-center gap-2">
-                    <span className="rounded-full border border-[#d9d8d1] bg-[#f6f6f3] px-2.5 py-0.5 text-xs font-semibold text-[#50586c]">
+                    <span className="rounded-full border border-kuartz-line bg-[#f6f6f3] px-2.5 py-0.5 text-xs font-semibold text-kuartz-secondary">
                       {SOURCE_LABELS[row.sourceType] ?? row.sourceType}
                     </span>
                     <span
@@ -101,7 +101,7 @@ export default async function NotificationsPage({
                       {TRIGGER_LABELS[row.trigger]}
                     </span>
                     {!row.readAt ? (
-                      <span className="rounded-full border border-[#171b36] px-2.5 py-0.5 text-xs font-semibold text-[#171b36]">
+                      <span className="rounded-full border border-kuartz-ink px-2.5 py-0.5 text-xs font-semibold text-kuartz-ink">
                         Unread
                       </span>
                     ) : null}
@@ -111,13 +111,13 @@ export default async function NotificationsPage({
                       </span>
                     ) : null}
                   </div>
-                  <p className="mt-2 font-semibold text-[#171b36]">
+                  <p className="mt-2 font-semibold text-kuartz-ink">
                     <Link href={row.href} className="underline-offset-4 hover:underline">
                       {row.title}
                     </Link>
                   </p>
-                  <p className="mt-1 text-sm text-[#50586c]">{row.body}</p>
-                  <p className="mt-1 text-xs text-[#767b89]">
+                  <p className="mt-1 text-sm text-kuartz-secondary">{row.body}</p>
+                  <p className="mt-1 text-xs text-kuartz-muted">
                     {dateTimeFormatter.format(row.createdAt)}
                     {row.recipientName ? ` · ${row.recipientName}` : " · unassigned"}
                   </p>

@@ -8,3 +8,7 @@ export function parseMoneyToMinorUnits(raw: string): number {
 export function formatMinorUnits(value: number): string {
   return (value / 100).toFixed(2);
 }
+
+export function formatMinorUnitsLocale(value: number, locale = "en-NG"): string {
+  return new Intl.NumberFormat(locale, { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(value / 100);
+}

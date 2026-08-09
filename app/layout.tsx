@@ -7,7 +7,16 @@ export const metadata: Metadata = {
   description: "Fashion operations from enquiry to delivery.",
   applicationName: "Kuartz Fashion CRM",
   appleWebApp: { capable: true, title: "Kuartz" },
+  icons: {
+    icon: [
+      { url: "/icons/kuartz-192.png", sizes: "192x192", type: "image/png" },
+      { url: "/icons/kuartz-512.png", sizes: "512x512", type: "image/png" },
+    ],
+    apple: [{ url: "/icons/kuartz-apple-touch.png", sizes: "180x180", type: "image/png" }],
+  },
 };
+
+export const viewport = { themeColor: "#171b36", colorScheme: "light" };
 
 export default function RootLayout({
   children,

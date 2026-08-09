@@ -149,7 +149,7 @@ export default async function OrderDetailPage({
 
   return (
     <div>
-      <header className="border-b border-[#d9d8d1] pb-8">
+      <header className="border-b border-kuartz-line pb-8">
         <p className="eyebrow">Order</p>
         <h1 className="page-title">{order.title}</h1>
         <p className="page-description">
@@ -181,7 +181,7 @@ export default async function OrderDetailPage({
         <div className="space-y-8">
           <div>
             <h2 className="section-title">Order details</h2>
-            <form action={updateOrderAction} className="mt-4 space-y-4 border-y border-[#d9d8d1] py-5">
+            <form action={updateOrderAction} className="mt-4 space-y-4 border-y border-kuartz-line py-5">
               <input type="hidden" name="orderId" value={order.id} />
               <input type="hidden" name="version" value={order.version} />
               <div className="grid gap-4 sm:grid-cols-2">
@@ -199,7 +199,7 @@ export default async function OrderDetailPage({
                 </label>
                 <label className="form-group">
                   <span>
-                    FF discount amount (₦) <span className="font-normal text-[#50586c]">(optional)</span>
+                    FF discount amount (₦) <span className="font-normal text-kuartz-secondary">(optional)</span>
                   </span>
                   <Input
                     name="ffDiscountAmount"
@@ -207,7 +207,7 @@ export default async function OrderDetailPage({
                   />
                 </label>
               </div>
-              <label className="flex items-center gap-2 text-sm font-semibold text-[#50586c]">
+              <label className="flex items-center gap-2 text-sm font-semibold text-kuartz-secondary">
                 <input type="checkbox" name="ffDiscount" defaultChecked={order.ffDiscount} />
                 Family &amp; friends discount applied
               </label>
@@ -221,11 +221,11 @@ export default async function OrderDetailPage({
             <h2 className="section-title">Looks</h2>
             <div className="mt-4 space-y-6">
               {order.looks.map((look) => (
-                <div key={look.id} role="group" aria-label={look.name} className="border-y border-[#d9d8d1] py-5">
+                <div key={look.id} role="group" aria-label={look.name} className="border-y border-kuartz-line py-5">
                   <div className="flex items-start justify-between gap-4">
-                    <p className="font-semibold text-[#171b36]">
+                    <p className="font-semibold text-kuartz-ink">
                       {look.name}
-                      {look.archivedAt ? <span className="ml-2 text-xs font-normal text-[#767b89]">Archived</span> : null}
+                      {look.archivedAt ? <span className="ml-2 text-xs font-normal text-kuartz-muted">Archived</span> : null}
                     </p>
                     {!look.archivedAt && mayArchive("look", session.role) ? (
                       <form action={archiveLookAction}>
@@ -260,19 +260,19 @@ export default async function OrderDetailPage({
                       </label>
                       <label className="form-group">
                         <span>
-                          Look date <span className="font-normal text-[#50586c]">(optional)</span>
+                          Look date <span className="font-normal text-kuartz-secondary">(optional)</span>
                         </span>
                         <Input type="date" name="lookDate" defaultValue={look.lookDate ?? ""} />
                       </label>
                     </div>
                     <label className="form-group">
                       <span>
-                        Notes <span className="font-normal text-[#50586c]">(optional)</span>
+                        Notes <span className="font-normal text-kuartz-secondary">(optional)</span>
                       </span>
                       <textarea
                         name="notes"
                         defaultValue={look.notes}
-                        className="min-h-[3.5rem] w-full rounded-[0.8rem] border border-[#cfcec7] bg-white/70 px-3.5 py-3 text-sm text-[#171b36] outline-none focus:border-[#88925f] focus:bg-white focus:ring-4 focus:ring-[#d2ff67]/20"
+                        className="min-h-[3.5rem] w-full rounded-[0.8rem] border border-kuartz-control bg-white/70 px-3.5 py-3 text-sm text-kuartz-ink outline-none focus:border-[#88925f] focus:bg-white focus:ring-4 focus:ring-kuartz-lime/20"
                       />
                     </label>
                     <Button type="submit" variant="outline">
@@ -281,8 +281,8 @@ export default async function OrderDetailPage({
                   </form>
 
                   <div className="mt-5">
-                    <h3 className="text-xs font-semibold uppercase tracking-wide text-[#50586c]">Items</h3>
-                    <div className="mt-3 divide-y divide-[#eceae2]">
+                    <h3 className="text-xs font-semibold uppercase tracking-wide text-kuartz-secondary">Items</h3>
+                    <div className="mt-3 divide-y divide-kuartz-lineSoft">
                       {look.items.length ? (
                         look.items.map((item) => {
                           const missingMeasurements = missingMeasurementsByItemId.get(item.id);
@@ -309,7 +309,7 @@ export default async function OrderDetailPage({
                               </label>
                               <label className="form-group">
                                 <span>
-                                  Custom label <span className="font-normal text-[#50586c]">(optional)</span>
+                                  Custom label <span className="font-normal text-kuartz-secondary">(optional)</span>
                                 </span>
                                 <Input name="customLabel" defaultValue={item.customLabel ?? ""} />
                               </label>
@@ -320,7 +320,7 @@ export default async function OrderDetailPage({
                               <Button type="submit" variant="outline">
                                 Save
                               </Button>
-                              {item.archivedAt ? <span className="text-xs font-semibold text-[#767b89]">Archived</span> : null}
+                              {item.archivedAt ? <span className="text-xs font-semibold text-kuartz-muted">Archived</span> : null}
                             </form>
                             <div className="mt-2">
                               {!item.archivedAt && mayArchive("item", session.role) ? (
@@ -358,7 +358,7 @@ export default async function OrderDetailPage({
                           );
                         })
                       ) : (
-                        <p className="py-3 text-sm text-[#767b89]">No Items yet on this Look.</p>
+                        <p className="py-3 text-sm text-kuartz-muted">No Items yet on this Look.</p>
                       )}
                     </div>
 
@@ -391,7 +391,7 @@ export default async function OrderDetailPage({
                       </label>
                       <label className="form-group">
                         <span>
-                          Custom label <span className="font-normal text-[#50586c]">(optional)</span>
+                          Custom label <span className="font-normal text-kuartz-secondary">(optional)</span>
                         </span>
                         <Input name="customLabel" placeholder="Only needed for “Other”" />
                       </label>
@@ -418,18 +418,18 @@ export default async function OrderDetailPage({
                 </label>
                 <label className="form-group">
                   <span>
-                    Look date <span className="font-normal text-[#50586c]">(optional)</span>
+                    Look date <span className="font-normal text-kuartz-secondary">(optional)</span>
                   </span>
                   <Input type="date" name="lookDate" />
                 </label>
               </div>
               <label className="form-group">
                 <span>
-                  Notes <span className="font-normal text-[#50586c]">(optional)</span>
+                  Notes <span className="font-normal text-kuartz-secondary">(optional)</span>
                 </span>
                 <textarea
                   name="notes"
-                  className="min-h-[3.5rem] w-full rounded-[0.8rem] border border-[#cfcec7] bg-white/70 px-3.5 py-3 text-sm text-[#171b36] outline-none focus:border-[#88925f] focus:bg-white focus:ring-4 focus:ring-[#d2ff67]/20"
+                  className="min-h-[3.5rem] w-full rounded-[0.8rem] border border-kuartz-control bg-white/70 px-3.5 py-3 text-sm text-kuartz-ink outline-none focus:border-[#88925f] focus:bg-white focus:ring-4 focus:ring-kuartz-lime/20"
                 />
               </label>
               <Button type="submit" variant="outline">
@@ -443,19 +443,19 @@ export default async function OrderDetailPage({
             <div className="mt-4 space-y-5">
               {consultationNotes.length ? (
                 consultationNotes.map((note) => (
-                  <div key={note.id} role="group" aria-label={note.sourceName} className="border-y border-[#d9d8d1] py-5">
+                  <div key={note.id} role="group" aria-label={note.sourceName} className="border-y border-kuartz-line py-5">
                     <div className="flex items-start justify-between gap-4">
                       <div>
-                        <p className="text-xs font-semibold uppercase tracking-wide text-[#50586c]">
+                        <p className="text-xs font-semibold uppercase tracking-wide text-kuartz-secondary">
                           {note.sourceName} · {note.lookName ?? "Whole order"}
                         </p>
-                        <p className="mt-1 text-sm text-[#767b89]">
+                        <p className="mt-1 text-sm text-kuartz-muted">
                           Created by {note.createdByName}
                           {note.lastEditedByName ? ` · Last edited by ${note.lastEditedByName}` : ""}
                           {note.occurredAt ? ` · Occurred ${dateFormatter.format(note.occurredAt)}` : ""}
                         </p>
                       </div>
-                      {note.archivedAt ? <span className="text-xs font-semibold text-[#767b89]">Archived</span> : null}
+                      {note.archivedAt ? <span className="text-xs font-semibold text-kuartz-muted">Archived</span> : null}
                     </div>
 
                     <form action={updateConsultationNoteAction} className="mt-4 space-y-3">
@@ -475,7 +475,7 @@ export default async function OrderDetailPage({
                         </label>
                         <label className="form-group">
                           <span>
-                            Occurred at <span className="font-normal text-[#50586c]">(optional)</span>
+                            Occurred at <span className="font-normal text-kuartz-secondary">(optional)</span>
                           </span>
                           <Input type="datetime-local" name="occurredAt" defaultValue={toDateTimeLocalValue(note.occurredAt)} />
                         </label>
@@ -486,7 +486,7 @@ export default async function OrderDetailPage({
                           name="body"
                           defaultValue={note.body}
                           required
-                          className="min-h-[4.5rem] w-full rounded-[0.8rem] border border-[#cfcec7] bg-white/70 px-3.5 py-3 text-sm text-[#171b36] outline-none focus:border-[#88925f] focus:bg-white focus:ring-4 focus:ring-[#d2ff67]/20"
+                          className="min-h-[4.5rem] w-full rounded-[0.8rem] border border-kuartz-control bg-white/70 px-3.5 py-3 text-sm text-kuartz-ink outline-none focus:border-[#88925f] focus:bg-white focus:ring-4 focus:ring-kuartz-lime/20"
                         />
                       </label>
                       <Button type="submit" variant="outline">
@@ -496,13 +496,13 @@ export default async function OrderDetailPage({
 
                     {note.revisions.length ? (
                       <details className="mt-3">
-                        <summary className="cursor-pointer text-xs font-semibold text-[#50586c]">
+                        <summary className="cursor-pointer text-xs font-semibold text-kuartz-secondary">
                           Edit history ({note.revisions.length})
                         </summary>
                         <div className="mt-2 space-y-2">
                           {note.revisions.map((revision) => (
-                            <div key={revision.id} className="text-sm text-[#767b89]">
-                              <p className="font-semibold text-[#171b36]">
+                            <div key={revision.id} className="text-sm text-kuartz-muted">
+                              <p className="font-semibold text-kuartz-ink">
                                 {revision.sourceName} · {revision.authorName} · {dateFormatter.format(revision.authoredAt)}
                               </p>
                               <p>{revision.body}</p>
@@ -537,7 +537,7 @@ export default async function OrderDetailPage({
                   </div>
                 ))
               ) : (
-                <p className="py-3 text-sm text-[#767b89]">No Consultation Notes yet.</p>
+                <p className="py-3 text-sm text-kuartz-muted">No Consultation Notes yet.</p>
               )}
             </div>
 
@@ -569,7 +569,7 @@ export default async function OrderDetailPage({
               </div>
               <label className="form-group">
                 <span>
-                  Occurred at <span className="font-normal text-[#50586c]">(optional)</span>
+                  Occurred at <span className="font-normal text-kuartz-secondary">(optional)</span>
                 </span>
                 <Input type="datetime-local" name="occurredAt" />
               </label>
@@ -578,7 +578,7 @@ export default async function OrderDetailPage({
                 <textarea
                   name="body"
                   required
-                  className="min-h-[4.5rem] w-full rounded-[0.8rem] border border-[#cfcec7] bg-white/70 px-3.5 py-3 text-sm text-[#171b36] outline-none focus:border-[#88925f] focus:bg-white focus:ring-4 focus:ring-[#d2ff67]/20"
+                  className="min-h-[4.5rem] w-full rounded-[0.8rem] border border-kuartz-control bg-white/70 px-3.5 py-3 text-sm text-kuartz-ink outline-none focus:border-[#88925f] focus:bg-white focus:ring-4 focus:ring-kuartz-lime/20"
                 />
               </label>
               <Button type="submit" variant="outline">
@@ -589,37 +589,37 @@ export default async function OrderDetailPage({
 
           <div>
             <h2 className="section-title">Pending client approval</h2>
-            <div className="mt-4 divide-y divide-[#eceae2]">
+            <div className="mt-4 divide-y divide-kuartz-lineSoft">
               {pendingApprovalFiles.length ? (
                 pendingApprovalFiles.map((file) => (
                   <a key={file.fileId} href={`#file-${file.fileId}`} className="grid gap-1 py-3 text-sm sm:grid-cols-[1fr_auto]">
-                    <p className="text-[#171b36] underline">
+                    <p className="text-kuartz-ink underline">
                       {formatStyleDirectionLabel(file.category)} · {file.lookName ?? "Whole Order"}
                     </p>
-                    <p className="font-semibold text-[#767b89]">{file.sentInActiveBatch ? "Sent — awaiting client" : "Awaiting batch"}</p>
+                    <p className="font-semibold text-kuartz-muted">{file.sentInActiveBatch ? "Sent — awaiting client" : "Awaiting batch"}</p>
                   </a>
                 ))
               ) : (
-                <p className="py-3 text-sm text-[#767b89]">Nothing is pending client approval.</p>
+                <p className="py-3 text-sm text-kuartz-muted">Nothing is pending client approval.</p>
               )}
             </div>
           </div>
 
           <div>
             <h2 className="section-title">Needs revision</h2>
-            <div className="mt-4 divide-y divide-[#eceae2]">
+            <div className="mt-4 divide-y divide-kuartz-lineSoft">
               {revisionQueueFiles.length ? (
                 revisionQueueFiles.map((file) => (
                   <a key={file.fileId} href={`#file-${file.fileId}`} className="grid gap-1 py-3 text-sm">
-                    <p className="text-[#171b36] underline">
+                    <p className="text-kuartz-ink underline">
                       {formatStyleDirectionLabel(file.category)} · {file.lookName ?? "Whole Order"} ·{" "}
-                      <span className="font-semibold text-[#767b89]">{formatStyleDirectionLabel(file.approvalStatus)}</span>
+                      <span className="font-semibold text-kuartz-muted">{formatStyleDirectionLabel(file.approvalStatus)}</span>
                     </p>
-                    {file.decisionComment ? <p className="text-[#767b89]">&quot;{file.decisionComment}&quot;</p> : null}
+                    {file.decisionComment ? <p className="text-kuartz-muted">&quot;{file.decisionComment}&quot;</p> : null}
                   </a>
                 ))
               ) : (
-                <p className="py-3 text-sm text-[#767b89]">No files are waiting on a revision.</p>
+                <p className="py-3 text-sm text-kuartz-muted">No files are waiting on a revision.</p>
               )}
             </div>
           </div>
@@ -633,17 +633,17 @@ export default async function OrderDetailPage({
                   if (!groupFiles.length) return null;
                   return (
                     <div key={group.lookId ?? "whole-order"}>
-                      <h3 className="text-xs font-semibold uppercase tracking-wide text-[#50586c]">{group.lookName}</h3>
+                      <h3 className="text-xs font-semibold uppercase tracking-wide text-kuartz-secondary">{group.lookName}</h3>
                       <div className="mt-3 space-y-5">
                         {groupFiles.map((file) => {
                           const revisions = styleDirectionRevisions.filter((revision) => revision.styleDirectionFileId === file.id);
                           const currentUrl = file.currentRevisionKey ? signedUrlByKey.get(file.currentRevisionKey) : undefined;
                           return (
-                            <div id={`file-${file.id}`} key={file.id} role="group" aria-label={`${formatStyleDirectionLabel(file.category)} — ${group.lookName}`} className="border-y border-[#d9d8d1] py-5">
+                            <div id={`file-${file.id}`} key={file.id} role="group" aria-label={`${formatStyleDirectionLabel(file.category)} — ${group.lookName}`} className="border-y border-kuartz-line py-5">
                               <div className="flex flex-wrap items-start justify-between gap-4">
                                 <div>
-                                  <p className="font-semibold text-[#171b36]">{formatStyleDirectionLabel(file.category)}</p>
-                                  <p className="mt-1 text-sm text-[#767b89]">
+                                  <p className="font-semibold text-kuartz-ink">{formatStyleDirectionLabel(file.category)}</p>
+                                  <p className="mt-1 text-sm text-kuartz-muted">
                                     {file.requiresClientApproval ? "Requires client approval" : "Internal reference only"}
                                     {file.approvalStatus ? ` · ${formatStyleDirectionLabel(file.approvalStatus)}` : ""}
                                     {file.archivedAt ? " · Archived" : ""}
@@ -653,7 +653,7 @@ export default async function OrderDetailPage({
 
                               {currentUrl ? (
                                 // eslint-disable-next-line @next/next/no-img-element -- private, signed R2 URL; next/image can't optimize it.
-                                <img src={currentUrl} alt={formatStyleDirectionLabel(file.category)} className="mt-3 max-h-64 rounded-[0.8rem] border border-[#d9d8d1] object-contain" />
+                                <img src={currentUrl} alt={formatStyleDirectionLabel(file.category)} className="mt-3 max-h-64 rounded-[0.8rem] border border-kuartz-line object-contain" />
                               ) : null}
 
                               <form action={reviseStyleDirectionFileAction} encType="multipart/form-data" className="mt-4 flex flex-wrap items-end gap-3">
@@ -671,10 +671,10 @@ export default async function OrderDetailPage({
 
                               {revisions.length ? (
                                 <details className="mt-3">
-                                  <summary className="cursor-pointer text-xs font-semibold text-[#50586c]">
+                                  <summary className="cursor-pointer text-xs font-semibold text-kuartz-secondary">
                                     Revision history ({revisions.length})
                                   </summary>
-                                  <ul className="mt-2 space-y-1 text-sm text-[#767b89]">
+                                  <ul className="mt-2 space-y-1 text-sm text-kuartz-muted">
                                     {revisions.map((revision) => {
                                       const revisionUrl = signedUrlByKey.get(revision.r2ObjectKey);
                                       return (
@@ -726,7 +726,7 @@ export default async function OrderDetailPage({
                   );
                 },
               )}
-              {!styleDirectionFiles.length ? <p className="py-3 text-sm text-[#767b89]">No Style Direction Files yet.</p> : null}
+              {!styleDirectionFiles.length ? <p className="py-3 text-sm text-kuartz-muted">No Style Direction Files yet.</p> : null}
             </div>
 
             <form
@@ -760,7 +760,7 @@ export default async function OrderDetailPage({
                   </NativeSelect>
                 </label>
               </div>
-              <label className="flex items-center gap-2 text-sm font-semibold text-[#50586c]">
+              <label className="flex items-center gap-2 text-sm font-semibold text-kuartz-secondary">
                 <input type="checkbox" name="requiresClientApproval" />
                 Requires client approval
               </label>
@@ -777,43 +777,43 @@ export default async function OrderDetailPage({
           <div>
             <div className="flex items-end justify-between gap-4">
               <h2 className="section-title">Approval batches</h2>
-              <Link href={`/orders/${order.id}/approval-batches/new`} className="text-sm font-semibold text-[#171b36] underline">
+              <Link href={`/orders/${order.id}/approval-batches/new`} className="text-sm font-semibold text-kuartz-ink underline">
                 Create approval batch
               </Link>
             </div>
-            <div className="mt-4 divide-y divide-[#eceae2]">
+            <div className="mt-4 divide-y divide-kuartz-lineSoft">
               {approvalBatches.length ? (
                 approvalBatches.map((batch) => (
                   <div key={batch.id} className="grid gap-1 py-3 text-sm sm:grid-cols-[1fr_auto]">
-                    <p className="text-[#171b36]">
+                    <p className="text-kuartz-ink">
                       Created {dateFormatter.format(batch.createdAt)}
                       {batch.deliveryMethod ? ` · ${batch.deliveryMethod === "email" ? "Emailed" : "Copied"}` : " · Not yet delivered"}
                     </p>
-                    <p className="font-semibold text-[#767b89]">{batch.status}</p>
+                    <p className="font-semibold text-kuartz-muted">{batch.status}</p>
                   </div>
                 ))
               ) : (
-                <p className="py-3 text-sm text-[#767b89]">No approval batches yet.</p>
+                <p className="py-3 text-sm text-kuartz-muted">No approval batches yet.</p>
               )}
             </div>
           </div>
 
           <div>
             <h2 className="section-title">Order confirmations</h2>
-            <div className="mt-4 divide-y divide-[#eceae2]">
+            <div className="mt-4 divide-y divide-kuartz-lineSoft">
               {orderConfirmations.length ? (
                 orderConfirmations.map((confirmation) => (
                   <div key={confirmation.id} className="grid gap-1 py-3 text-sm sm:grid-cols-[1fr_auto]">
-                    <p className="text-[#171b36]">
+                    <p className="text-kuartz-ink">
                       Created {dateFormatter.format(confirmation.createdAt)}
                       {confirmation.deliveryMethod ? ` · ${confirmation.deliveryMethod === "email" ? "Emailed" : "Copied"}` : " · Not yet delivered"}
                       {confirmation.decisionComment ? ` — "${confirmation.decisionComment}"` : ""}
                     </p>
-                    <p className="font-semibold text-[#767b89]">{confirmation.status}</p>
+                    <p className="font-semibold text-kuartz-muted">{confirmation.status}</p>
                   </div>
                 ))
               ) : (
-                <p className="py-3 text-sm text-[#767b89]">No order confirmations sent yet.</p>
+                <p className="py-3 text-sm text-kuartz-muted">No order confirmations sent yet.</p>
               )}
             </div>
             <form action={issueOrderConfirmationAction} className="mt-4">
@@ -828,23 +828,23 @@ export default async function OrderDetailPage({
         <aside className="space-y-9">
           <div>
             <h2 className="section-title">Workflow</h2>
-            <div className="mt-4 grid gap-2 border-t border-[#d9d8d1] pt-4 text-sm">
+            <div className="mt-4 grid gap-2 border-t border-kuartz-line pt-4 text-sm">
               <Link
                 href={`/orders/${order.id}/accessories`}
-                className="font-semibold text-[#171b36] underline-offset-4 hover:underline"
+                className="font-semibold text-kuartz-ink underline-offset-4 hover:underline"
               >
                 Accessories
                 {outstandingAccessories.length ? ` · ${outstandingAccessories.length} outstanding` : ""}
               </Link>
               <Link
                 href={`/orders/${order.id}/fittings`}
-                className="font-semibold text-[#171b36] underline-offset-4 hover:underline"
+                className="font-semibold text-kuartz-ink underline-offset-4 hover:underline"
               >
                 Fittings{openFittings.length ? ` · ${openFittings.length} scheduled` : ""}
               </Link>
               <Link
                 href={`/orders/${order.id}/vendor-ratings`}
-                className="font-semibold text-[#171b36] underline-offset-4 hover:underline"
+                className="font-semibold text-kuartz-ink underline-offset-4 hover:underline"
               >
                 Vendor ratings
               </Link>
@@ -854,32 +854,32 @@ export default async function OrderDetailPage({
           <div>
             <div className="flex items-end justify-between gap-4">
               <h2 className="section-title">Invoice</h2>
-              <Link href={`/orders/${order.id}/invoice`} className="text-sm font-semibold text-[#171b36] underline">
+              <Link href={`/orders/${order.id}/invoice`} className="text-sm font-semibold text-kuartz-ink underline">
                 {invoice ? "Open" : "Create"}
               </Link>
             </div>
-            <dl className="mt-4 space-y-2 border-t border-[#d9d8d1] pt-4 text-sm">
+            <dl className="mt-4 space-y-2 border-t border-kuartz-line pt-4 text-sm">
               {balance.state === "not_invoiced" ? (
-                <p className="text-[#767b89]">Not invoiced yet.</p>
+                <p className="text-kuartz-muted">Not invoiced yet.</p>
               ) : (
                 <>
                   <div className="flex justify-between">
-                    <dt className="text-[#50586c]">Status</dt>
-                    <dd className="font-semibold text-[#171b36]">
+                    <dt className="text-kuartz-secondary">Status</dt>
+                    <dd className="font-semibold text-kuartz-ink">
                       {invoiceStatus ? INVOICE_STATUS_LABELS[invoiceStatus] : "—"}
                     </dd>
                   </div>
                   <div className="flex justify-between">
-                    <dt className="text-[#50586c]">Invoiced</dt>
-                    <dd className="text-[#171b36]">₦{formatMinorUnits(balance.invoicedMinor)}</dd>
+                    <dt className="text-kuartz-secondary">Invoiced</dt>
+                    <dd className="text-kuartz-ink">₦{formatMinorUnits(balance.invoicedMinor)}</dd>
                   </div>
                   <div className="flex justify-between">
-                    <dt className="text-[#50586c]">Paid</dt>
-                    <dd className="text-[#171b36]">₦{formatMinorUnits(balance.paidMinor)}</dd>
+                    <dt className="text-kuartz-secondary">Paid</dt>
+                    <dd className="text-kuartz-ink">₦{formatMinorUnits(balance.paidMinor)}</dd>
                   </div>
-                  <div className="flex justify-between border-t border-[#d9d8d1] pt-2">
-                    <dt className="font-semibold text-[#171b36]">Balance</dt>
-                    <dd className="font-semibold text-[#171b36]">₦{formatMinorUnits(balance.balanceMinor)}</dd>
+                  <div className="flex justify-between border-t border-kuartz-line pt-2">
+                    <dt className="font-semibold text-kuartz-ink">Balance</dt>
+                    <dd className="font-semibold text-kuartz-ink">₦{formatMinorUnits(balance.balanceMinor)}</dd>
                   </div>
                 </>
               )}
@@ -889,8 +889,8 @@ export default async function OrderDetailPage({
           <div>
             <h2 className="section-title">Delivery and completion</h2>
             {isCompleted ? (
-              <div className="mt-4 border-t border-[#d9d8d1] pt-4">
-                <p className="text-sm text-[#171b36]">
+              <div className="mt-4 border-t border-kuartz-line pt-4">
+                <p className="text-sm text-kuartz-ink">
                   Completed {order.completedAt ? dateFormatter.format(order.completedAt) : ""}.
                 </p>
                 {order.completionOverrideReason ? (
@@ -908,7 +908,7 @@ export default async function OrderDetailPage({
                     </p>
                     <Link
                       href={`/orders/${order.id}/vendor-ratings`}
-                      className="mt-2 inline-block text-sm font-semibold text-[#171b36] underline"
+                      className="mt-2 inline-block text-sm font-semibold text-kuartz-ink underline"
                     >
                       Rate Vendors
                     </Link>
@@ -916,9 +916,9 @@ export default async function OrderDetailPage({
                 ) : null}
               </div>
             ) : (
-              <form action={completeOrderAction} className="mt-4 space-y-4 border-t border-[#d9d8d1] pt-4">
+              <form action={completeOrderAction} className="mt-4 space-y-4 border-t border-kuartz-line pt-4">
                 <input type="hidden" name="orderId" value={order.id} />
-                <p className="text-sm leading-6 text-[#50586c]">
+                <p className="text-sm leading-6 text-kuartz-secondary">
                   {completionBlocked
                     ? balance.state === "not_invoiced"
                       ? "This Order has not been invoiced, so nothing can have been settled."

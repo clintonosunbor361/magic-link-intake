@@ -28,7 +28,7 @@ export default async function VendorSpecialtiesPage({
 
   return (
     <div>
-      <header className="border-b border-[#d9d8d1] pb-8">
+      <header className="border-b border-kuartz-line pb-8">
         <p className="eyebrow">Organization settings</p>
         <h1 className="page-title">Vendor specialties</h1>
         <p className="page-description">
@@ -49,7 +49,7 @@ export default async function VendorSpecialtiesPage({
         <div>
           <h2 className="section-title">Configured specialties</h2>
           {specialties.length ? (
-            <div role="list" className="mt-4 divide-y divide-[#d9d8d1] border-y border-[#d9d8d1]">
+            <div role="list" className="mt-4 divide-y divide-kuartz-line border-y border-kuartz-line">
               {specialties.map((specialty) => (
                 <div
                   key={specialty.id}
@@ -58,9 +58,9 @@ export default async function VendorSpecialtiesPage({
                   className="grid gap-4 py-5 md:grid-cols-[minmax(0,1fr)_auto] md:items-center"
                 >
                   <div>
-                    <p className="font-semibold text-[#171b36]">{specialty.name}</p>
+                    <p className="font-semibold text-kuartz-ink">{specialty.name}</p>
                     {specialty.archivedAt ? (
-                      <p className="mt-1 text-sm text-[#767b89]">Archived</p>
+                      <p className="mt-1 text-sm text-kuartz-muted">Archived</p>
                     ) : null}
                   </div>
                   <form action={specialty.archivedAt ? restoreVendorSpecialtyAction : archiveVendorSpecialtyAction}>
@@ -88,7 +88,7 @@ export default async function VendorSpecialtiesPage({
 
         <aside>
           <h2 className="section-title">Add a specialty</h2>
-          <form action={createVendorSpecialtyAction} className="mt-4 space-y-4 border-t border-[#d9d8d1] pt-5">
+          <form action={createVendorSpecialtyAction} className="mt-4 space-y-4 border-t border-kuartz-line pt-5">
             <input type="hidden" name="sortOrder" value={nextSortOrder} />
             <label className="form-group">
               <span>Name</span>

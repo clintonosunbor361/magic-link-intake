@@ -59,7 +59,7 @@ export default async function ProductionPage({
 
   return (
     <div>
-      <header className="border-b border-[#d9d8d1] pb-8">
+      <header className="border-b border-kuartz-line pb-8">
         <p className="eyebrow">Operations</p>
         <h1 className="page-title">Production</h1>
         <p className="page-description">
@@ -75,7 +75,7 @@ export default async function ProductionPage({
       ) : null}
 
       {/* Filters live in the query string so a filtered view is linkable and survives a reload. */}
-      <form className="mt-8 grid gap-3 border-b border-[#d9d8d1] pb-6 md:grid-cols-2 xl:grid-cols-5" role="search">
+      <form className="mt-8 grid gap-3 border-b border-kuartz-line pb-6 md:grid-cols-2 xl:grid-cols-5" role="search">
         <label className="form-group">
           <span>Vendor</span>
           <NativeSelect name="vendorId" defaultValue={params.vendorId ?? ""}>
@@ -115,11 +115,11 @@ export default async function ProductionPage({
             type="date"
             name="dueBefore"
             defaultValue={params.dueBefore ?? ""}
-            className="min-h-[3.1rem] w-full rounded-[0.8rem] border border-[#cfcec7] bg-white/70 px-3.5 py-2.5 text-sm text-[#171b36] outline-none transition-[border-color,box-shadow,background] focus:border-[#88925f] focus:bg-white focus:ring-4 focus:ring-[#d2ff67]/20"
+            className="min-h-[3.1rem] w-full rounded-[0.8rem] border border-kuartz-control bg-white/70 px-3.5 py-2.5 text-sm text-kuartz-ink outline-none transition-[border-color,box-shadow,background] focus:border-[#88925f] focus:bg-white focus:ring-4 focus:ring-kuartz-lime/20"
           />
         </label>
         <div className="flex flex-col justify-end gap-3">
-          <label className="flex items-center gap-2.5 text-sm font-semibold text-[#272c45]">
+          <label className="flex items-center gap-2.5 text-sm font-semibold text-kuartz-body">
             <input
               type="checkbox"
               name="overdue"
@@ -136,7 +136,7 @@ export default async function ProductionPage({
             {hasFilters ? (
               <Link
                 href="/production"
-                className="inline-flex min-h-[2.75rem] items-center px-2 text-sm font-semibold text-[#50586c] underline-offset-4 transition-colors duration-200 hover:text-[#171b36] hover:underline"
+                className="inline-flex min-h-[2.75rem] items-center px-2 text-sm font-semibold text-kuartz-secondary underline-offset-4 transition-colors duration-200 hover:text-kuartz-ink hover:underline"
               >
                 Clear
               </Link>
@@ -145,7 +145,7 @@ export default async function ProductionPage({
         </div>
       </form>
 
-      <p className="mt-6 text-sm text-[#50586c]" role="status">
+      <p className="mt-6 text-sm text-kuartz-secondary" role="status">
         {itemCount} assigned {itemCount === 1 ? "Item" : "Items"}
         {hasFilters ? " matching these filters" : ""} · today is {today} ({timezone})
       </p>
@@ -156,7 +156,7 @@ export default async function ProductionPage({
             <section key={client.clientId} aria-label={client.clientName}>
               {/* Client is a heading on desktop; on mobile it also appears in each Order card
                   header, since the two-level layout drops this level of indentation. */}
-              <h2 className="sticky top-0 z-10 hidden border-b border-[#171b36] bg-[#f7f8fb]/95 py-2 text-lg font-bold tracking-tight text-[#171b36] backdrop-blur md:block">
+              <h2 className="sticky top-0 z-10 hidden border-b border-kuartz-ink bg-[#f7f8fb]/95 py-2 text-lg font-bold tracking-tight text-kuartz-ink backdrop-blur md:block">
                 <Link href={`/clients/${client.clientId}`} className="underline-offset-4 hover:underline">
                   {client.clientName}
                 </Link>
@@ -166,19 +166,19 @@ export default async function ProductionPage({
                 {client.orders.map((order) => (
                   <article
                     key={order.orderId}
-                    className="rounded-[1rem] border border-[#d9d8d1] bg-white/60 p-4 md:rounded-none md:border-0 md:border-t md:border-[#d9d8d1] md:bg-transparent md:p-0 md:pt-4"
+                    className="rounded-[1rem] border border-kuartz-line bg-white/60 p-4 md:rounded-none md:border-0 md:border-t md:border-kuartz-line md:bg-transparent md:p-0 md:pt-4"
                   >
                     <header className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
-                      <h3 className="text-base font-semibold text-[#171b36]">
+                      <h3 className="text-base font-semibold text-kuartz-ink">
                         <Link href={`/orders/${order.orderId}`} className="underline-offset-4 hover:underline">
                           {order.orderTitle}
                         </Link>
-                        <span className="ml-2 text-sm font-medium text-[#50586c] md:hidden">
+                        <span className="ml-2 text-sm font-medium text-kuartz-secondary md:hidden">
                           {order.clientName}
                         </span>
                       </h3>
                       {/* Client payment position sits at Order level, never on every Item row. */}
-                      <p className="text-sm text-[#50586c]">
+                      <p className="text-sm text-kuartz-secondary">
                         {order.orderBalance.state === "not_invoiced"
                           ? "Not invoiced yet"
                           : `Balance ₦${formatMinorUnits(order.orderBalance.balanceMinor)}`}
@@ -188,7 +188,7 @@ export default async function ProductionPage({
                     <div className="mt-3 space-y-5">
                       {order.looks.map((look) => (
                         <div key={look.lookId}>
-                          <h4 className="text-xs font-semibold uppercase tracking-wider text-[#767b89]">
+                          <h4 className="text-xs font-semibold uppercase tracking-wider text-kuartz-muted">
                             {look.lookName}
                           </h4>
                           <ul className="mt-2 divide-y divide-[#e6e5df] border-t border-[#e6e5df]">
@@ -232,11 +232,11 @@ function ProductionItem({
   return (
     <div className="grid gap-3 py-4 lg:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)] lg:items-start lg:gap-6">
       <div>
-        <p className="font-semibold text-[#171b36]">
+        <p className="font-semibold text-kuartz-ink">
           {item.itemLabel}
-          {item.quantity > 1 ? <span className="ml-1.5 font-medium text-[#50586c]">×{item.quantity}</span> : null}
+          {item.quantity > 1 ? <span className="ml-1.5 font-medium text-kuartz-secondary">×{item.quantity}</span> : null}
         </p>
-        <p className="mt-1 text-sm text-[#50586c]">
+        <p className="mt-1 text-sm text-kuartz-secondary">
           <Link href={`/vendors/${item.vendorId}`} className="underline-offset-4 hover:underline">
             {item.vendorName}
           </Link>
@@ -249,7 +249,7 @@ function ProductionItem({
         <div className="mt-2 flex flex-wrap items-center gap-2">
           <UrgencyBadge urgency={item.urgency} deadline={item.deadline} />
           {item.hasBriefExport ? (
-            <span className="text-xs font-medium text-[#767b89]">Brief exported</span>
+            <span className="text-xs font-medium text-kuartz-muted">Brief exported</span>
           ) : null}
         </div>
       </div>
@@ -273,7 +273,7 @@ function ProductionItem({
         </Button>
         <Link
           href={`/production/${item.assignmentId}`}
-          className="inline-flex min-h-[2.75rem] items-center text-sm font-semibold text-[#50586c] underline-offset-4 transition-colors duration-200 hover:text-[#171b36] hover:underline"
+          className="inline-flex min-h-[2.75rem] items-center text-sm font-semibold text-kuartz-secondary underline-offset-4 transition-colors duration-200 hover:text-kuartz-ink hover:underline"
         >
           Open
         </Link>

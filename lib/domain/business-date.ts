@@ -30,6 +30,14 @@ export function businessToday(timeZone: string, now: Date = new Date()): Busines
   return toBusinessDate(now, timeZone);
 }
 
+/** Format a date-only business fact without allowing the viewer's timezone to shift the day. */
+export function formatBusinessDate(value: BusinessDate, locale = "en-NG"): string {
+  const [year, month, day] = assertBusinessDate(value).split("-").map(Number);
+  return new Intl.DateTimeFormat(locale, { dateStyle: "medium", timeZone: "UTC" }).format(
+    new Date(Date.UTC(year, month - 1, day)),
+  );
+}
+
 export function assertBusinessDate(value: string): BusinessDate {
   if (!ISO_DATE.test(value)) throw new Error("A date is required in YYYY-MM-DD format.");
   return value;

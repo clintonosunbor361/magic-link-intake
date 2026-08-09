@@ -32,7 +32,7 @@ export default async function MeasurementRequirementsPage({
 
   return (
     <div>
-      <header className="border-b border-[#d9d8d1] pb-8">
+      <header className="border-b border-kuartz-line pb-8">
         <p className="eyebrow">Organization settings</p>
         <h1 className="page-title">Measurement requirements</h1>
         <p className="page-description">
@@ -42,19 +42,19 @@ export default async function MeasurementRequirementsPage({
       </header>
 
       <nav className="mt-6 flex gap-4 text-sm font-semibold">
-        <Link href="/settings/team" className="text-[#50586c] hover:text-[#171b36]">
+        <Link href="/settings/team" className="text-kuartz-secondary hover:text-kuartz-ink">
           Team
         </Link>
-        <Link href="/settings/item-types" className="text-[#50586c] hover:text-[#171b36]">
+        <Link href="/settings/item-types" className="text-kuartz-secondary hover:text-kuartz-ink">
           Item types
         </Link>
-        <Link href="/settings/consultation-note-sources" className="text-[#50586c] hover:text-[#171b36]">
+        <Link href="/settings/consultation-note-sources" className="text-kuartz-secondary hover:text-kuartz-ink">
           Consultation note sources
         </Link>
-        <Link href="/settings/measurement-fields" className="text-[#50586c] hover:text-[#171b36]">
+        <Link href="/settings/measurement-fields" className="text-kuartz-secondary hover:text-kuartz-ink">
           Measurement fields
         </Link>
-        <Link href="/settings/measurement-requirements" className="text-[#171b36] underline">
+        <Link href="/settings/measurement-requirements" className="text-kuartz-ink underline">
           Measurement requirements
         </Link>
       </nav>
@@ -66,7 +66,7 @@ export default async function MeasurementRequirementsPage({
       ) : null}
 
       {!itemTypes.length || !fields.length ? (
-        <p className="mt-9 text-sm text-[#767b89]">
+        <p className="mt-9 text-sm text-kuartz-muted">
           Add at least one item type and one measurement field before configuring requirements.
         </p>
       ) : (
@@ -74,13 +74,13 @@ export default async function MeasurementRequirementsPage({
           <table className="w-full border-collapse text-sm">
             <thead>
               <tr>
-                <th className="border-b border-[#d9d8d1] px-3 py-3 text-left font-semibold text-[#171b36]">
+                <th className="border-b border-kuartz-line px-3 py-3 text-left font-semibold text-kuartz-ink">
                   Field
                 </th>
                 {itemTypes.map((itemType) => (
                   <th
                     key={itemType.id}
-                    className="border-b border-[#d9d8d1] px-3 py-3 text-center font-semibold text-[#171b36]"
+                    className="border-b border-kuartz-line px-3 py-3 text-center font-semibold text-kuartz-ink"
                   >
                     {itemType.name}
                   </th>
@@ -89,9 +89,9 @@ export default async function MeasurementRequirementsPage({
             </thead>
             <tbody>
               {fields.map((field) => (
-                <tr key={field.id} className="border-b border-[#d9d8d1]">
-                  <th scope="row" className="px-3 py-3 text-left font-medium text-[#171b36]">
-                    {field.name} <span className="font-normal text-[#767b89]">({field.unit})</span>
+                <tr key={field.id} className="border-b border-kuartz-line">
+                  <th scope="row" className="px-3 py-3 text-left font-medium text-kuartz-ink">
+                    {field.name} <span className="font-normal text-kuartz-muted">({field.unit})</span>
                   </th>
                   {itemTypes.map((itemType) => {
                     const requirement = requirementByPair.get(`${itemType.id}:${field.id}`);

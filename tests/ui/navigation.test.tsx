@@ -17,7 +17,7 @@ describe("mobile staff navigation", () => {
     const trigger = screen.getByRole("button", { name: "Open navigation" });
 
     await user.click(trigger);
-    expect(screen.getByRole("complementary", { name: "Primary navigation" })).toHaveClass(
+    expect(screen.getByRole("dialog", { name: "Primary navigation" })).toHaveClass(
       "app-sidebar-open",
     );
 

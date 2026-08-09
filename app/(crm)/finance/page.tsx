@@ -35,7 +35,7 @@ export default async function FinancePage() {
 
   return (
     <div>
-      <header className="border-b border-[#d9d8d1] pb-8">
+      <header className="border-b border-kuartz-line pb-8">
         <p className="eyebrow">Finance</p>
         <h1 className="page-title">Money position</h1>
         <p className="page-description">
@@ -45,23 +45,23 @@ export default async function FinancePage() {
       </header>
 
       <section className="mt-9 grid gap-4 sm:grid-cols-2">
-        <div className="border-y border-[#d9d8d1] py-5">
-          <p className="text-xs font-semibold uppercase tracking-wider text-[#767b89]">
+        <div className="border-y border-kuartz-line py-5">
+          <p className="text-xs font-semibold uppercase tracking-wider text-kuartz-muted">
             Outstanding from clients
           </p>
-          <p className="mt-2 text-3xl font-semibold tracking-[-0.03em] text-[#171b36]">
+          <p className="mt-2 text-3xl font-semibold tracking-[-0.03em] text-kuartz-ink">
             ₦{formatMinorUnits(totalOutstandingMinor)}
           </p>
-          <p className="mt-1 text-sm text-[#50586c]">
+          <p className="mt-1 text-sm text-kuartz-secondary">
             {outstanding.length} Order{outstanding.length === 1 ? "" : "s"} with a balance
           </p>
         </div>
-        <div className="border-y border-[#d9d8d1] py-5">
-          <p className="text-xs font-semibold uppercase tracking-wider text-[#767b89]">Owed to vendors</p>
-          <p className="mt-2 text-3xl font-semibold tracking-[-0.03em] text-[#171b36]">
+        <div className="border-y border-kuartz-line py-5">
+          <p className="text-xs font-semibold uppercase tracking-wider text-kuartz-muted">Owed to vendors</p>
+          <p className="mt-2 text-3xl font-semibold tracking-[-0.03em] text-kuartz-ink">
             ₦{formatMinorUnits(totalOwedMinor)}
           </p>
-          <p className="mt-1 text-sm text-[#50586c]">
+          <p className="mt-1 text-sm text-kuartz-secondary">
             {owedToVendors.length} assignment{owedToVendors.length === 1 ? "" : "s"} unpaid
           </p>
         </div>
@@ -70,27 +70,27 @@ export default async function FinancePage() {
       <section className="mt-10">
         <h2 className="section-title">Outstanding client balances</h2>
         {outstanding.length ? (
-          <div className="mt-4 divide-y divide-[#d9d8d1] border-y border-[#d9d8d1]">
+          <div className="mt-4 divide-y divide-kuartz-line border-y border-kuartz-line">
             {outstanding.map((row) => (
               <div
                 key={row.orderId}
                 className="grid gap-2 py-4 text-sm sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center"
               >
                 <div>
-                  <p className="font-semibold text-[#171b36]">
+                  <p className="font-semibold text-kuartz-ink">
                     <Link href={`/orders/${row.orderId}/invoice`} className="underline-offset-4 hover:underline">
                       {row.orderTitle}
                     </Link>
                   </p>
-                  <p className="mt-1 text-[#50586c]">
+                  <p className="mt-1 text-kuartz-secondary">
                     {row.clientName}
                     {row.invoiceNumber ? ` · ${row.invoiceNumber}` : ""}
                     {row.completedAt ? " · Order completed" : ""}
                   </p>
                 </div>
-                <p className="font-semibold text-[#171b36] sm:text-right">
+                <p className="font-semibold text-kuartz-ink sm:text-right">
                   ₦{formatMinorUnits(row.balance.state === "invoiced" ? row.balance.balanceMinor : 0)}
-                  <span className="ml-2 font-medium text-[#767b89]">
+                  <span className="ml-2 font-medium text-kuartz-muted">
                     of ₦{formatMinorUnits(row.balance.state === "invoiced" ? row.balance.invoicedMinor : 0)}
                   </span>
                 </p>
@@ -109,21 +109,21 @@ export default async function FinancePage() {
       {notInvoiced.length ? (
         <section className="mt-10">
           <h2 className="section-title">Not invoiced yet</h2>
-          <p className="mt-2 text-sm text-[#50586c]">
+          <p className="mt-2 text-sm text-kuartz-secondary">
             Live Orders with no Invoice. Nothing has been billed, so no balance exists to chase.
           </p>
-          <div className="mt-4 divide-y divide-[#d9d8d1] border-y border-[#d9d8d1]">
+          <div className="mt-4 divide-y divide-kuartz-line border-y border-kuartz-line">
             {notInvoiced.map((row) => (
               <div key={row.orderId} className="grid gap-2 py-4 text-sm sm:grid-cols-[minmax(0,1fr)_auto]">
                 <div>
-                  <p className="font-semibold text-[#171b36]">
+                  <p className="font-semibold text-kuartz-ink">
                     <Link href={`/orders/${row.orderId}/invoice`} className="underline-offset-4 hover:underline">
                       {row.orderTitle}
                     </Link>
                   </p>
-                  <p className="mt-1 text-[#50586c]">{row.clientName}</p>
+                  <p className="mt-1 text-kuartz-secondary">{row.clientName}</p>
                 </div>
-                <p className="text-[#767b89] sm:text-right">Create Invoice</p>
+                <p className="text-kuartz-muted sm:text-right">Create Invoice</p>
               </div>
             ))}
           </div>
@@ -133,25 +133,25 @@ export default async function FinancePage() {
       <section className="mt-10">
         <h2 className="section-title">Vendor payments owed</h2>
         {owedToVendors.length ? (
-          <div className="mt-4 divide-y divide-[#d9d8d1] border-y border-[#d9d8d1]">
+          <div className="mt-4 divide-y divide-kuartz-line border-y border-kuartz-line">
             {owedToVendors.map((row) => (
               <div
                 key={row.assignmentId}
                 className="grid gap-2 py-4 text-sm sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center"
               >
                 <div>
-                  <p className="font-semibold text-[#171b36]">
+                  <p className="font-semibold text-kuartz-ink">
                     <Link href={`/production/${row.assignmentId}`} className="underline-offset-4 hover:underline">
                       {row.label}
                     </Link>
                   </p>
-                  <p className="mt-1 text-[#50586c]">
+                  <p className="mt-1 text-kuartz-secondary">
                     {row.vendorName} · {row.orderTitle} · due {row.deadline}
                   </p>
                 </div>
-                <p className="font-semibold text-[#171b36] sm:text-right">
+                <p className="font-semibold text-kuartz-ink sm:text-right">
                   ₦{formatMinorUnits(row.position.state === "agreed" ? row.position.owedMinor : 0)}
-                  <span className="ml-2 font-medium text-[#767b89]">
+                  <span className="ml-2 font-medium text-kuartz-muted">
                     of ₦{formatMinorUnits(row.position.state === "agreed" ? row.position.agreedCostMinor : 0)}
                   </span>
                 </p>

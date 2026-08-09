@@ -35,16 +35,16 @@ export default async function VendorDetailPage({
     <div>
       <Link
         href="/vendors"
-        className="text-sm font-semibold text-[#50586c] underline-offset-4 transition-colors duration-200 hover:text-[#171b36] hover:underline"
+        className="text-sm font-semibold text-kuartz-secondary underline-offset-4 transition-colors duration-200 hover:text-kuartz-ink hover:underline"
       >
         ← All Vendors
       </Link>
 
-      <header className="mt-4 border-b border-[#d9d8d1] pb-8">
+      <header className="mt-4 border-b border-kuartz-line pb-8">
         <p className="eyebrow">Vendor</p>
         <h1 className="page-title">{vendor.name}</h1>
         {vendor.archivedAt ? (
-          <p className="mt-3 text-sm font-semibold text-[#767b89]">
+          <p className="mt-3 text-sm font-semibold text-kuartz-muted">
             Archived — this Vendor cannot be selected for new assignments.
           </p>
         ) : null}
@@ -60,7 +60,7 @@ export default async function VendorDetailPage({
         <div className="space-y-8">
           <div>
             <h2 className="section-title">Performance</h2>
-            <div className="mt-4 grid gap-3 border-y border-[#d9d8d1] py-5">
+            <div className="mt-4 grid gap-3 border-y border-kuartz-line py-5">
               <VendorScores summary={vendor.ratingSummary} />
               <VendorJobStats
                 completedJobs={vendor.completedJobs}
@@ -79,18 +79,18 @@ export default async function VendorDetailPage({
 
           <div>
             <h2 className="section-title">Contact</h2>
-            <dl className="mt-4 grid gap-4 border-y border-[#d9d8d1] py-5 sm:grid-cols-2">
+            <dl className="mt-4 grid gap-4 border-y border-kuartz-line py-5 sm:grid-cols-2">
               <div>
-                <dt className="text-xs font-semibold uppercase tracking-wider text-[#767b89]">Phone</dt>
-                <dd className="mt-1 text-[#171b36]">{vendor.phone ?? "Not recorded"}</dd>
+                <dt className="text-xs font-semibold uppercase tracking-wider text-kuartz-muted">Phone</dt>
+                <dd className="mt-1 text-kuartz-ink">{vendor.phone ?? "Not recorded"}</dd>
               </div>
               <div>
-                <dt className="text-xs font-semibold uppercase tracking-wider text-[#767b89]">Email</dt>
-                <dd className="mt-1 text-[#171b36]">{vendor.email ?? "Not recorded"}</dd>
+                <dt className="text-xs font-semibold uppercase tracking-wider text-kuartz-muted">Email</dt>
+                <dd className="mt-1 text-kuartz-ink">{vendor.email ?? "Not recorded"}</dd>
               </div>
               <div className="sm:col-span-2">
-                <dt className="text-xs font-semibold uppercase tracking-wider text-[#767b89]">Address</dt>
-                <dd className="mt-1 text-[#171b36]">{vendor.address ?? "Not recorded"}</dd>
+                <dt className="text-xs font-semibold uppercase tracking-wider text-kuartz-muted">Address</dt>
+                <dd className="mt-1 text-kuartz-ink">{vendor.address ?? "Not recorded"}</dd>
               </div>
             </dl>
           </div>
@@ -99,7 +99,7 @@ export default async function VendorDetailPage({
         <aside className="space-y-8">
           <div>
             <h2 className="section-title">Edit Vendor</h2>
-            <form action={updateVendorAction} className="mt-4 space-y-4 border-t border-[#d9d8d1] pt-5">
+            <form action={updateVendorAction} className="mt-4 space-y-4 border-t border-kuartz-line pt-5">
               <input type="hidden" name="vendorId" value={vendor.id} />
               <input type="hidden" name="version" value={vendor.version} />
               <label className="form-group">
@@ -108,19 +108,19 @@ export default async function VendorDetailPage({
               </label>
               <label className="form-group">
                 <span>
-                  Phone <span className="font-normal text-[#50586c]">(optional)</span>
+                  Phone <span className="font-normal text-kuartz-secondary">(optional)</span>
                 </span>
                 <Input name="phone" type="tel" defaultValue={vendor.phone ?? ""} />
               </label>
               <label className="form-group">
                 <span>
-                  Email <span className="font-normal text-[#50586c]">(optional)</span>
+                  Email <span className="font-normal text-kuartz-secondary">(optional)</span>
                 </span>
                 <Input name="email" type="email" defaultValue={vendor.email ?? ""} />
               </label>
               <label className="form-group">
                 <span>
-                  Address <span className="font-normal text-[#50586c]">(optional)</span>
+                  Address <span className="font-normal text-kuartz-secondary">(optional)</span>
                 </span>
                 <Input name="address" defaultValue={vendor.address ?? ""} maxLength={200} />
               </label>
@@ -132,7 +132,7 @@ export default async function VendorDetailPage({
                     {selectableSpecialties.map((specialty) => (
                       <label
                         key={specialty.id}
-                        className="flex items-center gap-2.5 text-sm font-medium text-[#272c45]"
+                        className="flex items-center gap-2.5 text-sm font-medium text-kuartz-body"
                       >
                         <input
                           type="checkbox"
@@ -157,7 +157,7 @@ export default async function VendorDetailPage({
           {canArchive ? (
             <div>
               <h2 className="section-title">{vendor.archivedAt ? "Restore" : "Archive"}</h2>
-              <p className="mt-2 text-sm leading-6 text-[#50586c]">
+              <p className="mt-2 text-sm leading-6 text-kuartz-secondary">
                 {vendor.archivedAt
                   ? "Restoring makes this Vendor selectable for new assignments again."
                   : "Archiving hides this Vendor from assignment pickers. Existing assignments and their history are untouched."}

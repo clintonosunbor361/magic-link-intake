@@ -69,17 +69,17 @@ export default async function AssignmentDetailPage({
     <div>
       <Link
         href="/production"
-        className="text-sm font-semibold text-[#50586c] underline-offset-4 transition-colors duration-200 hover:text-[#171b36] hover:underline"
+        className="text-sm font-semibold text-kuartz-secondary underline-offset-4 transition-colors duration-200 hover:text-kuartz-ink hover:underline"
       >
         ← Production
       </Link>
 
-      <header className="mt-4 border-b border-[#d9d8d1] pb-8">
+      <header className="mt-4 border-b border-kuartz-line pb-8">
         <p className="eyebrow">Vendor assignment</p>
         <h1 className="page-title">{briefContext?.sources.itemLabel ?? briefContext?.sources.itemTypeName ?? "Item"}</h1>
         <div className="mt-4 flex flex-wrap items-center gap-3">
           <UrgencyBadge urgency={urgency} deadline={assignment.deadline} />
-          <span className="rounded-full border border-[#d9d8d1] bg-[#f6f6f3] px-2.5 py-0.5 text-xs font-semibold text-[#50586c]">
+          <span className="rounded-full border border-kuartz-line bg-[#f6f6f3] px-2.5 py-0.5 text-xs font-semibold text-kuartz-secondary">
             {assignment.productionStatusName}
           </span>
         </div>
@@ -97,26 +97,26 @@ export default async function AssignmentDetailPage({
             <h2 className="section-title">Vendor</h2>
             {/* Contact details belong here, in the assignment detail — not on every production
                 list row, where they would crowd out the operational information. */}
-            <dl className="mt-4 grid gap-4 border-y border-[#d9d8d1] py-5 sm:grid-cols-2">
+            <dl className="mt-4 grid gap-4 border-y border-kuartz-line py-5 sm:grid-cols-2">
               <div>
-                <dt className="text-xs font-semibold uppercase tracking-wider text-[#767b89]">Name</dt>
-                <dd className="mt-1 text-[#171b36]">
+                <dt className="text-xs font-semibold uppercase tracking-wider text-kuartz-muted">Name</dt>
+                <dd className="mt-1 text-kuartz-ink">
                   <Link href={`/vendors/${assignment.vendorId}`} className="underline-offset-4 hover:underline">
                     {assignment.vendorName}
                   </Link>
                 </dd>
               </div>
               <div>
-                <dt className="text-xs font-semibold uppercase tracking-wider text-[#767b89]">Phone</dt>
-                <dd className="mt-1 text-[#171b36]">{assignment.vendorPhone ?? "Not recorded"}</dd>
+                <dt className="text-xs font-semibold uppercase tracking-wider text-kuartz-muted">Phone</dt>
+                <dd className="mt-1 text-kuartz-ink">{assignment.vendorPhone ?? "Not recorded"}</dd>
               </div>
               <div>
-                <dt className="text-xs font-semibold uppercase tracking-wider text-[#767b89]">Email</dt>
-                <dd className="mt-1 text-[#171b36]">{assignment.vendorEmail ?? "Not recorded"}</dd>
+                <dt className="text-xs font-semibold uppercase tracking-wider text-kuartz-muted">Email</dt>
+                <dd className="mt-1 text-kuartz-ink">{assignment.vendorEmail ?? "Not recorded"}</dd>
               </div>
               <div>
-                <dt className="text-xs font-semibold uppercase tracking-wider text-[#767b89]">Payment position</dt>
-                <dd className="mt-1 text-[#171b36]">
+                <dt className="text-xs font-semibold uppercase tracking-wider text-kuartz-muted">Payment position</dt>
+                <dd className="mt-1 text-kuartz-ink">
                   {position.state === "no_agreed_cost"
                     ? "No agreed cost recorded"
                     : `₦${formatMinorUnits(position.paidMinor)} paid / ₦${formatMinorUnits(position.owedMinor)} owed`}
@@ -128,18 +128,18 @@ export default async function AssignmentDetailPage({
           <div>
             <h2 className="section-title">Status history</h2>
             {history.length ? (
-              <ol className="mt-4 divide-y divide-[#d9d8d1] border-y border-[#d9d8d1]">
+              <ol className="mt-4 divide-y divide-kuartz-line border-y border-kuartz-line">
                 {history.map((entry) => (
                   <li key={entry.id} className="py-4">
-                    <p className="text-sm font-semibold text-[#171b36]">
+                    <p className="text-sm font-semibold text-kuartz-ink">
                       {entry.previousStatusName
                         ? `${entry.previousStatusName} → ${entry.newStatusName}`
                         : `Assigned at ${entry.newStatusName}`}
                     </p>
-                    <p className="mt-1 text-xs text-[#767b89]">
+                    <p className="mt-1 text-xs text-kuartz-muted">
                       {entry.changedByName} · {entry.createdAt.toISOString().slice(0, 16).replace("T", " ")}
                     </p>
-                    {entry.note ? <p className="mt-2 text-sm leading-6 text-[#50586c]">{entry.note}</p> : null}
+                    {entry.note ? <p className="mt-2 text-sm leading-6 text-kuartz-secondary">{entry.note}</p> : null}
                   </li>
                 ))}
               </ol>
@@ -150,29 +150,29 @@ export default async function AssignmentDetailPage({
 
           <div>
             <h2 className="section-title">Vendor payments</h2>
-            <p className="mt-2 text-sm text-[#50586c]">
+            <p className="mt-2 text-sm text-kuartz-secondary">
               Balance is the agreed cost minus payments recorded here. Voided payments stop counting
               but stay on the record.
             </p>
             {payments.length ? (
-              <ol className="mt-4 divide-y divide-[#d9d8d1] border-y border-[#d9d8d1]">
+              <ol className="mt-4 divide-y divide-kuartz-line border-y border-kuartz-line">
                 {payments.map((payment) => (
                   <li key={payment.id} className="py-4">
                     <div className="flex flex-wrap items-baseline justify-between gap-2">
-                      <p className={`text-sm font-semibold ${payment.voidedAt ? "text-[#767b89] line-through" : "text-[#171b36]"}`}>
+                      <p className={`text-sm font-semibold ${payment.voidedAt ? "text-kuartz-muted line-through" : "text-kuartz-ink"}`}>
                         ₦{formatMinorUnits(payment.amountMinor)}
                       </p>
-                      <p className="text-xs text-[#767b89]">
+                      <p className="text-xs text-kuartz-muted">
                         {payment.paidOn} · {payment.recordedByName}
                       </p>
                     </div>
-                    {payment.reference ? <p className="mt-1 text-sm text-[#50586c]">{payment.reference}</p> : null}
+                    {payment.reference ? <p className="mt-1 text-sm text-kuartz-secondary">{payment.reference}</p> : null}
                     {receiptUrlByPaymentId.get(payment.id) ? (
                       <a
                         href={receiptUrlByPaymentId.get(payment.id)}
                         target="_blank"
                         rel="noreferrer"
-                        className="mt-2 inline-block text-sm font-semibold text-[#171b36] underline underline-offset-4"
+                        className="mt-2 inline-block text-sm font-semibold text-kuartz-ink underline underline-offset-4"
                       >
                         View receipt
                       </a>
@@ -207,15 +207,15 @@ export default async function AssignmentDetailPage({
 
           <div>
             <h2 className="section-title">Production notes</h2>
-            <p className="mt-2 text-sm text-[#50586c]">
+            <p className="mt-2 text-sm text-kuartz-secondary">
               Internal only. These never appear on client pages or in Vendor Brief PDFs.
             </p>
             {notes.length ? (
-              <ol className="mt-4 divide-y divide-[#d9d8d1] border-y border-[#d9d8d1]">
+              <ol className="mt-4 divide-y divide-kuartz-line border-y border-kuartz-line">
                 {notes.map((note) => (
                   <li key={note.id} className="py-4">
-                    <p className="text-sm leading-6 text-[#272c45]">{note.note}</p>
-                    <p className="mt-1 text-xs text-[#767b89]">
+                    <p className="text-sm leading-6 text-kuartz-body">{note.note}</p>
+                    <p className="mt-1 text-xs text-kuartz-muted">
                       {note.createdByName} · {note.createdAt.toISOString().slice(0, 16).replace("T", " ")}
                     </p>
                   </li>
@@ -230,7 +230,7 @@ export default async function AssignmentDetailPage({
         <aside className="space-y-9">
           <div>
             <h2 className="section-title">Change status</h2>
-            <form action={changeProductionStatusAction} className="mt-4 space-y-4 border-t border-[#d9d8d1] pt-5">
+            <form action={changeProductionStatusAction} className="mt-4 space-y-4 border-t border-kuartz-line pt-5">
               <input type="hidden" name="assignmentId" value={assignment.id} />
               <input type="hidden" name="version" value={assignment.version} />
               <input type="hidden" name="returnTo" value={returnTo} />
@@ -246,7 +246,7 @@ export default async function AssignmentDetailPage({
               </label>
               <label className="form-group">
                 <span>
-                  Note <span className="font-normal text-[#50586c]">(optional)</span>
+                  Note <span className="font-normal text-kuartz-secondary">(optional)</span>
                 </span>
                 <Input name="note" maxLength={300} />
               </label>
@@ -258,7 +258,7 @@ export default async function AssignmentDetailPage({
 
           <div>
             <h2 className="section-title">Add a production note</h2>
-            <form action={addProductionNoteAction} className="mt-4 space-y-4 border-t border-[#d9d8d1] pt-5">
+            <form action={addProductionNoteAction} className="mt-4 space-y-4 border-t border-kuartz-line pt-5">
               <input type="hidden" name="assignmentId" value={assignment.id} />
               <input type="hidden" name="returnTo" value={returnTo} />
               <label className="form-group">
@@ -277,7 +277,7 @@ export default async function AssignmentDetailPage({
               <form
                 action={recordVendorPaymentAction}
                 encType="multipart/form-data"
-                className="mt-4 space-y-4 border-t border-[#d9d8d1] pt-5"
+                className="mt-4 space-y-4 border-t border-kuartz-line pt-5"
               >
                 <input type="hidden" name="assignmentId" value={assignment.id} />
                 <label className="form-group">
@@ -290,19 +290,19 @@ export default async function AssignmentDetailPage({
                 </label>
                 <label className="form-group">
                   <span>
-                    Reference <span className="font-normal text-[#50586c]">(optional)</span>
+                    Reference <span className="font-normal text-kuartz-secondary">(optional)</span>
                   </span>
                   <Input name="reference" maxLength={200} />
                 </label>
                 <label className="form-group">
                   <span>
-                    Receipt <span className="font-normal text-[#50586c]">(optional)</span>
+                    Receipt <span className="font-normal text-kuartz-secondary">(optional)</span>
                   </span>
                   <input
                     type="file"
                     name="receipt"
                     accept="image/jpeg,image/png,image/webp,application/pdf"
-                    className="text-sm text-[#50586c] file:mr-3 file:cursor-pointer file:rounded-[0.6rem] file:border file:border-[#cfcec7] file:bg-white file:px-3 file:py-1.5 file:text-sm file:font-semibold file:text-[#171b36]"
+                    className="text-sm text-kuartz-secondary file:mr-3 file:cursor-pointer file:rounded-[0.6rem] file:border file:border-kuartz-control file:bg-white file:px-3 file:py-1.5 file:text-sm file:font-semibold file:text-kuartz-ink"
                   />
                 </label>
                 <Button className="w-full" type="submit">
@@ -314,7 +314,7 @@ export default async function AssignmentDetailPage({
 
           <div>
             <h2 className="section-title">Vendor Brief</h2>
-            <p className="mt-2 text-sm leading-6 text-[#50586c]">
+            <p className="mt-2 text-sm leading-6 text-kuartz-secondary">
               {assignment.briefLastExportedAt
                 ? `Last exported ${assignment.briefLastExportedAt.toISOString().slice(0, 10)}.`
                 : "Not exported yet."}
@@ -327,7 +327,7 @@ export default async function AssignmentDetailPage({
             ) : null}
             <Link
               href={`/production/${assignment.id}/brief`}
-              className="mt-4 inline-flex min-h-[2.75rem] w-full cursor-pointer items-center justify-center rounded-[0.8rem] border border-[#171b36] px-4 text-sm font-semibold text-[#171b36] transition-colors duration-200 hover:bg-[#171b36] hover:text-white"
+              className="mt-4 inline-flex min-h-[2.75rem] w-full cursor-pointer items-center justify-center rounded-[0.8rem] border border-kuartz-ink px-4 text-sm font-semibold text-kuartz-ink transition-colors duration-200 hover:bg-kuartz-ink hover:text-white"
             >
               Build brief
             </Link>

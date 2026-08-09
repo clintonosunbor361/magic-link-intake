@@ -19,7 +19,7 @@ export default async function NewEnquiryPage({
 
   return (
     <div>
-      <header className="border-b border-[#d9d8d1] pb-8">
+      <header className="border-b border-kuartz-line pb-8">
         <p className="eyebrow">Enquiries</p>
         <h1 className="page-title">New Enquiry</h1>
         <p className="page-description">Capture a person who has contacted Kuartz directly.</p>
@@ -37,7 +37,7 @@ export default async function NewEnquiryPage({
           WhatsApp same as primary number
         </label>
         <label className="form-group">
-          <span>WhatsApp number <span className="font-normal text-[#50586c]">(optional)</span></span>
+          <span>WhatsApp number <span className="font-normal text-kuartz-secondary">(optional)</span></span>
           <Input name="whatsappPhone" />
         </label>
 
@@ -87,17 +87,17 @@ export default async function NewEnquiryPage({
           <span>Brief</span>
           <textarea
             name="brief"
-            className="min-h-[7rem] w-full rounded-[0.8rem] border border-[#cfcec7] bg-white/70 px-3.5 py-3 text-sm text-[#171b36] outline-none focus:border-[#88925f] focus:bg-white focus:ring-4 focus:ring-[#d2ff67]/20"
+            className="min-h-[7rem] w-full rounded-[0.8rem] border border-kuartz-control bg-white/70 px-3.5 py-3 text-sm text-kuartz-ink outline-none focus:border-[#88925f] focus:bg-white focus:ring-4 focus:ring-kuartz-lime/20"
           />
         </label>
 
         <div className="grid gap-5 sm:grid-cols-2">
           <label className="form-group">
-            <span>Lead source <span className="font-normal text-[#50586c]">(optional)</span></span>
+            <span>Lead source <span className="font-normal text-kuartz-secondary">(optional)</span></span>
             <Input name="leadSource" />
           </label>
           <label className="form-group">
-            <span>Primary owner <span className="font-normal text-[#50586c]">(optional)</span></span>
+            <span>Primary owner <span className="font-normal text-kuartz-secondary">(optional)</span></span>
             <NativeSelect name="ownerStaffId" defaultValue="">
               <option value="">Unassigned</option>
               {staff.map((member) => (
@@ -110,15 +110,15 @@ export default async function NewEnquiryPage({
         </div>
 
         <label className="form-group">
-          <span>Internal notes <span className="font-normal text-[#50586c]">(optional)</span></span>
+          <span>Internal notes <span className="font-normal text-kuartz-secondary">(optional)</span></span>
           <textarea
             name="internalNotes"
-            className="min-h-[5rem] w-full rounded-[0.8rem] border border-[#cfcec7] bg-white/70 px-3.5 py-3 text-sm text-[#171b36] outline-none focus:border-[#88925f] focus:bg-white focus:ring-4 focus:ring-[#d2ff67]/20"
+            className="min-h-[5rem] w-full rounded-[0.8rem] border border-kuartz-control bg-white/70 px-3.5 py-3 text-sm text-kuartz-ink outline-none focus:border-[#88925f] focus:bg-white focus:ring-4 focus:ring-kuartz-lime/20"
           />
         </label>
 
         <div className="flex items-center justify-between gap-4">
-          <Link href="/enquiries" className="text-sm font-semibold text-[#50586c] hover:text-[#171b36]">
+          <Link href="/enquiries" className="text-sm font-semibold text-kuartz-secondary hover:text-kuartz-ink">
             Cancel
           </Link>
           <Button type="submit">Create Enquiry</Button>

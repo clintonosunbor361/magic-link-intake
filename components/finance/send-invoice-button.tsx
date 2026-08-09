@@ -26,10 +26,12 @@ export function SendInvoiceButton({ invoiceId }: { invoiceId: string }) {
       }
 
       const blob = await response.blob();
+      const disposition = response.headers.get("content-disposition");
+      const filename = disposition?.match(/filename="([^"]+)"/i)?.[1] ?? `${invoiceId}.pdf`;
       const url = URL.createObjectURL(blob);
       const link = document.createElement("a");
       link.href = url;
-      link.download = `${invoiceId}.pdf`;
+      link.download = filename;
       document.body.appendChild(link);
       link.click();
       link.remove();
@@ -45,7 +47,7 @@ export function SendInvoiceButton({ invoiceId }: { invoiceId: string }) {
   return (
     <div className="mt-4">
       <Button className="w-full" type="button" onClick={send} disabled={sending}>
-        {sending ? "Sending…" : "Send Invoice"}
+        {sending ? "Preparing PDF…" : "Mark sent & download PDF"}
       </Button>
       {error ? (
         <p className="form-alert mt-3" role="alert">

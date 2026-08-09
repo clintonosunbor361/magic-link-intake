@@ -104,7 +104,7 @@ export default async function OverviewPage() {
 
   return (
     <div>
-      <header className="grid gap-8 border-b border-[#d9d8d1] pb-9 md:grid-cols-[minmax(0,1fr)_auto] md:items-end">
+      <header className="grid gap-8 border-b border-kuartz-line pb-9 md:grid-cols-[minmax(0,1fr)_auto] md:items-end">
         <div>
           <p className="eyebrow">
             <WeekdayLabel />
@@ -119,13 +119,13 @@ export default async function OverviewPage() {
         {unreadCount ? (
           <Link
             href="/notifications"
-            className="inline-flex w-fit items-center gap-2 rounded-full border border-[#171b36] bg-white/70 px-4 py-2 text-xs font-semibold text-[#171b36] transition-colors duration-200 hover:bg-[#171b36] hover:text-white"
+            className="inline-flex w-fit items-center gap-2 rounded-full border border-kuartz-ink bg-white/70 px-4 py-2 text-xs font-semibold text-kuartz-ink transition-colors duration-200 hover:bg-kuartz-ink hover:text-white"
           >
             {unreadCount} unread notification{unreadCount === 1 ? "" : "s"}
             <ArrowRight size={14} />
           </Link>
         ) : (
-          <span className="inline-flex w-fit items-center gap-2 rounded-full border border-[#d9d8d1] bg-white/55 px-4 py-2 text-xs font-semibold text-[#596071]">
+          <span className="inline-flex w-fit items-center gap-2 rounded-full border border-kuartz-line bg-white/55 px-4 py-2 text-xs font-semibold text-[#596071]">
             <span className="h-2 w-2 rounded-full bg-[#93aa53]" />
             Nothing unread
           </span>
@@ -137,11 +137,11 @@ export default async function OverviewPage() {
           <Link
             key={metric.label}
             href={metric.href}
-            className="group border border-[#d9d8d1] bg-white/50 px-5 py-4 transition-colors duration-200 hover:border-[#171b36]"
+            className="group border border-kuartz-line bg-white/50 px-5 py-4 transition-colors duration-200 hover:border-kuartz-ink"
           >
-            <p className="text-xs font-semibold uppercase tracking-wider text-[#767b89]">{metric.label}</p>
-            <p className="mt-2 text-2xl font-semibold tracking-[-0.03em] text-[#171b36]">{metric.value}</p>
-            <p className="mt-1 text-sm text-[#50586c]">{metric.hint}</p>
+            <p className="text-xs font-semibold uppercase tracking-wider text-kuartz-muted">{metric.label}</p>
+            <p className="mt-2 text-2xl font-semibold tracking-[-0.03em] text-kuartz-ink">{metric.value}</p>
+            <p className="mt-1 text-sm text-kuartz-secondary">{metric.hint}</p>
           </Link>
         ))}
       </section>
@@ -223,27 +223,27 @@ export default async function OverviewPage() {
           <div>
             <div className="flex items-end justify-between gap-4">
               <h2 className="section-title">Notifications</h2>
-              <Link href="/notifications" className="text-sm font-semibold text-[#171b36] underline">
+              <Link href="/notifications" className="text-sm font-semibold text-kuartz-ink underline">
                 All
               </Link>
             </div>
             {recentNotifications.length ? (
-              <ol className="mt-4 divide-y divide-[#d9d8d1] border-y border-[#d9d8d1]">
+              <ol className="mt-4 divide-y divide-kuartz-line border-y border-kuartz-line">
                 {recentNotifications.map((row) => (
                   <li key={row.id} className="py-3">
-                    <p className="text-sm font-semibold text-[#171b36]">
+                    <p className="text-sm font-semibold text-kuartz-ink">
                       <Link href={row.href} className="underline-offset-4 hover:underline">
                         {row.title}
                       </Link>
                     </p>
-                    <p className="mt-1 text-xs text-[#767b89]">
+                    <p className="mt-1 text-xs text-kuartz-muted">
                       {TRIGGER_LABELS[row.trigger]} · {row.dueDate}
                     </p>
                   </li>
                 ))}
               </ol>
             ) : (
-              <p className="mt-4 border-y border-[#d9d8d1] py-5 text-sm text-[#767b89]">
+              <p className="mt-4 border-y border-kuartz-line py-5 text-sm text-kuartz-muted">
                 Nothing unread.
               </p>
             )}
@@ -252,27 +252,27 @@ export default async function OverviewPage() {
           <div>
             <div className="flex items-end justify-between gap-4">
               <h2 className="section-title">Pending approvals</h2>
-              <Link href="/orders" className="text-sm font-semibold text-[#171b36] underline">
+              <Link href="/orders" className="text-sm font-semibold text-kuartz-ink underline">
                 Orders
               </Link>
             </div>
             {pendingApprovals.length ? (
-              <ol className="mt-4 divide-y divide-[#d9d8d1] border-y border-[#d9d8d1]">
+              <ol className="mt-4 divide-y divide-kuartz-line border-y border-kuartz-line">
                 {pendingApprovals.slice(0, PANEL_LIMIT).map((row) => (
                   <li key={row.fileId} className="py-3">
-                    <p className="text-sm font-semibold text-[#171b36]">
+                    <p className="text-sm font-semibold text-kuartz-ink">
                       <Link href={`/orders/${row.orderId}`} className="underline-offset-4 hover:underline">
                         {row.orderTitle}
                       </Link>
                     </p>
-                    <p className="mt-1 text-xs text-[#767b89]">
+                    <p className="mt-1 text-xs text-kuartz-muted">
                       {row.clientName} · sent {dateFormatter.format(row.updatedAt)}
                     </p>
                   </li>
                 ))}
               </ol>
             ) : (
-              <p className="mt-4 border-y border-[#d9d8d1] py-5 text-sm text-[#767b89]">
+              <p className="mt-4 border-y border-kuartz-line py-5 text-sm text-kuartz-muted">
                 Nothing awaiting a client decision.
               </p>
             )}
@@ -317,22 +317,22 @@ function Panel({
     <div>
       <div className="flex items-end justify-between gap-4">
         <h2 className="section-title">{title}</h2>
-        <Link href={href} className="text-sm font-semibold text-[#171b36] underline">
+        <Link href={href} className="text-sm font-semibold text-kuartz-ink underline">
           {linkLabel}
         </Link>
       </div>
       {rows.length ? (
         <>
-          <ol className="mt-4 divide-y divide-[#d9d8d1] border-y border-[#d9d8d1]">
+          <ol className="mt-4 divide-y divide-kuartz-line border-y border-kuartz-line">
             {rows.map((row) => (
               <li key={row.key} className="grid gap-2 py-4 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center">
                 <div>
-                  <p className="text-sm font-semibold text-[#171b36]">
+                  <p className="text-sm font-semibold text-kuartz-ink">
                     <Link href={row.href} className="underline-offset-4 hover:underline">
                       {row.primary}
                     </Link>
                   </p>
-                  <p className="mt-1 text-sm text-[#50586c]">{row.secondary}</p>
+                  <p className="mt-1 text-sm text-kuartz-secondary">{row.secondary}</p>
                 </div>
                 {row.badge ? (
                   <span
@@ -345,9 +345,9 @@ function Panel({
             ))}
           </ol>
           {total > rows.length ? (
-            <p className="mt-3 text-sm text-[#767b89]">
+            <p className="mt-3 text-sm text-kuartz-muted">
               {total - rows.length} more —{" "}
-              <Link href={href} className="font-semibold text-[#171b36] underline">
+              <Link href={href} className="font-semibold text-kuartz-ink underline">
                 see all
               </Link>
             </p>

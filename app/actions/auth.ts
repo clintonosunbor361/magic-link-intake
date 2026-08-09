@@ -4,15 +4,17 @@ import { redirect } from "next/navigation";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { readFormString } from "@/lib/forms/read-string";
 
-export async function signInAction(formData: FormData) {
+export type SignInState = { error: string | null };
+
+export async function signInAction(_state: SignInState, formData: FormData): Promise<SignInState> {
   const email = readFormString(formData, "email");
   const password = readFormString(formData, "password");
-  if (!email || !password) redirect("/auth/sign-in?error=Enter+your+email+and+password.");
+  if (!email || !password) return { error: "Enter your email and password." };
 
   const supabase = await createSupabaseServerClient();
   if (!supabase) redirect("/setup");
   const { error } = await supabase.auth.signInWithPassword({ email, password });
-  if (error) redirect("/auth/sign-in?error=The+email+or+password+is+incorrect.");
+  if (error) return { error: "The email or password is incorrect." };
   redirect("/");
 }
 

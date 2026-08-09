@@ -21,12 +21,12 @@ export default async function VendorBriefPage({ params }: { params: Promise<{ as
     <div>
       <Link
         href={`/production/${assignmentId}`}
-        className="text-sm font-semibold text-[#50586c] underline-offset-4 transition-colors duration-200 hover:text-[#171b36] hover:underline"
+        className="text-sm font-semibold text-kuartz-secondary underline-offset-4 transition-colors duration-200 hover:text-kuartz-ink hover:underline"
       >
         ← Assignment
       </Link>
 
-      <header className="mt-4 border-b border-[#d9d8d1] pb-8">
+      <header className="mt-4 border-b border-kuartz-line pb-8">
         <p className="eyebrow">Vendor Brief</p>
         <h1 className="page-title">Build the brief</h1>
         <p className="page-description">

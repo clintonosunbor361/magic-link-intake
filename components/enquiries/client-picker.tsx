@@ -65,7 +65,7 @@ export function ClientPicker() {
             </Button>
           </div>
           {results && results.length ? (
-            <ul className="divide-y divide-[#d9d8d1] rounded-[0.8rem] border border-[#d9d8d1]">
+            <ul className="divide-y divide-kuartz-line rounded-[0.8rem] border border-kuartz-line">
               {results.map((client) => (
                 <li key={client.id}>
                   <button
@@ -73,8 +73,8 @@ export function ClientPicker() {
                     onClick={() => setSelected(client)}
                     className="flex w-full flex-col gap-1 px-4 py-3 text-left text-sm hover:bg-[#f8f8f4] sm:flex-row sm:items-center sm:justify-between"
                   >
-                    <span className="font-medium text-[#171b36]">{client.fullName}</span>
-                    <span className="text-[#50586c]">
+                    <span className="font-medium text-kuartz-ink">{client.fullName}</span>
+                    <span className="text-kuartz-secondary">
                       {client.primaryPhone}
                       {client.email ? ` · ${client.email}` : ""}
                       {client.latestOrderTitle ? ` · Latest: ${client.latestOrderTitle}` : " · No prior Orders"}
@@ -84,7 +84,7 @@ export function ClientPicker() {
               ))}
             </ul>
           ) : results ? (
-            <p className="text-sm text-[#50586c]">No matching Clients. A new Client will be created.</p>
+            <p className="text-sm text-kuartz-secondary">No matching Clients. A new Client will be created.</p>
           ) : null}
         </>
       )}

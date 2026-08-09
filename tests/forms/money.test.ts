@@ -1,2 +1,3 @@
-import {describe,expect,it} from "vitest"; import {parseMoneyToMinorUnits} from "@/lib/forms/money";
+import {describe,expect,it} from "vitest"; import {formatMinorUnitsLocale,parseMoneyToMinorUnits} from "@/lib/forms/money";
 describe("parseMoneyToMinorUnits",()=>{it("parses whole and fractional amounts without floating-point arithmetic",()=>{expect(parseMoneyToMinorUnits("500000")).toBe(50_000_000);expect(parseMoneyToMinorUnits("12.34")).toBe(1234)});it.each(["1.234","12x","-1",""])("rejects invalid amount %s",value=>expect(()=>parseMoneyToMinorUnits(value)).toThrow("Enter a valid amount"))});
+describe("formatMinorUnitsLocale",()=>{it("formats grouped display values from integer minor units",()=>{expect(formatMinorUnitsLocale(12_345_67,"en-NG")).toBe("12,345.67")})});

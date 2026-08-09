@@ -73,17 +73,17 @@ export function ItemAssignmentDrawer({
       className="mt-3 rounded-[0.8rem] border border-[#e6e5df] bg-white/50"
       aria-label={assignment ? `Vendor assignment for ${itemLabel}` : `Assign a Vendor to ${itemLabel}`}
     >
-      <summary className="flex cursor-pointer flex-wrap items-center gap-2 px-3.5 py-2.5 text-sm font-semibold text-[#171b36] marker:text-[#767b89]">
+      <summary className="flex cursor-pointer flex-wrap items-center gap-2 px-3.5 py-2.5 text-sm font-semibold text-kuartz-ink marker:text-kuartz-muted">
         {assignment ? (
           <>
             <span>{assignment.vendorName}</span>
             {urgency ? <UrgencyBadge urgency={urgency} deadline={assignment.deadline} /> : null}
-            <span className="rounded-full border border-[#d9d8d1] bg-[#f6f6f3] px-2 py-0.5 text-xs font-semibold text-[#50586c]">
+            <span className="rounded-full border border-kuartz-line bg-[#f6f6f3] px-2 py-0.5 text-xs font-semibold text-kuartz-secondary">
               {assignment.productionStatusName}
             </span>
           </>
         ) : (
-          <span className="text-[#50586c]">No Vendor assigned</span>
+          <span className="text-kuartz-secondary">No Vendor assigned</span>
         )}
       </summary>
 
@@ -91,22 +91,22 @@ export function ItemAssignmentDrawer({
         {assignment ? (
           <>
             <div>
-              <h4 className="text-xs font-semibold uppercase tracking-wider text-[#767b89]">Vendor contact</h4>
-              <p className="mt-1.5 text-sm text-[#272c45]">
+              <h4 className="text-xs font-semibold uppercase tracking-wider text-kuartz-muted">Vendor contact</h4>
+              <p className="mt-1.5 text-sm text-kuartz-body">
                 <Link href={`/vendors/${assignment.vendorId}`} className="underline-offset-4 hover:underline">
                   {assignment.vendorName}
                 </Link>
                 {assignment.vendorPhone ? ` · ${assignment.vendorPhone}` : ""}
                 {assignment.vendorEmail ? ` · ${assignment.vendorEmail}` : ""}
               </p>
-              <p className="mt-1 text-sm text-[#50586c]">
+              <p className="mt-1 text-sm text-kuartz-secondary">
                 {assignment.agreedVendorCostMinor === null
                   ? "No agreed cost recorded"
                   : `Agreed cost ₦${formatMinorUnits(assignment.agreedVendorCostMinor)}`}
               </p>
               <Link
                 href={`/production/${assignment.id}`}
-                className="mt-2 inline-block text-sm font-semibold text-[#50586c] underline-offset-4 transition-colors duration-200 hover:text-[#171b36] hover:underline"
+                className="mt-2 inline-block text-sm font-semibold text-kuartz-secondary underline-offset-4 transition-colors duration-200 hover:text-kuartz-ink hover:underline"
               >
                 Open production detail →
               </Link>
@@ -122,7 +122,7 @@ export function ItemAssignmentDrawer({
               </label>
               <label className="form-group w-36">
                 <span>
-                  Agreed cost (₦) <span className="font-normal text-[#50586c]">(optional)</span>
+                  Agreed cost (₦) <span className="font-normal text-kuartz-secondary">(optional)</span>
                 </span>
                 <Input
                   name="agreedVendorCostMinor"
@@ -180,7 +180,7 @@ export function ItemAssignmentDrawer({
                   </label>
                   <label className="form-group w-36">
                     <span>
-                      Agreed cost (₦) <span className="font-normal text-[#50586c]">(optional)</span>
+                      Agreed cost (₦) <span className="font-normal text-kuartz-secondary">(optional)</span>
                     </span>
                     <Input name="agreedVendorCostMinor" inputMode="decimal" />
                   </label>
@@ -216,7 +216,7 @@ export function ItemAssignmentDrawer({
                 </label>
                 <label className="form-group w-36">
                   <span>
-                    Agreed cost (₦) <span className="font-normal text-[#50586c]">(optional)</span>
+                    Agreed cost (₦) <span className="font-normal text-kuartz-secondary">(optional)</span>
                   </span>
                   <Input name="agreedVendorCostMinor" inputMode="decimal" />
                 </label>
@@ -228,7 +228,7 @@ export function ItemAssignmentDrawer({
               className="rounded-[0.7rem] border border-[#e6e5df] p-3.5"
               aria-label={`Quick-create a Vendor for ${itemLabel}`}
             >
-              <summary className="cursor-pointer text-sm font-semibold text-[#50586c]">
+              <summary className="cursor-pointer text-sm font-semibold text-kuartz-secondary">
                 Vendor not in the list? Quick-create one
               </summary>
               <form action={createVendorAction} className="mt-3 flex flex-wrap items-end gap-3">
@@ -239,7 +239,7 @@ export function ItemAssignmentDrawer({
                 </label>
                 <label className="form-group">
                   <span>
-                    Phone <span className="font-normal text-[#50586c]">(optional)</span>
+                    Phone <span className="font-normal text-kuartz-secondary">(optional)</span>
                   </span>
                   <Input name="phone" type="tel" />
                 </label>
@@ -275,11 +275,11 @@ export function LookBulkAssignForm({
       className="mt-4 rounded-[0.8rem] border border-[#e6e5df] bg-white/50"
       aria-label={`Bulk assign a Vendor to ${lookName}`}
     >
-      <summary className="cursor-pointer px-3.5 py-2.5 text-sm font-semibold text-[#171b36]">
+      <summary className="cursor-pointer px-3.5 py-2.5 text-sm font-semibold text-kuartz-ink">
         Assign a Vendor to this whole Look
       </summary>
       <div className="border-t border-[#e6e5df] px-3.5 py-4">
-        <p className="text-sm leading-6 text-[#50586c]">
+        <p className="text-sm leading-6 text-kuartz-secondary">
           {unassignedCount
             ? `Assigns the ${unassignedCount} unassigned ${unassignedCount === 1 ? "Item" : "Items"} in ${lookName}. Items that already have a Vendor are skipped — reassign those individually.`
             : `Every Item in ${lookName} already has a Vendor. Reassign individually from each Item.`}
@@ -309,7 +309,7 @@ export function LookBulkAssignForm({
             </label>
             <label className="form-group w-36">
               <span>
-                Agreed cost (₦) <span className="font-normal text-[#50586c]">(optional)</span>
+                Agreed cost (₦) <span className="font-normal text-kuartz-secondary">(optional)</span>
               </span>
               <Input name="agreedVendorCostMinor" inputMode="decimal" disabled={!unassignedCount} />
             </label>

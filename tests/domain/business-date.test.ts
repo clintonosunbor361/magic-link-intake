@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { businessToday, daysBetween, toBusinessDate } from "@/lib/domain/business-date";
+import { businessToday, daysBetween, formatBusinessDate, toBusinessDate } from "@/lib/domain/business-date";
 
 describe("toBusinessDate", () => {
   it("resolves an instant into the organization's calendar day, not the runtime's", () => {
@@ -26,6 +26,12 @@ describe("toBusinessDate", () => {
 describe("businessToday", () => {
   it("takes the reference instant as an argument so callers stay testable", () => {
     expect(businessToday("Africa/Lagos", new Date("2026-08-07T23:30:00Z"))).toBe("2026-08-08");
+  });
+});
+
+describe("formatBusinessDate", () => {
+  it("formats the recorded calendar day without timezone drift", () => {
+    expect(formatBusinessDate("2026-08-09", "en-NG")).toBe("9 Aug 2026");
   });
 });
 

@@ -37,7 +37,7 @@ export default async function NewApprovalBatchPage({
 
   return (
     <div>
-      <header className="border-b border-[#d9d8d1] pb-8">
+      <header className="border-b border-kuartz-line pb-8">
         <p className="eyebrow">Order</p>
         <h1 className="page-title">Create an approval batch</h1>
         <p className="page-description">
@@ -54,7 +54,7 @@ export default async function NewApprovalBatchPage({
       ) : null}
 
       {eligibleFiles.length === 0 ? (
-        <p className="mt-6 text-sm text-[#767b89]">
+        <p className="mt-6 text-sm text-kuartz-muted">
           No files are currently eligible for a new approval batch. A file becomes eligible once it requires client
           approval and has a Pending status.
         </p>
@@ -67,7 +67,7 @@ export default async function NewApprovalBatchPage({
               <h2 className="section-title">Whole Order</h2>
               <div className="mt-3 space-y-2">
                 {wholeOrderFiles.map((file) => (
-                  <label key={file.fileId} className="flex items-center gap-2 text-sm text-[#171b36]">
+                  <label key={file.fileId} className="flex items-center gap-2 text-sm text-kuartz-ink">
                     <input type="checkbox" name="fileIds" value={file.fileId} />
                     {formatStyleDirectionLabel(file.category)}
                   </label>
@@ -81,7 +81,7 @@ export default async function NewApprovalBatchPage({
               <h2 className="section-title">{group.lookName}</h2>
               <div className="mt-3 space-y-2">
                 {group.files.map((file) => (
-                  <label key={file.fileId} className="flex items-center gap-2 text-sm text-[#171b36]">
+                  <label key={file.fileId} className="flex items-center gap-2 text-sm text-kuartz-ink">
                     <input type="checkbox" name="fileIds" value={file.fileId} />
                     {formatStyleDirectionLabel(file.category)}
                   </label>

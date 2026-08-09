@@ -36,12 +36,12 @@ export default async function OrderVendorRatingsPage({
     <div>
       <Link
         href={`/orders/${id}`}
-        className="text-sm font-semibold text-[#50586c] underline-offset-4 transition-colors duration-200 hover:text-[#171b36] hover:underline"
+        className="text-sm font-semibold text-kuartz-secondary underline-offset-4 transition-colors duration-200 hover:text-kuartz-ink hover:underline"
       >
         ← {order.title}
       </Link>
 
-      <header className="mt-4 border-b border-[#d9d8d1] pb-8">
+      <header className="mt-4 border-b border-kuartz-line pb-8">
         <p className="eyebrow">Vendor ratings</p>
         <h1 className="page-title">Rate the Vendors</h1>
         <p className="page-description">
@@ -63,7 +63,7 @@ export default async function OrderVendorRatingsPage({
               key={row.vendorId}
               action={rateVendorAction}
               aria-label={`Rate ${row.vendorName}`}
-              className="border-t border-[#d9d8d1] pt-6"
+              className="border-t border-kuartz-line pt-6"
             >
               <input type="hidden" name="orderId" value={id} />
               <input type="hidden" name="vendorId" value={row.vendorId} />
@@ -77,7 +77,7 @@ export default async function OrderVendorRatingsPage({
                     {row.vendorName}
                   </Link>
                 </h2>
-                <p className="text-sm text-[#767b89]">{row.ratingId ? "Rated — editing revises it" : "Not rated yet"}</p>
+                <p className="text-sm text-kuartz-muted">{row.ratingId ? "Rated — editing revises it" : "Not rated yet"}</p>
               </div>
 
               <div className="mt-4 flex flex-wrap items-end gap-4">

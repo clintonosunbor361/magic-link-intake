@@ -27,7 +27,7 @@ export default async function ApprovalBatchCreatedPage({
 
   return (
     <div>
-      <header className="border-b border-[#d9d8d1] pb-8">
+      <header className="border-b border-kuartz-line pb-8">
         <p className="eyebrow">Order</p>
         <h1 className="page-title">Approval batch created</h1>
         <p className="page-description">
@@ -49,12 +49,12 @@ export default async function ApprovalBatchCreatedPage({
         <section className="mt-9 space-y-8">
           <div>
             <h2 className="section-title">Approval link</h2>
-            <p className="mt-2 text-sm text-[#767b89]">
+            <p className="mt-2 text-sm text-kuartz-muted">
               This link is shown only once — send it now or copy it. Creating another batch for this Order invalidates
               this link.
             </p>
             <div className="mt-3 flex flex-wrap items-center gap-3">
-              <code className="rounded-[0.6rem] border border-[#d9d8d1] bg-white/70 px-3 py-2 text-sm">{approvalLink}</code>
+              <code className="rounded-[0.6rem] border border-kuartz-line bg-white/70 px-3 py-2 text-sm">{approvalLink}</code>
               <CopyLinkButton url={approvalLink} />
               <form action={markApprovalBatchCopiedAction}>
                 <input type="hidden" name="orderId" value={order.id} />
@@ -84,7 +84,7 @@ export default async function ApprovalBatchCreatedPage({
           </form>
         </section>
       ) : (
-        <p className="mt-6 text-sm text-[#767b89]">
+        <p className="mt-6 text-sm text-kuartz-muted">
           This link is no longer available to display. Check the Approval batches list on the Order page, or create a
           new batch if the client still needs to decide.
         </p>

@@ -104,7 +104,7 @@ const required = (name: string) => {
 };
 
 const databaseUrl = required("DATABASE_URL");
-const email = required("BOOTSTRAP_ADMIN_EMAIL").toLowerCase();
+const email = required("BOOTSTRAP_ADMIN_EMAIL").trim().toLowerCase();
 const password = required("BOOTSTRAP_ADMIN_PASSWORD");
 const fullName = process.env.BOOTSTRAP_ADMIN_NAME ?? "Kuartz Super Admin";
 const organizationName = process.env.BOOTSTRAP_ORGANIZATION_NAME ?? "Kuartz by Roti";

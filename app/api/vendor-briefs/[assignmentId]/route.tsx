@@ -1,9 +1,9 @@
-import { renderToBuffer } from "@react-pdf/renderer";
 import { type NextRequest, NextResponse } from "next/server";
 import sharp from "sharp";
 import { requireStaffSession } from "@/lib/auth/session";
 import { businessToday } from "@/lib/domain/business-date";
 import { getOrganizationTimezone } from "@/lib/organizations/repository";
+import { renderThenRecordExport } from "@/lib/pdf/ephemeral-export";
 import { getPrivateObjectBytes } from "@/lib/storage/r2";
 import {
   buildVendorBriefDocument,
@@ -12,7 +12,7 @@ import {
   type VendorBriefSelection,
 } from "@/lib/vendor-briefs/document";
 import { decideBriefExport, recordBriefExport } from "@/lib/vendor-briefs/export-service";
-import { VendorBriefPdf, type RenderableBriefImage } from "@/lib/vendor-briefs/pdf";
+import { renderVendorBriefPdf, type RenderableBriefImage } from "@/lib/vendor-briefs/pdf";
 import { createBriefExportRepository, getVendorBriefContext } from "@/lib/vendor-briefs/repository";
 
 // Exporting is a POST, not a GET, because it mutates: hitting this route is what makes the export
@@ -53,22 +53,30 @@ export async function POST(request: NextRequest, context: { params: Promise<{ as
     edits: payload.edits,
   });
 
-  const images = await loadImages(briefContext.imageObjects, document.images.map((image) => image.revisionId));
-
-  const timezone = await getOrganizationTimezone(session.organizationId);
-  const pdf = await renderToBuffer(
-    <VendorBriefPdf document={document} images={images} exportedOn={businessToday(timezone)} />,
-  );
-
-  await recordBriefExport(
-    {
-      organizationId: session.organizationId,
-      assignmentId,
-      actor: { staffId: session.userId },
-      decision,
-    },
-    createBriefExportRepository(),
-  );
+  let pdf: Buffer;
+  try {
+    pdf = await renderThenRecordExport(
+      async () => {
+        const images = await loadImages(briefContext.imageObjects, document.images.map((image) => image.revisionId));
+        const timezone = await getOrganizationTimezone(session.organizationId);
+        return renderVendorBriefPdf(document, images, businessToday(timezone));
+      },
+      () => recordBriefExport(
+        {
+          organizationId: session.organizationId,
+          assignmentId,
+          actor: { staffId: session.userId },
+          decision,
+        },
+        createBriefExportRepository(),
+      ),
+    );
+  } catch (error) {
+    return NextResponse.json(
+      { error: error instanceof Error ? error.message : "This brief could not be exported." },
+      { status: 422 },
+    );
+  }
 
   const filename = `vendor-brief-${slugify(document.itemLabel ?? document.itemTypeName)}.pdf`;
   return new NextResponse(new Uint8Array(pdf), {
@@ -78,6 +86,7 @@ export async function POST(request: NextRequest, context: { params: Promise<{ as
       "Content-Disposition": `attachment; filename="${filename}"`,
       // Nothing about a brief should be cached: it is assembled from live records every time.
       "Cache-Control": "no-store",
+      "X-Content-Type-Options": "nosniff",
     },
   });
 }
@@ -132,13 +141,12 @@ async function loadImages(
           .toBuffer();
         return { revisionId: image.revisionId, label: image.label, data };
       } catch {
-        // One unreadable reference must not cost the whole brief — the rest still exports.
-        return null;
+        throw new Error(`The selected reference “${image.label}” could not be included. Remove it or upload a new revision.`);
       }
     }),
   );
 
-  return loaded.filter((image): image is RenderableBriefImage => image !== null);
+  return loaded;
 }
 
 function slugify(value: string): string {

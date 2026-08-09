@@ -1,13 +1,13 @@
-import { renderToBuffer } from "@react-pdf/renderer";
 import { type NextRequest, NextResponse } from "next/server";
 import { requireStaffSession } from "@/lib/auth/session";
 import { businessToday } from "@/lib/domain/business-date";
 import { canManageFinance } from "@/lib/domain/access-control";
 import { buildInvoiceDocument } from "@/lib/finance/invoice-document";
-import { InvoicePdf } from "@/lib/finance/invoice-pdf";
+import { renderInvoicePdf } from "@/lib/finance/invoice-pdf";
 import { markInvoiceSent } from "@/lib/finance/invoice-service";
 import { createInvoiceRepository, getInvoiceForOrder } from "@/lib/finance/repository";
 import { getOrganizationTimezone } from "@/lib/organizations/repository";
+import { renderThenRecordExport } from "@/lib/pdf/ephemeral-export";
 import { getDatabase } from "@/db";
 import { invoices, orders } from "@/db/schema";
 import { and, eq } from "drizzle-orm";
@@ -32,23 +32,6 @@ export async function POST(request: NextRequest, context: { params: Promise<{ in
   const invoice = await getInvoiceForOrder(session.organizationId, orderId);
   if (!invoice) return NextResponse.json({ error: "Invoice was not found." }, { status: 404 });
 
-  try {
-    await markInvoiceSent(
-      {
-        actor: { role: session.role, staffId: session.userId },
-        organizationId: session.organizationId,
-        invoiceId,
-        expectedVersion: invoice.version,
-      },
-      createInvoiceRepository(),
-    );
-  } catch (error) {
-    return NextResponse.json(
-      { error: error instanceof Error ? error.message : "This Invoice could not be sent." },
-      { status: 422 },
-    );
-  }
-
   const document = buildInvoiceDocument({
     invoiceNumber: invoice.invoiceNumber,
     organizationName: session.organizationName,
@@ -62,8 +45,29 @@ export async function POST(request: NextRequest, context: { params: Promise<{ in
     paymentInstructions: invoice.paymentInstructions,
   });
 
-  const timezone = await getOrganizationTimezone(session.organizationId);
-  const pdf = await renderToBuffer(<InvoicePdf document={document} issuedOn={businessToday(timezone)} />);
+  let pdf: Buffer;
+  try {
+    pdf = await renderThenRecordExport(
+      async () => {
+        const timezone = await getOrganizationTimezone(session.organizationId);
+        return renderInvoicePdf(document, businessToday(timezone));
+      },
+      () => markInvoiceSent(
+        {
+          actor: { role: session.role, staffId: session.userId },
+          organizationId: session.organizationId,
+          invoiceId,
+          expectedVersion: invoice.version,
+        },
+        createInvoiceRepository(),
+      ),
+    );
+  } catch (error) {
+    return NextResponse.json(
+      { error: error instanceof Error ? error.message : "This Invoice could not be sent." },
+      { status: 422 },
+    );
+  }
 
   return new NextResponse(new Uint8Array(pdf), {
     status: 200,
@@ -71,6 +75,7 @@ export async function POST(request: NextRequest, context: { params: Promise<{ in
       "Content-Type": "application/pdf",
       "Content-Disposition": `attachment; filename="${invoice.invoiceNumber.toLowerCase()}.pdf"`,
       "Cache-Control": "no-store",
+      "X-Content-Type-Options": "nosniff",
     },
   });
 }

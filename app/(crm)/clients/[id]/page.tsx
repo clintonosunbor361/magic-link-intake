@@ -61,7 +61,7 @@ export default async function ClientDetailPage({
 
   return (
     <div>
-      <header className="border-b border-[#d9d8d1] pb-8">
+      <header className="border-b border-kuartz-line pb-8">
         <p className="eyebrow">Client</p>
         <h1 className="page-title">{client.fullName}</h1>
         <p className="page-description">Client since {dateFormatter.format(client.createdAt)}</p>
@@ -78,7 +78,7 @@ export default async function ClientDetailPage({
         <div className="space-y-8">
           <div>
             <h2 className="section-title">Identity</h2>
-            <form action={updateClientAction} className="mt-4 space-y-4 border-y border-[#d9d8d1] py-5">
+            <form action={updateClientAction} className="mt-4 space-y-4 border-y border-kuartz-line py-5">
               <input type="hidden" name="clientId" value={client.id} />
               <input type="hidden" name="version" value={client.version} />
               <div className="grid gap-4 sm:grid-cols-2">
@@ -92,13 +92,13 @@ export default async function ClientDetailPage({
                 </label>
                 <label className="form-group">
                   <span>
-                    WhatsApp <span className="font-normal text-[#50586c]">(optional)</span>
+                    WhatsApp <span className="font-normal text-kuartz-secondary">(optional)</span>
                   </span>
                   <Input name="whatsappPhone" defaultValue={client.whatsappPhone ?? ""} />
                 </label>
                 <label className="form-group">
                   <span>
-                    Email <span className="font-normal text-[#50586c]">(optional)</span>
+                    Email <span className="font-normal text-kuartz-secondary">(optional)</span>
                   </span>
                   <Input name="email" type="email" defaultValue={client.email ?? ""} />
                 </label>
@@ -111,7 +111,7 @@ export default async function ClientDetailPage({
 
           <div>
             <h2 className="section-title">Order history</h2>
-            <div className="mt-4 divide-y divide-[#d9d8d1] border-y border-[#d9d8d1]">
+            <div className="mt-4 divide-y divide-kuartz-line border-y border-kuartz-line">
               {orders.length ? (
                 orders.map((order) => (
                   <div
@@ -119,29 +119,29 @@ export default async function ClientDetailPage({
                     className="grid gap-1 py-4 text-sm sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center"
                   >
                     <div>
-                      <Link href={`/orders/${order.id}`} className="font-semibold text-[#171b36] hover:underline">
+                      <Link href={`/orders/${order.id}`} className="font-semibold text-kuartz-ink hover:underline">
                         {order.title}
                       </Link>
-                      <p className="mt-1 text-[#50586c]">
+                      <p className="mt-1 text-kuartz-secondary">
                         {order.eventType} · {dateFormatter.format(order.createdAt)}
                         {order.archivedAt ? " · Archived" : ""}
                       </p>
                     </div>
-                    <p className="text-[#171b36]">₦{formatMinorUnits(order.finalAgreedPriceMinor)}</p>
+                    <p className="text-kuartz-ink">₦{formatMinorUnits(order.finalAgreedPriceMinor)}</p>
                   </div>
                 ))
               ) : (
-                <p className="py-8 text-sm text-[#767b89]">No Orders yet for this Client.</p>
+                <p className="py-8 text-sm text-kuartz-muted">No Orders yet for this Client.</p>
               )}
             </div>
           </div>
 
           <div>
             <h2 className="section-title">Measurements</h2>
-            {measurementProfile.archivedAt ? <p className="mt-2 text-sm text-[#767b89]">This measurement profile is archived.</p> : null}
+            {measurementProfile.archivedAt ? <p className="mt-2 text-sm text-kuartz-muted">This measurement profile is archived.</p> : null}
             <div className="mt-4 space-y-4">
               {measurementFields.map((field) => (
-                <div key={field.fieldId} className="border-y border-[#d9d8d1] py-4">
+                <div key={field.fieldId} className="border-y border-kuartz-line py-4">
                   <form
                     action={setMeasurementValueAction}
                     aria-label={`Measurement — ${field.fieldName}`}
@@ -153,13 +153,13 @@ export default async function ClientDetailPage({
                     <input type="hidden" name="version" value={field.version} />
                     <label className="form-group">
                       <span>
-                        {field.fieldName} <span className="font-normal text-[#767b89]">({field.unit})</span>
+                        {field.fieldName} <span className="font-normal text-kuartz-muted">({field.unit})</span>
                       </span>
                       <Input name="value" defaultValue={field.value ?? ""} />
                     </label>
                     <label className="form-group">
                       <span>
-                        Note <span className="font-normal text-[#50586c]">(optional)</span>
+                        Note <span className="font-normal text-kuartz-secondary">(optional)</span>
                       </span>
                       <Input name="note" />
                     </label>
@@ -167,7 +167,7 @@ export default async function ClientDetailPage({
                       Save
                     </Button>
                   </form>
-                  <p className="mt-2 text-xs text-[#767b89]">
+                  <p className="mt-2 text-xs text-kuartz-muted">
                     {field.value ? (
                       <>
                         {field.lastEditedByName ? `Last edited by ${field.lastEditedByName}` : `Set by ${field.createdByName}`}
@@ -179,10 +179,10 @@ export default async function ClientDetailPage({
                   </p>
                   {field.revisions.length ? (
                     <details className="mt-2">
-                      <summary className="cursor-pointer text-xs font-semibold text-[#50586c]">
+                      <summary className="cursor-pointer text-xs font-semibold text-kuartz-secondary">
                         Edit history ({field.revisions.length})
                       </summary>
-                      <ul className="mt-2 space-y-1 text-sm text-[#767b89]">
+                      <ul className="mt-2 space-y-1 text-sm text-kuartz-muted">
                         {field.revisions.map((revision) => (
                           <li key={revision.id}>
                             {revision.previousValue ?? "(unset)"} → {revision.newValue} · {revision.changedByName} ·{" "}
@@ -198,7 +198,7 @@ export default async function ClientDetailPage({
             </div>
 
             <div className="mt-6">
-              <h3 className="text-xs font-semibold uppercase tracking-wide text-[#50586c]">Attachments</h3>
+              <h3 className="text-xs font-semibold uppercase tracking-wide text-kuartz-secondary">Attachments</h3>
               <div className="mt-3 space-y-2">
                 {attachments.length ? (
                   attachments.map((attachment) => {
@@ -234,7 +234,7 @@ export default async function ClientDetailPage({
                     );
                   })
                 ) : (
-                  <p className="text-sm text-[#767b89]">No attachments yet.</p>
+                  <p className="text-sm text-kuartz-muted">No attachments yet.</p>
                 )}
               </div>
               <form
@@ -278,21 +278,21 @@ export default async function ClientDetailPage({
             </div>
 
             <div className="mt-6">
-              <h3 className="text-xs font-semibold uppercase tracking-wide text-[#50586c]">Measurement confirmations</h3>
-              <div className="mt-3 divide-y divide-[#eceae2]">
+              <h3 className="text-xs font-semibold uppercase tracking-wide text-kuartz-secondary">Measurement confirmations</h3>
+              <div className="mt-3 divide-y divide-kuartz-lineSoft">
                 {measurementConfirmations.length ? (
                   measurementConfirmations.map((confirmation) => (
                     <div key={confirmation.id} className="grid gap-1 py-3 text-sm sm:grid-cols-[1fr_auto]">
-                      <p className="text-[#171b36]">
+                      <p className="text-kuartz-ink">
                         Created {dateFormatter.format(confirmation.createdAt)}
                         {confirmation.deliveryMethod ? ` · ${confirmation.deliveryMethod === "email" ? "Emailed" : "Copied"}` : " · Not yet delivered"}
                         {confirmation.decisionComment ? ` — "${confirmation.decisionComment}"` : ""}
                       </p>
-                      <p className="font-semibold text-[#767b89]">{confirmation.status}</p>
+                      <p className="font-semibold text-kuartz-muted">{confirmation.status}</p>
                     </div>
                   ))
                 ) : (
-                  <p className="py-3 text-sm text-[#767b89]">No measurement confirmations sent yet.</p>
+                  <p className="py-3 text-sm text-kuartz-muted">No measurement confirmations sent yet.</p>
                 )}
               </div>
               <form action={issueMeasurementConfirmationAction} className="mt-4">

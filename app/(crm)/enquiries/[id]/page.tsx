@@ -45,7 +45,7 @@ export default async function EnquiryDetailPage({
 
   return (
     <div>
-      <header className="border-b border-[#d9d8d1] pb-8">
+      <header className="border-b border-kuartz-line pb-8">
         <p className="eyebrow">Enquiry</p>
         <h1 className="page-title">{enquiry.fullName}</h1>
         <p className="page-description">
@@ -71,48 +71,48 @@ export default async function EnquiryDetailPage({
         <div className="space-y-8">
           <div>
             <h2 className="section-title">Contact details</h2>
-            <dl className="mt-4 grid gap-4 border-y border-[#d9d8d1] py-5 sm:grid-cols-2">
+            <dl className="mt-4 grid gap-4 border-y border-kuartz-line py-5 sm:grid-cols-2">
               <div>
-                <dt className="text-xs font-semibold uppercase tracking-wide text-[#50586c]">Primary phone</dt>
-                <dd className="mt-1 text-sm text-[#171b36]">{enquiry.primaryPhone}</dd>
+                <dt className="text-xs font-semibold uppercase tracking-wide text-kuartz-secondary">Primary phone</dt>
+                <dd className="mt-1 text-sm text-kuartz-ink">{enquiry.primaryPhone}</dd>
               </div>
               <div>
-                <dt className="text-xs font-semibold uppercase tracking-wide text-[#50586c]">WhatsApp</dt>
-                <dd className="mt-1 text-sm text-[#171b36]">{enquiry.whatsappPhone || "Same as primary"}</dd>
+                <dt className="text-xs font-semibold uppercase tracking-wide text-kuartz-secondary">WhatsApp</dt>
+                <dd className="mt-1 text-sm text-kuartz-ink">{enquiry.whatsappPhone || "Same as primary"}</dd>
               </div>
               <div>
-                <dt className="text-xs font-semibold uppercase tracking-wide text-[#50586c]">Email</dt>
-                <dd className="mt-1 text-sm text-[#171b36]">{enquiry.email || "—"}</dd>
+                <dt className="text-xs font-semibold uppercase tracking-wide text-kuartz-secondary">Email</dt>
+                <dd className="mt-1 text-sm text-kuartz-ink">{enquiry.email || "—"}</dd>
               </div>
               <div>
-                <dt className="text-xs font-semibold uppercase tracking-wide text-[#50586c]">Preferred contact</dt>
-                <dd className="mt-1 text-sm text-[#171b36]">{enquiry.preferredContactChannel}</dd>
+                <dt className="text-xs font-semibold uppercase tracking-wide text-kuartz-secondary">Preferred contact</dt>
+                <dd className="mt-1 text-sm text-kuartz-ink">{enquiry.preferredContactChannel}</dd>
               </div>
               <div>
-                <dt className="text-xs font-semibold uppercase tracking-wide text-[#50586c]">Event type</dt>
-                <dd className="mt-1 text-sm text-[#171b36]">{enquiry.eventType}</dd>
+                <dt className="text-xs font-semibold uppercase tracking-wide text-kuartz-secondary">Event type</dt>
+                <dd className="mt-1 text-sm text-kuartz-ink">{enquiry.eventType}</dd>
               </div>
               <div>
-                <dt className="text-xs font-semibold uppercase tracking-wide text-[#50586c]">Budget range</dt>
-                <dd className="mt-1 text-sm text-[#171b36]">{enquiry.budgetRange || "—"}</dd>
+                <dt className="text-xs font-semibold uppercase tracking-wide text-kuartz-secondary">Budget range</dt>
+                <dd className="mt-1 text-sm text-kuartz-ink">{enquiry.budgetRange || "—"}</dd>
               </div>
               {enquiry.channel === "internal_staff" ? (
                 <>
                   <div>
-                    <dt className="text-xs font-semibold uppercase tracking-wide text-[#50586c]">Lead source</dt>
-                    <dd className="mt-1 text-sm text-[#171b36]">{enquiry.leadSource || "—"}</dd>
+                    <dt className="text-xs font-semibold uppercase tracking-wide text-kuartz-secondary">Lead source</dt>
+                    <dd className="mt-1 text-sm text-kuartz-ink">{enquiry.leadSource || "—"}</dd>
                   </div>
                   <div>
-                    <dt className="text-xs font-semibold uppercase tracking-wide text-[#50586c]">Primary owner</dt>
-                    <dd className="mt-1 text-sm text-[#171b36]">{owner?.fullName || "Unassigned"}</dd>
+                    <dt className="text-xs font-semibold uppercase tracking-wide text-kuartz-secondary">Primary owner</dt>
+                    <dd className="mt-1 text-sm text-kuartz-ink">{owner?.fullName || "Unassigned"}</dd>
                   </div>
                 </>
               ) : null}
             </dl>
-            {enquiry.brief ? <p className="mt-4 text-sm leading-6 text-[#50586c]">{enquiry.brief}</p> : null}
+            {enquiry.brief ? <p className="mt-4 text-sm leading-6 text-kuartz-secondary">{enquiry.brief}</p> : null}
             {enquiry.channel === "internal_staff" && enquiry.internalNotes ? (
-              <p className="mt-4 rounded-[0.8rem] border border-[#d9d8d1] bg-white/60 p-4 text-sm leading-6 text-[#50586c]">
-                <span className="font-semibold text-[#171b36]">Internal notes: </span>
+              <p className="mt-4 rounded-[0.8rem] border border-kuartz-line bg-white/60 p-4 text-sm leading-6 text-kuartz-secondary">
+                <span className="font-semibold text-kuartz-ink">Internal notes: </span>
                 {enquiry.internalNotes}
               </p>
             ) : null}
@@ -120,19 +120,19 @@ export default async function EnquiryDetailPage({
 
           <div>
             <h2 className="section-title">Follow-up notes</h2>
-            <div className="mt-4 space-y-3 border-y border-[#d9d8d1] py-4">
+            <div className="mt-4 space-y-3 border-y border-kuartz-line py-4">
               {notes.length ? (
                 notes.map((note) => (
-                  <div key={note.id} className="border-b border-[#eceae2] pb-3 last:border-none last:pb-0">
-                    <p className="text-sm text-[#171b36]">{note.note}</p>
-                    <p className="mt-1 text-xs text-[#50586c]">
+                  <div key={note.id} className="border-b border-kuartz-lineSoft pb-3 last:border-none last:pb-0">
+                    <p className="text-sm text-kuartz-ink">{note.note}</p>
+                    <p className="mt-1 text-xs text-kuartz-secondary">
                       {note.createdByName ?? "Staff"} · {dateFormatter.format(note.createdAt)}
                       {note.nextFollowUpDate ? ` · Next follow-up ${dayFormatter.format(new Date(note.nextFollowUpDate))}` : ""}
                     </p>
                   </div>
                 ))
               ) : (
-                <p className="py-4 text-sm text-[#50586c]">No follow-up notes yet.</p>
+                <p className="py-4 text-sm text-kuartz-secondary">No follow-up notes yet.</p>
               )}
             </div>
             <form action={addFollowUpNoteAction} className="mt-4 space-y-3">
@@ -142,7 +142,7 @@ export default async function EnquiryDetailPage({
                 <textarea
                   name="note"
                   required
-                  className="min-h-[4.5rem] w-full rounded-[0.8rem] border border-[#cfcec7] bg-white/70 px-3.5 py-3 text-sm text-[#171b36] outline-none focus:border-[#88925f] focus:bg-white focus:ring-4 focus:ring-[#d2ff67]/20"
+                  className="min-h-[4.5rem] w-full rounded-[0.8rem] border border-kuartz-control bg-white/70 px-3.5 py-3 text-sm text-kuartz-ink outline-none focus:border-[#88925f] focus:bg-white focus:ring-4 focus:ring-kuartz-lime/20"
                 />
               </label>
               <div className="grid gap-4 sm:grid-cols-2">
@@ -151,7 +151,7 @@ export default async function EnquiryDetailPage({
                   <Input type="date" name="occurredOn" defaultValue={new Date().toISOString().slice(0, 10)} required />
                 </label>
                 <label className="form-group">
-                  <span>Next follow-up <span className="font-normal text-[#50586c]">(optional)</span></span>
+                  <span>Next follow-up <span className="font-normal text-kuartz-secondary">(optional)</span></span>
                   <Input type="date" name="nextFollowUpDate" />
                 </label>
               </div>
@@ -163,15 +163,15 @@ export default async function EnquiryDetailPage({
 
           <div>
             <h2 className="section-title">Tasks</h2>
-            <div className="mt-4 space-y-3 border-y border-[#d9d8d1] py-4">
+            <div className="mt-4 space-y-3 border-y border-kuartz-line py-4">
               {tasks.length ? (
                 tasks.map((task) => (
-                  <div key={task.id} className="flex items-center justify-between gap-4 border-b border-[#eceae2] pb-3 last:border-none last:pb-0">
+                  <div key={task.id} className="flex items-center justify-between gap-4 border-b border-kuartz-lineSoft pb-3 last:border-none last:pb-0">
                     <div>
-                      <p className={`text-sm font-medium ${task.status === "done" ? "text-[#50586c] line-through" : "text-[#171b36]"}`}>
+                      <p className={`text-sm font-medium ${task.status === "done" ? "text-kuartz-secondary line-through" : "text-kuartz-ink"}`}>
                         {task.title}
                       </p>
-                      <p className="mt-1 text-xs text-[#50586c]">
+                      <p className="mt-1 text-xs text-kuartz-secondary">
                         Due {dayFormatter.format(new Date(task.dueDate))} · {task.assignedToName ?? "Unassigned"}
                       </p>
                     </div>
@@ -186,7 +186,7 @@ export default async function EnquiryDetailPage({
                   </div>
                 ))
               ) : (
-                <p className="py-4 text-sm text-[#50586c]">No tasks yet.</p>
+                <p className="py-4 text-sm text-kuartz-secondary">No tasks yet.</p>
               )}
             </div>
             <form action={createTaskAction} className="mt-4 space-y-3">
@@ -212,7 +212,7 @@ export default async function EnquiryDetailPage({
                 </label>
               </div>
               <label className="form-group">
-                <span>Note <span className="font-normal text-[#50586c]">(optional)</span></span>
+                <span>Note <span className="font-normal text-kuartz-secondary">(optional)</span></span>
                 <Input name="note" />
               </label>
               <Button type="submit" variant="outline">

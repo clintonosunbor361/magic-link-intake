@@ -25,7 +25,7 @@ export default async function EnquiriesInboxPage({
 
   return (
     <div>
-      <header className="grid gap-8 border-b border-[#d9d8d1] pb-8 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-end">
+      <header className="grid gap-8 border-b border-kuartz-line pb-8 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-end">
         <div>
           <p className="eyebrow">Enquiries</p>
           <h1 className="page-title">Inbox</h1>
@@ -47,9 +47,9 @@ export default async function EnquiriesInboxPage({
           name="search"
           defaultValue={params.search ?? ""}
           placeholder="Search by name, phone, or email"
-          className="min-h-[3.1rem] w-full max-w-sm rounded-[0.8rem] border border-[#cfcec7] bg-white/70 px-3.5 py-3 text-sm text-[#171b36] outline-none focus:border-[#88925f] focus:bg-white focus:ring-4 focus:ring-[#d2ff67]/20"
+          className="min-h-[3.1rem] w-full max-w-sm rounded-[0.8rem] border border-kuartz-control bg-white/70 px-3.5 py-3 text-sm text-kuartz-ink outline-none focus:border-[#88925f] focus:bg-white focus:ring-4 focus:ring-kuartz-lime/20"
         />
-        <label className="flex items-center gap-2 text-sm font-semibold text-[#50586c]">
+        <label className="flex items-center gap-2 text-sm font-semibold text-kuartz-secondary">
           <input type="checkbox" name="includeArchived" value="1" defaultChecked={params.includeArchived === "1"} />
           Include archived
         </label>
@@ -60,9 +60,24 @@ export default async function EnquiriesInboxPage({
 
       <section className="mt-9">
         {enquiries.length ? (
-          <div className="overflow-x-auto border-y border-[#d9d8d1]">
+          <>
+          <ul className="divide-y divide-kuartz-line border-y border-kuartz-line md:hidden">
+            {enquiries.map((enquiry) => (
+              <li key={enquiry.id} className="py-4">
+                <Link href={`/enquiries/${enquiry.id}`} className="block min-h-11 font-semibold text-kuartz-ink">
+                  {enquiry.fullName}
+                  <span className="mt-1 block text-sm font-normal text-kuartz-secondary">{enquiry.primaryPhone}</span>
+                </Link>
+                <dl className="mt-2 grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
+                  <div><dt className="text-xs text-kuartz-muted">Event</dt><dd className="text-kuartz-body">{enquiry.eventType}</dd></div>
+                  <div><dt className="text-xs text-kuartz-muted">Status</dt><dd className="text-kuartz-body">{enquiry.convertedAt ? "Converted" : enquiry.archivedAt ? "Archived" : "Open"}</dd></div>
+                </dl>
+              </li>
+            ))}
+          </ul>
+          <div className="hidden overflow-x-auto border-y border-kuartz-line md:block">
             <table className="w-full min-w-[820px] text-left text-sm">
-              <thead className="text-xs text-[#50586c]">
+              <thead className="text-xs text-kuartz-secondary">
                 <tr>
                   <th className="py-3 pr-4 font-semibold">Person</th>
                   <th className="px-4 py-3 font-semibold">Contact</th>
@@ -72,28 +87,29 @@ export default async function EnquiriesInboxPage({
                   <th className="pl-4 py-3 font-semibold">Received</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-[#d9d8d1]">
+              <tbody className="divide-y divide-kuartz-line">
                 {enquiries.map((enquiry) => (
                   <tr key={enquiry.id}>
-                    <td className="py-4 pr-4 font-semibold text-[#171b36]">
+                    <td className="py-4 pr-4 font-semibold text-kuartz-ink">
                       <Link href={`/enquiries/${enquiry.id}`} className="hover:underline">
                         {enquiry.fullName}
                       </Link>
                     </td>
-                    <td className="px-4 py-4 text-[#50586c]">{enquiry.primaryPhone}</td>
-                    <td className="px-4 py-4 text-[#171b36]">{enquiry.eventType}</td>
-                    <td className="px-4 py-4 text-[#50586c]">
+                    <td className="px-4 py-4 text-kuartz-secondary">{enquiry.primaryPhone}</td>
+                    <td className="px-4 py-4 text-kuartz-ink">{enquiry.eventType}</td>
+                    <td className="px-4 py-4 text-kuartz-secondary">
                       {enquiry.channel === "external_form" ? "External" : "Internal"}
                     </td>
-                    <td className="px-4 py-4 text-[#50586c]">
+                    <td className="px-4 py-4 text-kuartz-secondary">
                       {enquiry.convertedAt ? "Converted" : enquiry.archivedAt ? "Archived" : "Open"}
                     </td>
-                    <td className="pl-4 py-4 text-[#50586c]">{dateFormatter.format(enquiry.createdAt)}</td>
+                    <td className="pl-4 py-4 text-kuartz-secondary">{dateFormatter.format(enquiry.createdAt)}</td>
                   </tr>
                 ))}
               </tbody>
             </table>
           </div>
+          </>
         ) : (
           <EmptyState
             className="mt-4"
@@ -112,7 +128,7 @@ export default async function EnquiriesInboxPage({
                 Previous
               </Button>
             )}
-            <span className="text-sm text-[#50586c]">Page {page}</span>
+            <span className="text-sm text-kuartz-secondary">Page {page}</span>
             {hasNextPage ? (
               <Button asChild variant="outline">
                 <Link href={pageHref(params, page + 1)}>Next</Link>

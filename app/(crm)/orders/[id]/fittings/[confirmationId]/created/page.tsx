@@ -30,7 +30,7 @@ export default async function FittingConfirmationCreatedPage({
 
   return (
     <div>
-      <header className="border-b border-[#d9d8d1] pb-8">
+      <header className="border-b border-kuartz-line pb-8">
         <p className="eyebrow">Fittings</p>
         <h1 className="page-title">Fitting confirmation created</h1>
         <p className="page-description">
@@ -52,12 +52,12 @@ export default async function FittingConfirmationCreatedPage({
         <section className="mt-9 space-y-8">
           <div>
             <h2 className="section-title">Confirmation link</h2>
-            <p className="mt-2 text-sm text-[#767b89]">
+            <p className="mt-2 text-sm text-kuartz-muted">
               This link is shown only once — send it now or copy it. Sending another confirmation for
               this Fitting invalidates this link, and it expires after seven days.
             </p>
             <div className="mt-3 flex flex-wrap items-center gap-3">
-              <code className="rounded-[0.6rem] border border-[#d9d8d1] bg-white/70 px-3 py-2 text-sm">
+              <code className="rounded-[0.6rem] border border-kuartz-line bg-white/70 px-3 py-2 text-sm">
                 {confirmationLink}
               </code>
               <CopyLinkButton url={confirmationLink} />
@@ -88,7 +88,7 @@ export default async function FittingConfirmationCreatedPage({
           </form>
         </section>
       ) : (
-        <p className="mt-6 text-sm text-[#767b89]">
+        <p className="mt-6 text-sm text-kuartz-muted">
           This link is no longer available to display. Send a new confirmation from the Fittings page
           if the client still needs to confirm.
         </p>

@@ -27,8 +27,8 @@ export function SettingsNav({ current }: { current: string }) {
             aria-current={active ? "page" : undefined}
             className={
               active
-                ? "text-[#171b36] underline decoration-2 underline-offset-4"
-                : "text-[#50586c] transition-colors duration-200 hover:text-[#171b36]"
+                ? "text-kuartz-ink underline decoration-2 underline-offset-4"
+                : "text-kuartz-secondary transition-colors duration-200 hover:text-kuartz-ink"
             }
           >
             {link.label}

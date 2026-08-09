@@ -18,7 +18,7 @@ import { mayArchive, mayRestore } from "@/lib/domain/record-lifecycle";
 import { getOrderWithLooksAndItems } from "@/lib/orders/repository";
 
 const textareaClass =
-  "min-h-[3.5rem] w-full rounded-[0.8rem] border border-[#cfcec7] bg-white/70 px-3.5 py-3 text-sm text-[#171b36] outline-none focus:border-[#88925f] focus:bg-white focus:ring-4 focus:ring-[#d2ff67]/20";
+  "min-h-[3.5rem] w-full rounded-[0.8rem] border border-kuartz-control bg-white/70 px-3.5 py-3 text-sm text-kuartz-ink outline-none focus:border-[#88925f] focus:bg-white focus:ring-4 focus:ring-kuartz-lime/20";
 
 export default async function OrderAccessoriesPage({
   params,
@@ -45,12 +45,12 @@ export default async function OrderAccessoriesPage({
     <div>
       <Link
         href={`/orders/${id}`}
-        className="text-sm font-semibold text-[#50586c] underline-offset-4 transition-colors duration-200 hover:text-[#171b36] hover:underline"
+        className="text-sm font-semibold text-kuartz-secondary underline-offset-4 transition-colors duration-200 hover:text-kuartz-ink hover:underline"
       >
         ← {order.title}
       </Link>
 
-      <header className="mt-4 border-b border-[#d9d8d1] pb-8">
+      <header className="mt-4 border-b border-kuartz-line pb-8">
         <p className="eyebrow">Accessory sourcing</p>
         <h1 className="page-title">Accessories</h1>
         <p className="page-description">
@@ -79,7 +79,7 @@ export default async function OrderAccessoriesPage({
           {accessories.length ? (
             <div className="mt-4 space-y-6">
               {accessories.map((accessory) => (
-                <div key={accessory.id} className="border-t border-[#d9d8d1] pt-5">
+                <div key={accessory.id} className="border-t border-kuartz-line pt-5">
                 <form
                   action={updateAccessoryItemAction}
                   aria-label={accessory.label}
@@ -91,7 +91,7 @@ export default async function OrderAccessoriesPage({
 
                   <div className="flex flex-wrap items-baseline justify-between gap-2">
                     <h3 className="section-title">{accessory.label}</h3>
-                    <p className="text-sm text-[#767b89]">
+                    <p className="text-sm text-kuartz-muted">
                       {accessory.deliveryDate.state === "inherited"
                         ? `Due ${accessory.deliveryDate.date}${accessory.lookName ? ` · ${accessory.lookName}` : " · earliest Look"}`
                         : "No date — no dated Look to inherit from"}
@@ -126,13 +126,13 @@ export default async function OrderAccessoriesPage({
                     </label>
                     <label className="form-group">
                       <span>
-                        Label <span className="font-normal text-[#50586c]">(optional)</span>
+                        Label <span className="font-normal text-kuartz-secondary">(optional)</span>
                       </span>
                       <Input name="customLabel" defaultValue={accessory.customLabel ?? ""} maxLength={120} />
                     </label>
                     <label className="form-group">
                       <span>
-                        Look <span className="font-normal text-[#50586c]">(optional)</span>
+                        Look <span className="font-normal text-kuartz-secondary">(optional)</span>
                       </span>
                       <NativeSelect name="lookId" defaultValue={accessory.lookId ?? ""}>
                         <option value="">Whole Order</option>
@@ -147,7 +147,7 @@ export default async function OrderAccessoriesPage({
 
                   <label className="form-group">
                     <span>
-                      Notes <span className="font-normal text-[#50586c]">(optional)</span>
+                      Notes <span className="font-normal text-kuartz-secondary">(optional)</span>
                     </span>
                     <textarea name="notes" defaultValue={accessory.notes} className={textareaClass} />
                   </label>
@@ -196,7 +196,7 @@ export default async function OrderAccessoriesPage({
         <aside>
           <h2 className="section-title">Add an Accessory</h2>
           {canConfigure ? (
-            <form action={createAccessoryItemAction} className="mt-4 space-y-4 border-t border-[#d9d8d1] pt-5">
+            <form action={createAccessoryItemAction} className="mt-4 space-y-4 border-t border-kuartz-line pt-5">
               <input type="hidden" name="orderId" value={id} />
               <label className="form-group">
                 <span>Type</span>
@@ -210,13 +210,13 @@ export default async function OrderAccessoriesPage({
               </label>
               <label className="form-group">
                 <span>
-                  Label <span className="font-normal text-[#50586c]">(optional)</span>
+                  Label <span className="font-normal text-kuartz-secondary">(optional)</span>
                 </span>
                 <Input name="customLabel" maxLength={120} placeholder="e.g. Black oxfords, size 44" />
               </label>
               <label className="form-group">
                 <span>
-                  Look <span className="font-normal text-[#50586c]">(optional)</span>
+                  Look <span className="font-normal text-kuartz-secondary">(optional)</span>
                 </span>
                 <NativeSelect name="lookId" defaultValue="">
                   <option value="">Whole Order</option>
@@ -229,7 +229,7 @@ export default async function OrderAccessoriesPage({
               </label>
               <label className="form-group">
                 <span>
-                  Notes <span className="font-normal text-[#50586c]">(optional)</span>
+                  Notes <span className="font-normal text-kuartz-secondary">(optional)</span>
                 </span>
                 <textarea name="notes" className={textareaClass} />
               </label>

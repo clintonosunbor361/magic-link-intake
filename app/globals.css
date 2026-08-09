@@ -4,7 +4,20 @@
 
 :root {
   color-scheme: light;
-  background: #f3f5f8;
+  --color-canvas: #f4f3ee;
+  --color-surface: #ffffff;
+  --color-ink: #171b36;
+  --color-body: #272c45;
+  --color-secondary: #50586c;
+  --color-muted: #606777;
+  --color-line: #d9d8d1;
+  --color-line-soft: #eceae2;
+  --color-control: #cfcec7;
+  --color-accent: #d2ff67;
+  --color-danger: #7e403d;
+  --color-success: #44582a;
+  --focus-ring: 0 0 0 4px rgba(210, 255, 103, 0.32);
+  background: var(--color-canvas);
 }
 
 * {
@@ -29,6 +42,45 @@ input,
 select,
 textarea {
   font: inherit;
+}
+
+button,
+[role="button"],
+a[href],
+select,
+summary {
+  touch-action: manipulation;
+}
+
+button:not(:disabled),
+[role="button"],
+a[href],
+select:not(:disabled),
+summary {
+  cursor: pointer;
+}
+
+:focus-visible {
+  outline: 2px solid var(--color-ink);
+  outline-offset: 3px;
+}
+
+.skip-link {
+  position: fixed;
+  left: 1rem;
+  top: 1rem;
+  z-index: 100;
+  transform: translateY(-180%);
+  border-radius: 0.75rem;
+  background: var(--color-accent);
+  padding: 0.75rem 1rem;
+  color: var(--color-ink);
+  font-weight: 800;
+  transition: transform 160ms ease;
+}
+
+.skip-link:focus {
+  transform: translateY(0);
 }
 
 ::selection {
@@ -452,6 +504,16 @@ textarea {
   .form-alert, .form-success { margin-bottom: 1.25rem; border-left: 3px solid #b95b59; background: rgba(255,255,255,0.7); padding: 0.85rem 1rem; color: #713c3b; font-size: 0.875rem; line-height: 1.5; }
   .form-success { border-left-color: #819d45; color: #44582a; }
   .offline-banner { position: fixed; inset: auto 1rem 1rem 1rem; z-index: 60; border: 1px solid rgba(255,255,255,.15); border-radius: .85rem; background: #171b36; padding: .8rem 1rem; color: white; text-align: center; font-size: .8rem; font-weight: 650; box-shadow: 0 12px 35px rgba(23,27,54,.22); }
+}
+
+@media (max-width: 639px) {
+  input,
+  select,
+  textarea,
+  .field,
+  .select-field {
+    font-size: 1rem;
+  }
 }
 
 @media (min-width: 1024px) {

@@ -28,7 +28,7 @@ export default async function ConvertEnquiryPage({
 
   return (
     <div>
-      <header className="border-b border-[#d9d8d1] pb-8">
+      <header className="border-b border-kuartz-line pb-8">
         <p className="eyebrow">Enquiry</p>
         <h1 className="page-title">Convert {enquiry.fullName}</h1>
         <p className="page-description">Create a Client and Active Order from this Enquiry. This cannot be undone.</p>
@@ -44,7 +44,7 @@ export default async function ConvertEnquiryPage({
 
         <div>
           <h2 className="section-title">Client</h2>
-          <p className="mt-1 text-sm text-[#50586c]">
+          <p className="mt-1 text-sm text-kuartz-secondary">
             Link to an existing Client, or leave unselected to create a new Client from this Enquiry&apos;s details.
           </p>
           <div className="mt-4">
@@ -90,7 +90,7 @@ export default async function ConvertEnquiryPage({
               Friends &amp; Family discount
             </label>
             <label className="form-group">
-              <span>Amount discounted (₦) <span className="font-normal text-[#50586c]">(optional)</span></span>
+              <span>Amount discounted (₦) <span className="font-normal text-kuartz-secondary">(optional)</span></span>
               <Input name="ffDiscountAmount" type="number" min="0" step="0.01" />
             </label>
           </div>
@@ -104,11 +104,11 @@ export default async function ConvertEnquiryPage({
               <Input name="lookName" required placeholder="e.g. Traditional Wedding" />
             </label>
             <label className="form-group">
-              <span>Look date <span className="font-normal text-[#50586c]">(optional)</span></span>
+              <span>Look date <span className="font-normal text-kuartz-secondary">(optional)</span></span>
               <Input name="lookDate" type="date" />
             </label>
             <label className="form-group">
-              <span>Notes <span className="font-normal text-[#50586c]">(optional)</span></span>
+              <span>Notes <span className="font-normal text-kuartz-secondary">(optional)</span></span>
               <Input name="lookNotes" />
             </label>
           </div>

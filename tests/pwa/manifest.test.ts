@@ -9,15 +9,24 @@ describe("online-only PWA contract", () => {
       expect.objectContaining({
         name: "Kuartz Fashion CRM",
         start_url: "/",
+        scope: "/",
         display: "standalone",
       }),
+    );
+    expect(manifest().icons).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ sizes: "192x192", type: "image/png" }),
+        expect.objectContaining({ sizes: "512x512", purpose: "maskable" }),
+      ]),
     );
   });
 
   it("caches only the dedicated offline fallback, not CRM records", () => {
     const worker = readFileSync(resolve("public/sw.js"), "utf8");
-    expect(worker).toContain('cache.addAll(["/offline", "/kuartz-mark.svg"])');
+    expect(worker).toContain('const CACHE = "kuartz-shell-v2"');
+    expect(worker).toContain("cache.addAll(OFFLINE_ASSETS)");
     expect(worker).toContain('caches.match("/offline")');
     expect(worker).not.toContain('caches.match("/")');
+    expect(worker).not.toContain("event.request.method !== \"POST\"");
   });
 });

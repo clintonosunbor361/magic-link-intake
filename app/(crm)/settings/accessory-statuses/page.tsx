@@ -31,7 +31,7 @@ export default async function AccessoryStatusesPage({
 
   return (
     <div>
-      <header className="border-b border-[#d9d8d1] pb-8">
+      <header className="border-b border-kuartz-line pb-8">
         <p className="eyebrow">Organization settings</p>
         <h1 className="page-title">Accessory statuses</h1>
         <p className="page-description">
@@ -53,7 +53,7 @@ export default async function AccessoryStatusesPage({
         <div>
           <h2 className="section-title">Configured statuses</h2>
           {statuses.length ? (
-            <div role="list" className="mt-4 divide-y divide-[#d9d8d1] border-y border-[#d9d8d1]">
+            <div role="list" className="mt-4 divide-y divide-kuartz-line border-y border-kuartz-line">
               {statuses.map((status, index) => (
                 <div
                   key={status.id}
@@ -62,7 +62,7 @@ export default async function AccessoryStatusesPage({
                   className="grid gap-4 py-5 md:grid-cols-[minmax(0,1fr)_auto] md:items-center"
                 >
                   <div>
-                    <p className="flex flex-wrap items-center gap-2 font-semibold text-[#171b36]">
+                    <p className="flex flex-wrap items-center gap-2 font-semibold text-kuartz-ink">
                       {status.name}
                       {status.isCompleted ? (
                         <span className="inline-flex items-center gap-1 rounded-full border border-[#cadfb0] bg-[#f2f8e8] px-2 py-0.5 text-xs font-semibold text-[#4a6320]">
@@ -71,7 +71,7 @@ export default async function AccessoryStatusesPage({
                         </span>
                       ) : null}
                     </p>
-                    <p className="mt-1 text-sm text-[#767b89]">
+                    <p className="mt-1 text-sm text-kuartz-muted">
                       {status.archivedAt
                         ? "Archived"
                         : index === 0
@@ -120,17 +120,17 @@ export default async function AccessoryStatusesPage({
 
         <aside>
           <h2 className="section-title">Add a status</h2>
-          <form action={createAccessoryStatusAction} className="mt-4 space-y-4 border-t border-[#d9d8d1] pt-5">
+          <form action={createAccessoryStatusAction} className="mt-4 space-y-4 border-t border-kuartz-line pt-5">
             <input type="hidden" name="sortOrder" value={nextSortOrder} />
             <label className="form-group">
               <span>Name</span>
               <Input name="name" required maxLength={80} />
             </label>
-            <label className="flex items-start gap-3 text-sm font-semibold text-[#272c45]">
+            <label className="flex items-start gap-3 text-sm font-semibold text-kuartz-body">
               <input type="checkbox" name="isCompleted" className="mt-0.5 h-4 w-4 cursor-pointer accent-[#88925f]" />
               <span>
                 Counts as delivered
-                <small className="mt-0.5 block font-medium text-[#818693]">
+                <small className="mt-0.5 block font-medium text-kuartz-subtle">
                   Accessories at this status stop appearing as outstanding on the Order.
                 </small>
               </span>
