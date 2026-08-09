@@ -10,3 +10,4 @@ pnpm-debug.log*
 .env.local
 test-results/
 playwright-report/
+.vercel
