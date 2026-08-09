@@ -13,7 +13,7 @@ vi.mock("next/link", () => ({
 describe("mobile staff navigation", () => {
   it("opens, closes with Escape, and restores focus to its trigger", async () => {
     const user = userEvent.setup();
-    render(<Navigation canManageTeam />);
+    render(<Navigation canManageTeam canManageFinance />);
     const trigger = screen.getByRole("button", { name: "Open navigation" });
 
     await user.click(trigger);
@@ -29,7 +29,8 @@ describe("mobile staff navigation", () => {
   });
 
   it("does not expose Settings to an Admin Assistant", () => {
-    render(<Navigation canManageTeam={false} />);
+    render(<Navigation canManageTeam={false} canManageFinance={false} />);
     expect(screen.queryByRole("link", { name: /settings/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: /finance/i })).not.toBeInTheDocument();
   });
 });

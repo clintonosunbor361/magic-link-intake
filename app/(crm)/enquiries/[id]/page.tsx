@@ -10,7 +10,7 @@ import {
 } from "@/app/actions/enquiries";
 import { requireStaffSession } from "@/lib/auth/session";
 import { mayArchive, mayRestore } from "@/lib/domain/record-lifecycle";
-import { getEnquiry, listFollowUpNotes, listTasks } from "@/lib/enquiries/repository";
+import { getConvertedRecordReferences, getEnquiry, listFollowUpNotes, listTasks } from "@/lib/enquiries/repository";
 import { listStaffMembers } from "@/lib/team/repository";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -33,10 +33,13 @@ export default async function EnquiryDetailPage({
   const enquiry = await getEnquiry(session.organizationId, id);
   if (!enquiry) notFound();
 
-  const [notes, tasks, staff] = await Promise.all([
+  const [notes, tasks, staff, convertedReferences] = await Promise.all([
     listFollowUpNotes(id),
     listTasks(id),
     listStaffMembers(session.organizationId),
+    enquiry.convertedClientId && enquiry.convertedOrderId
+      ? getConvertedRecordReferences(session.organizationId, enquiry.convertedClientId, enquiry.convertedOrderId)
+      : Promise.resolve(null),
   ]);
 
   const owner = staff.find((member) => member.userId === enquiry.ownerStaffId);
@@ -62,7 +65,19 @@ export default async function EnquiryDetailPage({
 
       {isConverted ? (
         <p className="form-success mt-6">
-          Converted into Client {enquiry.convertedClientId} / Order {enquiry.convertedOrderId}.
+          {convertedReferences ? (
+            <>
+              Converted into{" "}
+              <Link href={`/clients/${enquiry.convertedClientId}`} className="font-semibold underline underline-offset-4">
+                Client #{String(convertedReferences.clientNumber).padStart(3, "0")}
+              </Link>{" "}
+              /{" "}
+              <Link href={`/orders/${enquiry.convertedOrderId}`} className="font-semibold underline underline-offset-4">
+                Order #{String(convertedReferences.orderNumber).padStart(3, "0")}
+              </Link>
+              .
+            </>
+          ) : "Converted into a Client and Active Order."}
         </p>
       ) : null}
       {isArchived ? <p className="form-alert mt-6">This Enquiry is archived.</p> : null}

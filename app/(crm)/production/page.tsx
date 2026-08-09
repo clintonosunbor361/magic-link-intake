@@ -6,7 +6,6 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { NativeSelect } from "@/components/ui/native-select";
 import { requireStaffSession } from "@/lib/auth/session";
 import { businessToday } from "@/lib/domain/business-date";
-import { formatMinorUnits } from "@/lib/forms/money";
 import { getOrganizationTimezone } from "@/lib/organizations/repository";
 import { listProductionStatuses } from "@/lib/production-statuses/repository";
 import { listProductionWorkspace, type ProductionItemRow } from "@/lib/production/workspace-repository";
@@ -177,12 +176,6 @@ export default async function ProductionPage({
                           {order.clientName}
                         </span>
                       </h3>
-                      {/* Client payment position sits at Order level, never on every Item row. */}
-                      <p className="text-sm text-kuartz-secondary">
-                        {order.orderBalance.state === "not_invoiced"
-                          ? "Not invoiced yet"
-                          : `Balance ₦${formatMinorUnits(order.orderBalance.balanceMinor)}`}
-                      </p>
                     </header>
 
                     <div className="mt-3 space-y-5">
@@ -240,11 +233,6 @@ function ProductionItem({
           <Link href={`/vendors/${item.vendorId}`} className="underline-offset-4 hover:underline">
             {item.vendorName}
           </Link>
-          {" · "}
-          {/* Compact vendor payment position; the full picture lives in the assignment drawer. */}
-          {item.vendorPosition.state === "no_agreed_cost"
-            ? "No agreed cost"
-            : `₦${formatMinorUnits(item.vendorPosition.paidMinor)} paid / ₦${formatMinorUnits(item.vendorPosition.owedMinor)} owed`}
         </p>
         <div className="mt-2 flex flex-wrap items-center gap-2">
           <UrgencyBadge urgency={item.urgency} deadline={item.deadline} />

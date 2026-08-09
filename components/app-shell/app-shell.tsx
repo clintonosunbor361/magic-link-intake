@@ -1,5 +1,5 @@
 import { signOutAction } from "@/app/actions/auth";
-import { canManageTeam } from "@/lib/domain/access-control";
+import { canManageFinance, canManageTeam } from "@/lib/domain/access-control";
 import type { StaffSession } from "@/lib/auth/session";
 import { Navigation } from "@/components/app-shell/navigation";
 import { Button } from "@/components/ui/button";
@@ -9,7 +9,10 @@ export function AppShell({ session, children }: { session: StaffSession; childre
   return (
     <div className="min-h-[100dvh] bg-kuartz-canvas lg:pl-[17rem]">
       <a className="skip-link" href="#main-content">Skip to main content</a>
-      <Navigation canManageTeam={canManageTeam(session.role)} />
+      <Navigation
+        canManageTeam={canManageTeam(session.role)}
+        canManageFinance={canManageFinance(session.role)}
+      />
       <header className="sticky top-0 z-20 flex h-[4.5rem] items-center justify-between border-b border-kuartz-line bg-kuartz-canvas/90 px-4 backdrop-blur-xl sm:px-7 lg:px-10">
         <div className="pl-12 lg:pl-0">
           <p className="text-sm font-semibold text-kuartz-ink">{session.organizationName}</p>

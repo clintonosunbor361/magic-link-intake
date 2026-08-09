@@ -28,7 +28,7 @@ import {
 import { issueOrderConfirmationAction } from "@/app/actions/client-confirmations";
 import { completeOrderAction } from "@/app/actions/order-completion";
 import { requireStaffSession } from "@/lib/auth/session";
-import { canOverrideCompletionGate } from "@/lib/domain/access-control";
+import { canManageFinance, canOverrideCompletionGate } from "@/lib/domain/access-control";
 import { mayArchive, mayRestore } from "@/lib/domain/record-lifecycle";
 import { listOutstandingAccessories } from "@/lib/accessories/repository";
 import { listOpenFittingSessions } from "@/lib/fittings/repository";
@@ -774,7 +774,7 @@ export default async function OrderDetailPage({
             </form>
           </div>
 
-          <div>
+          {canManageFinance(session.role) ? <div>
             <div className="flex items-end justify-between gap-4">
               <h2 className="section-title">Approval batches</h2>
               <Link href={`/orders/${order.id}/approval-batches/new`} className="text-sm font-semibold text-kuartz-ink underline">
@@ -796,7 +796,7 @@ export default async function OrderDetailPage({
                 <p className="py-3 text-sm text-kuartz-muted">No approval batches yet.</p>
               )}
             </div>
-          </div>
+          </div> : null}
 
           <div>
             <h2 className="section-title">Order confirmations</h2>
@@ -920,9 +920,11 @@ export default async function OrderDetailPage({
                 <input type="hidden" name="orderId" value={order.id} />
                 <p className="text-sm leading-6 text-kuartz-secondary">
                   {completionBlocked
-                    ? balance.state === "not_invoiced"
-                      ? "This Order has not been invoiced, so nothing can have been settled."
-                      : `₦${formatMinorUnits(balance.balanceMinor)} is still outstanding.`
+                    ? canManageFinance(session.role)
+                      ? balance.state === "not_invoiced"
+                        ? "This Order has not been invoiced, so nothing can have been settled."
+                        : `₦${formatMinorUnits(balance.balanceMinor)} is still outstanding.`
+                      : "A financial balance is still outstanding."
                     : "The client balance is settled."}
                 </p>
 

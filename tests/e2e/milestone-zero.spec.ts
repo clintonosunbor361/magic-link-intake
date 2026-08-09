@@ -28,7 +28,7 @@ test("invalid credentials stay on a clean sign-in URL", async ({ page }) => {
   await page.getByRole("button", { name: "Sign in" }).click();
 
   await expect(page).toHaveURL(/\/auth\/sign-in$/);
-  await expect(page.getByRole("alert")).toHaveText("The email or password is incorrect.");
+  await expect(page.locator(".form-alert")).toHaveText("The email or password is incorrect.");
 });
 
 test("a Super Admin can reach the dashboard, team settings, and the Enquiries inbox", async ({ page, isMobile }) => {
@@ -41,6 +41,8 @@ test("a Super Admin can reach the dashboard, team settings, and the Enquiries in
   await expect(page.getByText("Separate Atelier")).toHaveCount(0);
   await page.goto("/enquiries");
   await expect(page.getByRole("heading", { name: "Inbox" })).toBeVisible();
+  await page.goto("/finance");
+  await expect(page.getByRole("heading", { name: "Money position" })).toBeVisible();
   await expectNoSeriousAccessibilityViolations(page);
 });
 
@@ -48,7 +50,10 @@ test("an Admin Assistant cannot reach Super Admin settings", async ({ page }) =>
   await signIn(page, E2E_USERS.assistant);
   await expect(page.getByRole("heading", { name: /Good (morning|afternoon|evening), Teni/ })).toBeVisible();
   await expect(page.getByRole("link", { name: "Settings" })).toHaveCount(0);
+  await expect(page.getByRole("link", { name: "Finance" })).toHaveCount(0);
   await page.goto("/settings/team");
+  await expect(page).toHaveURL(/\/$/);
+  await page.goto("/finance");
   await expect(page).toHaveURL(/\/$/);
 });
 

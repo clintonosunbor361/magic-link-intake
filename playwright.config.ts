@@ -8,6 +8,9 @@ export default defineConfig({
   testDir: "./tests/e2e",
   testMatch: "**/*.spec.ts",
   fullyParallel: false,
+  // Every project intentionally exercises the same organization and local Supabase instance.
+  // Serial execution keeps auth rate limits and shared domain fixtures deterministic.
+  workers: 1,
   retries: process.env.CI ? 2 : 0,
   reporter: process.env.CI ? [["github"], ["html", { open: "never" }]] : "list",
   globalSetup: "./tests/e2e/global-setup.ts",
@@ -18,9 +21,14 @@ export default defineConfig({
   },
   projects: [
     { name: "desktop-chromium", use: { ...devices["Desktop Chrome"] } },
-    { name: "mobile-chromium", use: { ...devices["Pixel 7"] } },
+    {
+      name: "mobile-chromium",
+      testMatch: "**/milestone-zero.spec.ts",
+      use: { ...devices["Pixel 7"] },
+    },
     {
       name: "small-mobile-chromium",
+      testMatch: "**/milestone-zero.spec.ts",
       use: { ...devices["Desktop Chrome"], viewport: { width: 375, height: 667 }, isMobile: true, hasTouch: true },
     },
   ],

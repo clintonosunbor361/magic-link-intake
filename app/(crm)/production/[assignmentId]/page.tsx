@@ -38,13 +38,14 @@ export default async function AssignmentDetailPage({
   const timezone = await getOrganizationTimezone(session.organizationId);
   const today = businessToday(timezone);
 
+  const canManage = canManageFinance(session.role);
   const [statuses, history, notes, briefContext, payments, paidMinor] = await Promise.all([
     listProductionStatuses(session.organizationId),
     listStatusHistory(session.organizationId, assignmentId),
     listProductionNotes(session.organizationId, assignmentId),
     getVendorBriefContext(session.organizationId, assignmentId),
-    listVendorPayments(session.organizationId, assignmentId),
-    sumLiveVendorPaymentsMinor(session.organizationId, assignmentId),
+    canManage ? listVendorPayments(session.organizationId, assignmentId) : Promise.resolve([]),
+    canManage ? sumLiveVendorPaymentsMinor(session.organizationId, assignmentId) : Promise.resolve(0),
   ]);
 
   // Receipts are private objects reached through short-lived signed URLs, computed per render rather
@@ -56,7 +57,6 @@ export default async function AssignmentDetailPage({
   );
   const receiptUrlByPaymentId = new Map(receiptUrlEntries);
 
-  const canManage = canManageFinance(session.role);
   const urgency = describeUrgency({ deadline: assignment.deadline, today });
   const position = computeVendorPaymentPosition({
     agreedCostMinor: assignment.agreedVendorCostMinor,
@@ -114,14 +114,14 @@ export default async function AssignmentDetailPage({
                 <dt className="text-xs font-semibold uppercase tracking-wider text-kuartz-muted">Email</dt>
                 <dd className="mt-1 text-kuartz-ink">{assignment.vendorEmail ?? "Not recorded"}</dd>
               </div>
-              <div>
+              {canManage ? <div>
                 <dt className="text-xs font-semibold uppercase tracking-wider text-kuartz-muted">Payment position</dt>
                 <dd className="mt-1 text-kuartz-ink">
                   {position.state === "no_agreed_cost"
                     ? "No agreed cost recorded"
                     : `₦${formatMinorUnits(position.paidMinor)} paid / ₦${formatMinorUnits(position.owedMinor)} owed`}
                 </dd>
-              </div>
+              </div> : null}
             </dl>
           </div>
 
@@ -148,7 +148,7 @@ export default async function AssignmentDetailPage({
             )}
           </div>
 
-          <div>
+          {canManage ? <div>
             <h2 className="section-title">Vendor payments</h2>
             <p className="mt-2 text-sm text-kuartz-secondary">
               Balance is the agreed cost minus payments recorded here. Voided payments stop counting
@@ -203,7 +203,7 @@ export default async function AssignmentDetailPage({
                 description="Record each payment to this Vendor, with its receipt where you have one."
               />
             )}
-          </div>
+          </div> : null}
 
           <div>
             <h2 className="section-title">Production notes</h2>

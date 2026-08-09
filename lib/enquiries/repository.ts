@@ -1,6 +1,6 @@
 import "server-only";
 
-import { and, desc, eq, isNull, or, sql } from "drizzle-orm";
+import { and, asc, desc, eq, isNull, or, sql } from "drizzle-orm";
 import { getDatabase } from "@/db";
 import {
   auditEntries,
@@ -347,6 +347,30 @@ export async function getEnquiry(organizationId: string, enquiryId: string) {
     .where(and(eq(enquiries.organizationId, organizationId), eq(enquiries.id, enquiryId)))
     .limit(1);
   return row ?? null;
+}
+
+export async function getConvertedRecordReferences(
+  organizationId: string,
+  clientId: string,
+  orderId: string,
+): Promise<{ clientNumber: number; orderNumber: number } | null> {
+  const db = getDatabase();
+  const [clientRows, orderRows] = await Promise.all([
+    db
+      .select({ id: clients.id })
+      .from(clients)
+      .where(eq(clients.organizationId, organizationId))
+      .orderBy(asc(clients.createdAt), asc(clients.id)),
+    db
+      .select({ id: orders.id })
+      .from(orders)
+      .where(eq(orders.organizationId, organizationId))
+      .orderBy(asc(orders.createdAt), asc(orders.id)),
+  ]);
+  const clientIndex = clientRows.findIndex((row) => row.id === clientId);
+  const orderIndex = orderRows.findIndex((row) => row.id === orderId);
+  if (clientIndex < 0 || orderIndex < 0) return null;
+  return { clientNumber: clientIndex + 1, orderNumber: orderIndex + 1 };
 }
 
 export async function searchClients(organizationId: string, search: string) {

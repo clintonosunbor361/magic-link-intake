@@ -12,7 +12,11 @@ async function signIn(page: Page, user: (typeof E2E_USERS)[keyof typeof E2E_USER
 // Desktop-chromium and mobile-chromium share one dev server and database, so
 // identical test data created concurrently by both projects would collide.
 function projectSuffix(testInfo: TestInfo): string {
-  return testInfo.project.name === "mobile-chromium" ? "9" : "1";
+  return testInfo.project.name === "mobile-chromium"
+    ? "9"
+    : testInfo.project.name === "small-mobile-chromium"
+      ? "5"
+      : "1";
 }
 
 function uniquePhone(testInfo: TestInfo, base: string): string {
@@ -20,7 +24,9 @@ function uniquePhone(testInfo: TestInfo, base: string): string {
 }
 
 function uniqueName(testInfo: TestInfo, base: string): string {
-  return `${base} ${projectSuffix(testInfo)}`;
+  const compact = base.replace(/\s+/g, "");
+  const marker = testInfo.project.name === "mobile-chromium" ? "MobileKilo" : testInfo.project.name === "small-mobile-chromium" ? "PocketZulu" : "DesktopAlpha";
+  return `${compact}${compact}${marker}`;
 }
 
 const ENQUIRY_DETAIL_URL = /\/enquiries\/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -173,6 +179,7 @@ test("only a Super Admin can manage the Item Types list", async ({ page }, testI
   const addItemForm = page.getByRole("form", { name: "Add Item — Only Look" });
   await expect(addItemForm.getByLabel("Type").locator(`option:text-is("${typeName}")`)).toHaveCount(0);
 
+  await page.context().clearCookies();
   await signIn(page, E2E_USERS.assistant);
   await page.goto("/settings/item-types");
   await expect(page).toHaveURL("/");

@@ -14,8 +14,6 @@ import {
   listUpcomingLookDates,
 } from "@/lib/dashboard/repository";
 import { daysBetween } from "@/lib/domain/business-date";
-import { listOrderBalances, listVendorPaymentPositions } from "@/lib/finance/repository";
-import { formatMinorUnits } from "@/lib/forms/money";
 import { countUnreadNotifications, listNotifications } from "@/lib/notifications/repository";
 import { TRIGGER_LABELS } from "@/lib/notifications/triggers";
 import { getOrganizationTimezone } from "@/lib/organizations/repository";
@@ -38,8 +36,6 @@ export default async function OverviewPage() {
     delayed,
     pendingApprovals,
     followUps,
-    balances,
-    vendorPositions,
     recentNotifications,
     unreadCount,
   ] = await Promise.all([
@@ -49,24 +45,9 @@ export default async function OverviewPage() {
     listDelayedAssignments(session.organizationId, today),
     listPendingApprovals(session.organizationId),
     listDueFollowUps(session.organizationId, today),
-    listOrderBalances(session.organizationId),
-    listVendorPaymentPositions(session.organizationId),
     listNotifications(session.organizationId, { unreadOnly: true, limit: PANEL_LIMIT }),
     countUnreadNotifications(session.organizationId),
   ]);
-
-  const outstanding = balances.filter((row) => row.balance.state === "invoiced" && row.balance.balanceMinor > 0);
-  const totalOutstandingMinor = outstanding.reduce(
-    (total, row) => total + (row.balance.state === "invoiced" ? row.balance.balanceMinor : 0),
-    0,
-  );
-  const owedToVendors = vendorPositions.filter(
-    (row) => row.position.state === "agreed" && row.position.owedMinor > 0,
-  );
-  const totalOwedMinor = owedToVendors.reduce(
-    (total, row) => total + (row.position.state === "agreed" ? row.position.owedMinor : 0),
-    0,
-  );
 
   const metrics = [
     { label: "Active clients", value: String(activeClients), href: "/clients", hint: "with a live Order" },
@@ -87,18 +68,6 @@ export default async function OverviewPage() {
       value: String(followUps.length),
       href: "/enquiries",
       hint: "due or overdue",
-    },
-    {
-      label: "Owed by clients",
-      value: `₦${formatMinorUnits(totalOutstandingMinor)}`,
-      href: "/finance",
-      hint: `${outstanding.length} Order${outstanding.length === 1 ? "" : "s"}`,
-    },
-    {
-      label: "Owed to vendors",
-      value: `₦${formatMinorUnits(totalOwedMinor)}`,
-      href: "/finance",
-      hint: `${owedToVendors.length} assignment${owedToVendors.length === 1 ? "" : "s"}`,
     },
   ];
 

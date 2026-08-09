@@ -20,7 +20,7 @@ import { Button } from "@/components/ui/button";
 
 type NavItem = { href: string; label: string; icon: typeof House; activePrefix?: string };
 
-const navigation: NavItem[] = [
+const operationalNavigation: NavItem[] = [
   { href: "/", label: "Overview", icon: House },
   { href: "/enquiries", label: "Enquiries", icon: MessageSquareText },
   { href: "/clients", label: "Clients", icon: UsersRound },
@@ -30,18 +30,19 @@ const navigation: NavItem[] = [
   // Admin Assistants create and search Vendors, and Settings is Super-Admin-only.
   { href: "/vendors", label: "Vendors", icon: Hammer },
   { href: "/production", label: "Production", icon: Factory },
-  { href: "/finance", label: "Finance", icon: WalletCards },
 ];
 
-export function Navigation({ canManageTeam }: { canManageTeam: boolean }) {
+export function Navigation({ canManageTeam, canManageFinance }: { canManageTeam: boolean; canManageFinance: boolean }) {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
   const triggerRef = useRef<HTMLButtonElement>(null);
   const closeRef = useRef<HTMLButtonElement>(null);
   const asideRef = useRef<HTMLElement>(null);
-  const links = canManageTeam
-    ? [...navigation, { href: "/settings/team", activePrefix: "/settings", label: "Settings", icon: Settings }]
-    : navigation;
+  const links: NavItem[] = [
+    ...operationalNavigation,
+    ...(canManageFinance ? [{ href: "/finance", label: "Finance", icon: WalletCards }] : []),
+    ...(canManageTeam ? [{ href: "/settings/team", activePrefix: "/settings", label: "Settings", icon: Settings }] : []),
+  ];
 
   useEffect(() => {
     if (!open) return;

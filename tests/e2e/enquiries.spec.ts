@@ -17,7 +17,11 @@ async function selectGlassDropdown(page: Page, label: string, option: string) {
 // Desktop-chromium and mobile-chromium share one dev server and database, so
 // identical test data created concurrently by both projects would collide.
 function projectSuffix(testInfo: TestInfo): string {
-  return testInfo.project.name === "mobile-chromium" ? "9" : "1";
+  return testInfo.project.name === "mobile-chromium"
+    ? "9"
+    : testInfo.project.name === "small-mobile-chromium"
+      ? "5"
+      : "1";
 }
 
 function uniquePhone(testInfo: TestInfo, base: string): string {
@@ -25,7 +29,9 @@ function uniquePhone(testInfo: TestInfo, base: string): string {
 }
 
 function uniqueName(testInfo: TestInfo, base: string): string {
-  return `${base} ${projectSuffix(testInfo)}`;
+  const compact = base.replace(/\s+/g, "");
+  const marker = testInfo.project.name === "mobile-chromium" ? "MobileKilo" : testInfo.project.name === "small-mobile-chromium" ? "PocketZulu" : "DesktopAlpha";
+  return `${compact}${compact}${marker}`;
 }
 
 // Matches only a real Enquiry detail URL (a UUID), never a redirect back to
@@ -154,7 +160,7 @@ test("converting an Enquiry creates a Client and Active Order with an audit entr
   await page.getByRole("button", { name: "Convert Enquiry" }).click();
 
   await expect(page).toHaveURL(ENQUIRY_DETAIL_URL);
-  await expect(page.getByText(/Converted into Client/)).toBeVisible();
+  await expect(page.getByText(/Converted into Client #\d{3} \/ Order #\d{3}/)).toBeVisible();
 
   await page.goto("/settings/team");
   await expect(

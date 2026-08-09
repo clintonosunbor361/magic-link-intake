@@ -24,13 +24,14 @@ async function signIn(page: Page, user: (typeof E2E_USERS)[keyof typeof E2E_USER
 // across the whole e2e suite.
 const PROJECT_FIXTURES = {
   "mobile-chromium": { client: "Zubairu Danjuma", vendor: "Danjuma Workroom", phone: "08155509990" },
+  "small-mobile-chromium": { client: "Chinonso Eze", vendor: "Eze Workroom", phone: "08155507770" },
   default: { client: "Ifeoma Nwosu", vendor: "Ajayi Atelier", phone: "08155501110" },
 } as const;
 
 function fixturesFor(testInfo: TestInfo) {
-  return testInfo.project.name === "mobile-chromium"
-    ? PROJECT_FIXTURES["mobile-chromium"]
-    : PROJECT_FIXTURES.default;
+  if (testInfo.project.name === "mobile-chromium") return PROJECT_FIXTURES["mobile-chromium"];
+  if (testInfo.project.name === "small-mobile-chromium") return PROJECT_FIXTURES["small-mobile-chromium"];
+  return PROJECT_FIXTURES.default;
 }
 
 const ENQUIRY_DETAIL_URL = /\/enquiries\/[0-9a-f-]{36}$/i;

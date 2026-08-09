@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { createInvoiceAction, updateInvoiceAction, voidInvoiceAction } from "@/app/actions/invoices";
 import {
   editClientPaymentAction,
@@ -37,6 +37,7 @@ export default async function OrderInvoicePage({
   searchParams: Promise<{ error?: string }>;
 }) {
   const session = await requireStaffSession();
+  if (!canManageFinance(session.role)) redirect("/");
   const [{ id }, query] = await Promise.all([params, searchParams]);
 
   const order = await getOrderWithLooksAndItems(session.organizationId, id);
@@ -85,13 +86,6 @@ export default async function OrderInvoicePage({
       {query.error ? (
         <p className="form-alert mt-6" role="alert">
           {query.error}
-        </p>
-      ) : null}
-
-      {!canManage ? (
-        <p className="mt-6 border-l-[3px] border-[#88925f] bg-white/70 px-4 py-3.5 text-sm leading-6 text-[#3f4a24]" role="status">
-          Invoices and payments are managed by a Super Admin. You can see the position here but cannot
-          change it.
         </p>
       ) : null}
 
