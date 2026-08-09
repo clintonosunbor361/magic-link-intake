@@ -30,6 +30,8 @@ import { completeOrderAction } from "@/app/actions/order-completion";
 import { requireStaffSession } from "@/lib/auth/session";
 import { canOverrideCompletionGate } from "@/lib/domain/access-control";
 import { mayArchive, mayRestore } from "@/lib/domain/record-lifecycle";
+import { listOutstandingAccessories } from "@/lib/accessories/repository";
+import { listOpenFittingSessions } from "@/lib/fittings/repository";
 import { blocksOrderCompletion, computeOrderBalance } from "@/lib/finance/balances";
 import { deriveInvoiceStatus, INVOICE_STATUS_LABELS } from "@/lib/finance/invoice";
 import { getInvoiceForOrder, listVendorsAwaitingRating } from "@/lib/finance/repository";
@@ -131,9 +133,11 @@ export default async function OrderDetailPage({
 
   // Finance position. The balance shown here is the same computation the completion gate enforces
   // server-side, so the button and the rule can never disagree about whether this Order is settled.
-  const [invoice, vendorsAwaitingRating] = await Promise.all([
+  const [invoice, vendorsAwaitingRating, outstandingAccessories, openFittings] = await Promise.all([
     getInvoiceForOrder(session.organizationId, order.id),
     listVendorsAwaitingRating(session.organizationId, order.id),
+    listOutstandingAccessories(session.organizationId, order.id),
+    listOpenFittingSessions(session.organizationId, order.id),
   ]);
   const balance = computeOrderBalance({
     invoicedMinor: invoice ? invoice.totalMinor : null,
@@ -823,6 +827,31 @@ export default async function OrderDetailPage({
 
         <aside className="space-y-9">
           <div>
+            <h2 className="section-title">Workflow</h2>
+            <div className="mt-4 grid gap-2 border-t border-[#d9d8d1] pt-4 text-sm">
+              <Link
+                href={`/orders/${order.id}/accessories`}
+                className="font-semibold text-[#171b36] underline-offset-4 hover:underline"
+              >
+                Accessories
+                {outstandingAccessories.length ? ` · ${outstandingAccessories.length} outstanding` : ""}
+              </Link>
+              <Link
+                href={`/orders/${order.id}/fittings`}
+                className="font-semibold text-[#171b36] underline-offset-4 hover:underline"
+              >
+                Fittings{openFittings.length ? ` · ${openFittings.length} scheduled` : ""}
+              </Link>
+              <Link
+                href={`/orders/${order.id}/vendor-ratings`}
+                className="font-semibold text-[#171b36] underline-offset-4 hover:underline"
+              >
+                Vendor ratings
+              </Link>
+            </div>
+          </div>
+
+          <div>
             <div className="flex items-end justify-between gap-4">
               <h2 className="section-title">Invoice</h2>
               <Link href={`/orders/${order.id}/invoice`} className="text-sm font-semibold text-[#171b36] underline">
@@ -896,6 +925,27 @@ export default async function OrderDetailPage({
                       : `₦${formatMinorUnits(balance.balanceMinor)} is still outstanding.`
                     : "The client balance is settled."}
                 </p>
+
+                {/* Accessories and Fittings warn but never block: the payment gate is the only hard
+                    gate the spec defines, and a forgotten accessory should not strand an Order. */}
+                {outstandingAccessories.length || openFittings.length ? (
+                  <div className="border-l-[3px] border-[#c8a45c] bg-white/70 px-4 py-3 text-sm leading-6 text-[#6b4f14]">
+                    <p className="font-semibold">Still open on this Order</p>
+                    {outstandingAccessories.length ? (
+                      <p className="mt-1">
+                        {outstandingAccessories.length} Accessor
+                        {outstandingAccessories.length === 1 ? "y" : "ies"} not yet delivered:{" "}
+                        {outstandingAccessories.map((accessory) => accessory.label).join(", ")}
+                      </p>
+                    ) : null}
+                    {openFittings.length ? (
+                      <p className="mt-1">
+                        {openFittings.length} Fitting{openFittings.length === 1 ? "" : "s"} still scheduled.
+                      </p>
+                    ) : null}
+                    <p className="mt-1 text-xs">Completing anyway is allowed — this is a reminder, not a block.</p>
+                  </div>
+                ) : null}
                 {completionBlocked && canOverrideCompletionGate(session.role) ? (
                   <label className="form-group">
                     <span>Override reason</span>

@@ -34,7 +34,13 @@ export const styleDirectionApprovalStatus = pgEnum("style_direction_approval_sta
   "rejected",
 ]);
 export const styleDirectionBatchDeliveryMethod = pgEnum("style_direction_batch_delivery_method", ["email", "copy_link"]);
-export const clientConfirmationSubjectType = pgEnum("client_confirmation_subject_type", ["measurement_profile", "order_detail"]);
+export const clientConfirmationSubjectType = pgEnum("client_confirmation_subject_type", [
+  "measurement_profile",
+  "order_detail",
+  // A Fitting confirmation is sent after the session and asks the client to confirm the outcome —
+  // the fit and the agreed alterations — not to accept an appointment.
+  "fitting_session",
+]);
 export const clientConfirmationDecisionStatus = pgEnum("client_confirmation_decision_status", [
   "pending",
   "confirmed",
@@ -44,6 +50,15 @@ export const clientConfirmationDeliveryMethod = pgEnum("client_confirmation_deli
 // Only the three staff-driven states are stored. Part Paid and Paid are derived from the balance in
 // deriveInvoiceStatus, so a label can never disagree with the money it describes.
 export const invoiceLifecycleStatus = pgEnum("invoice_lifecycle_status", ["draft", "sent", "void"]);
+// Fixed on purpose, unlike production and accessory statuses: the app reasons about these states
+// (reminders fire on scheduled ones, completion warns on open ones, missed is not cancelled), so a
+// configurable list would be configurable in name only.
+export const fittingSessionStatus = pgEnum("fitting_session_status", [
+  "scheduled",
+  "completed",
+  "missed",
+  "cancelled",
+]);
 
 const timestamps = {
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
@@ -1484,6 +1499,226 @@ export const vendorPayments = pgTable(
   ],
 ).enableRLS();
 
+// Accessory Sourcing is a separate module hanging off the Order. Accessory Items deliberately have
+// no vendor assignment, no production status and no money of their own: they never enter the Vendor
+// Brief or Production workflows, and anything charged for them is an ordinary Invoice line item.
+export const accessoryTypes = pgTable(
+  "accessory_types",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    organizationId: uuid("organization_id")
+      .references(() => organizations.id)
+      .notNull(),
+    name: text("name").notNull(),
+    sortOrder: integer("sort_order").default(0).notNull(),
+    version: integer("version").default(1).notNull(),
+    archivedAt: timestamp("archived_at", { withTimezone: true }),
+    ...timestamps,
+  },
+  (table) => [
+    index("accessory_types_org_sort_idx").on(table.organizationId, table.sortOrder),
+    pgPolicy("staff can view organization accessory types", {
+      for: "select",
+      to: "authenticated",
+      using: sql`exists (
+        select 1 from organization_memberships membership
+        where membership.organization_id = ${table.organizationId}
+          and membership.user_id = auth.uid()
+          and membership.archived_at is null
+      )`,
+    }),
+  ],
+).enableRLS();
+
+// isCompleted marks the delivered/completed end of the list, exactly as production_statuses does.
+// It drives the non-blocking outstanding-accessory warning on Order completion.
+export const accessoryStatuses = pgTable(
+  "accessory_statuses",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    organizationId: uuid("organization_id")
+      .references(() => organizations.id)
+      .notNull(),
+    name: text("name").notNull(),
+    sortOrder: integer("sort_order").default(0).notNull(),
+    isCompleted: boolean("is_completed").default(false).notNull(),
+    version: integer("version").default(1).notNull(),
+    archivedAt: timestamp("archived_at", { withTimezone: true }),
+    ...timestamps,
+  },
+  (table) => [
+    index("accessory_statuses_org_sort_idx").on(table.organizationId, table.sortOrder),
+    pgPolicy("staff can view organization accessory statuses", {
+      for: "select",
+      to: "authenticated",
+      using: sql`exists (
+        select 1 from organization_memberships membership
+        where membership.organization_id = ${table.organizationId}
+          and membership.user_id = auth.uid()
+          and membership.archived_at is null
+      )`,
+    }),
+  ],
+).enableRLS();
+
+// lookId is nullable: an Accessory belongs to the whole Order or to one Look, the same shape as
+// Style Direction Files and Consultation Notes. There is no delivery-date column — the date is
+// inherited (the linked Look's date, or the earliest dated live Look for a whole-Order Accessory)
+// and computed in resolveAccessoryDeliveryDate, so it cannot go stale when a Look moves.
+export const accessoryItems = pgTable(
+  "accessory_items",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    organizationId: uuid("organization_id")
+      .references(() => organizations.id)
+      .notNull(),
+    orderId: uuid("order_id")
+      .references(() => orders.id)
+      .notNull(),
+    lookId: uuid("look_id").references(() => looks.id),
+    accessoryTypeId: uuid("accessory_type_id")
+      .references(() => accessoryTypes.id)
+      .notNull(),
+    // Same shape as items.customLabel: any type may carry a free-text label, which is also how the
+    // spec's "Other/custom is allowed" rule is satisfied.
+    customLabel: text("custom_label"),
+    accessoryStatusId: uuid("accessory_status_id")
+      .references(() => accessoryStatuses.id)
+      .notNull(),
+    notes: text("notes").default("").notNull(),
+    version: integer("version").default(1).notNull(),
+    archivedAt: timestamp("archived_at", { withTimezone: true }),
+    ...timestamps,
+  },
+  (table) => [
+    index("accessory_items_order_idx").on(table.orderId),
+    index("accessory_items_look_idx").on(table.lookId),
+    index("accessory_items_status_idx").on(table.accessoryStatusId),
+    pgPolicy("staff can view organization accessory items", {
+      for: "select",
+      to: "authenticated",
+      using: sql`exists (
+        select 1 from organization_memberships membership
+        where membership.organization_id = ${table.organizationId}
+          and membership.user_id = auth.uid()
+          and membership.archived_at is null
+      )`,
+    }),
+  ],
+).enableRLS();
+
+// A Fitting Session is one appointment on the Order, optionally naming a Look. Rescheduling edits
+// scheduledAt in place so the appointment keeps its identity and its notes; a repeat fitting is a
+// new row. clientSummary is the only field the magic link shows — session notes are internal.
+export const fittingSessions = pgTable(
+  "fitting_sessions",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    organizationId: uuid("organization_id")
+      .references(() => organizations.id)
+      .notNull(),
+    orderId: uuid("order_id")
+      .references(() => orders.id)
+      .notNull(),
+    lookId: uuid("look_id").references(() => looks.id),
+    scheduledAt: timestamp("scheduled_at", { withTimezone: true }).notNull(),
+    location: text("location").default("").notNull(),
+    status: fittingSessionStatus("status").default("scheduled").notNull(),
+    clientSummary: text("client_summary").default("").notNull(),
+    scheduledByStaffId: uuid("scheduled_by_staff_id")
+      .references(() => staffProfiles.id)
+      .notNull(),
+    version: integer("version").default(1).notNull(),
+    archivedAt: timestamp("archived_at", { withTimezone: true }),
+    ...timestamps,
+  },
+  (table) => [
+    index("fitting_sessions_order_idx").on(table.orderId, table.scheduledAt),
+    index("fitting_sessions_org_scheduled_idx").on(table.organizationId, table.scheduledAt),
+    index("fitting_sessions_status_idx").on(table.status),
+    pgPolicy("staff can view organization fitting sessions", {
+      for: "select",
+      to: "authenticated",
+      using: sql`exists (
+        select 1 from organization_memberships membership
+        where membership.organization_id = ${table.organizationId}
+          and membership.user_id = auth.uid()
+          and membership.archived_at is null
+      )`,
+    }),
+  ],
+).enableRLS();
+
+// Internal only — the same rule as production_notes. These never reach a client page and never
+// appear in a Vendor Brief. Alterations agreed at a fitting are recorded here in prose.
+export const fittingSessionNotes = pgTable(
+  "fitting_session_notes",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    organizationId: uuid("organization_id")
+      .references(() => organizations.id)
+      .notNull(),
+    fittingSessionId: uuid("fitting_session_id")
+      .references(() => fittingSessions.id)
+      .notNull(),
+    note: text("note").notNull(),
+    createdByStaffId: uuid("created_by_staff_id")
+      .references(() => staffProfiles.id)
+      .notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => [
+    index("fitting_session_notes_session_idx").on(table.fittingSessionId, table.createdAt),
+    pgPolicy("staff can view organization fitting session notes", {
+      for: "select",
+      to: "authenticated",
+      using: sql`exists (
+        select 1 from organization_memberships membership
+        where membership.organization_id = ${table.organizationId}
+          and membership.user_id = auth.uid()
+          and membership.archived_at is null
+      )`,
+    }),
+  ],
+).enableRLS();
+
+// Because rescheduling mutates scheduledAt, the previous date would otherwise be lost. Every status
+// move and every reschedule appends a row here, so "moved twice then missed" stays legible.
+export const fittingSessionHistory = pgTable(
+  "fitting_session_history",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    organizationId: uuid("organization_id")
+      .references(() => organizations.id)
+      .notNull(),
+    fittingSessionId: uuid("fitting_session_id")
+      .references(() => fittingSessions.id)
+      .notNull(),
+    previousStatus: fittingSessionStatus("previous_status"),
+    newStatus: fittingSessionStatus("new_status").notNull(),
+    previousScheduledAt: timestamp("previous_scheduled_at", { withTimezone: true }),
+    newScheduledAt: timestamp("new_scheduled_at", { withTimezone: true }).notNull(),
+    note: text("note"),
+    changedByStaffId: uuid("changed_by_staff_id")
+      .references(() => staffProfiles.id)
+      .notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => [
+    index("fitting_session_history_session_idx").on(table.fittingSessionId, table.createdAt),
+    pgPolicy("staff can view organization fitting session history", {
+      for: "select",
+      to: "authenticated",
+      using: sql`exists (
+        select 1 from organization_memberships membership
+        where membership.organization_id = ${table.organizationId}
+          and membership.user_id = auth.uid()
+          and membership.archived_at is null
+      )`,
+    }),
+  ],
+).enableRLS();
+
 export type OrganizationMembership = typeof organizationMemberships.$inferSelect;
 export type AuditEntry = typeof auditEntries.$inferSelect;
 export type Client = typeof clients.$inferSelect;
@@ -1522,3 +1757,9 @@ export type Invoice = typeof invoices.$inferSelect;
 export type InvoiceLineItem = typeof invoiceLineItems.$inferSelect;
 export type ClientPayment = typeof clientPayments.$inferSelect;
 export type VendorPayment = typeof vendorPayments.$inferSelect;
+export type AccessoryType = typeof accessoryTypes.$inferSelect;
+export type AccessoryStatus = typeof accessoryStatuses.$inferSelect;
+export type AccessoryItem = typeof accessoryItems.$inferSelect;
+export type FittingSession = typeof fittingSessions.$inferSelect;
+export type FittingSessionNote = typeof fittingSessionNotes.$inferSelect;
+export type FittingSessionHistoryEntry = typeof fittingSessionHistory.$inferSelect;

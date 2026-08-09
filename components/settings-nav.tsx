@@ -11,6 +11,8 @@ const SETTINGS_LINKS = [
   { href: "/settings/measurement-requirements", label: "Measurement requirements" },
   { href: "/settings/vendor-specialties", label: "Vendor specialties" },
   { href: "/settings/production-statuses", label: "Production statuses" },
+  { href: "/settings/accessory-types", label: "Accessory types" },
+  { href: "/settings/accessory-statuses", label: "Accessory statuses" },
 ] as const;
 
 export function SettingsNav({ current }: { current: string }) {

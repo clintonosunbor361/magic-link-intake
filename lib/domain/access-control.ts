@@ -132,3 +132,47 @@ export function assertCanManageFinance(role: StaffRole): void {
 export function canOverrideCompletionGate(role: StaffRole): boolean {
   return role === "super_admin";
 }
+
+// Accessory types and statuses follow the configurable-list rule the spec states for every such
+// list: Super Admin manages what exists, Admin Assistant only selects from it.
+export function canManageAccessoryTypes(role: StaffRole): boolean {
+  return role === "super_admin";
+}
+
+export function assertCanManageAccessoryTypes(role: StaffRole): void {
+  if (!canManageAccessoryTypes(role)) {
+    throw new Error("Super Admin access is required.");
+  }
+}
+
+export function canManageAccessoryStatuses(role: StaffRole): boolean {
+  return role === "super_admin";
+}
+
+export function assertCanManageAccessoryStatuses(role: StaffRole): void {
+  if (!canManageAccessoryStatuses(role)) {
+    throw new Error("Super Admin access is required.");
+  }
+}
+
+// Sourcing an accessory and running a fitting are operational work: both roles do it. Neither is
+// financial, and neither is destructive.
+export function canManageAccessoryItems(role: StaffRole): boolean {
+  return canPerformOperationalWork(role);
+}
+
+export function assertCanManageAccessoryItems(role: StaffRole): void {
+  if (!canManageAccessoryItems(role)) {
+    throw new Error("Staff access is required.");
+  }
+}
+
+export function canManageFittingSessions(role: StaffRole): boolean {
+  return canPerformOperationalWork(role);
+}
+
+export function assertCanManageFittingSessions(role: StaffRole): void {
+  if (!canManageFittingSessions(role)) {
+    throw new Error("Staff access is required.");
+  }
+}

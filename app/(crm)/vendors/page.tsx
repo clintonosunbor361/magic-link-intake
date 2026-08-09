@@ -6,6 +6,7 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { Input } from "@/components/ui/input";
 import { requireStaffSession } from "@/lib/auth/session";
 import { listVendorSpecialties } from "@/lib/vendor-specialties/repository";
+import { listPendingRatingPrompts } from "@/lib/vendors/rating-repository";
 import { listVendorsWithStats } from "@/lib/vendors/repository";
 
 export default async function VendorsPage({
@@ -17,9 +18,10 @@ export default async function VendorsPage({
   const params = await searchParams;
   const includeArchived = params.archived === "1";
 
-  const [vendors, specialties] = await Promise.all([
+  const [vendors, specialties, pendingRatings] = await Promise.all([
     listVendorsWithStats(session.organizationId, { search: params.q, includeArchived }),
     listVendorSpecialties(session.organizationId),
+    listPendingRatingPrompts(session.organizationId),
   ]);
 
   return (
@@ -36,6 +38,16 @@ export default async function VendorsPage({
       {params.error ? (
         <p className="form-alert mt-6" role="alert">
           {params.error}
+        </p>
+      ) : null}
+
+      {pendingRatings.length ? (
+        <p className="mt-6 border-l-[3px] border-[#88925f] bg-white/70 px-4 py-3.5 text-sm leading-6 text-[#3f4a24]">
+          {pendingRatings.length} Vendor rating{pendingRatings.length === 1 ? "" : "s"} still pending on
+          completed Orders.{" "}
+          <Link href="/vendor-ratings" className="font-semibold underline underline-offset-4">
+            Review pending ratings
+          </Link>
         </p>
       ) : null}
 

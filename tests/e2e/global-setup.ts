@@ -142,6 +142,26 @@ export default async function globalSetup() {
           ('40000000-0000-0000-0000-000000000004', 'Not Started', 0, false),
           ('40000000-0000-0000-0000-000000000004', 'Completed', 1, true)
       `;
+      // Accessory lists mirror the bootstrap defaults so the seeded orgs match a real one.
+      await transaction`
+        insert into accessory_types (organization_id, name, sort_order)
+        values
+          ('30000000-0000-0000-0000-000000000003', 'Shoes', 0),
+          ('30000000-0000-0000-0000-000000000003', 'Watches', 1),
+          ('30000000-0000-0000-0000-000000000003', 'Cufflinks', 2),
+          ('30000000-0000-0000-0000-000000000003', 'Other', 3),
+          ('40000000-0000-0000-0000-000000000004', 'Shoes', 0)
+      `;
+      await transaction`
+        insert into accessory_statuses (organization_id, name, sort_order, is_completed)
+        values
+          ('30000000-0000-0000-0000-000000000003', 'Not Started', 0, false),
+          ('30000000-0000-0000-0000-000000000003', 'Sourcing', 1, false),
+          ('30000000-0000-0000-0000-000000000003', 'Ordered', 2, false),
+          ('30000000-0000-0000-0000-000000000003', 'Delivered', 3, true),
+          ('40000000-0000-0000-0000-000000000004', 'Not Started', 0, false),
+          ('40000000-0000-0000-0000-000000000004', 'Delivered', 1, true)
+      `;
     });
   } finally {
     await sql.end();

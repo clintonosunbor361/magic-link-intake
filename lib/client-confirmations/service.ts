@@ -2,7 +2,7 @@ import { generateToken, hashToken } from "@/lib/tokens";
 
 const CONFIRMATION_TTL_MS = 7 * 24 * 60 * 60 * 1000;
 
-export type ClientConfirmationSubjectType = "measurement_profile" | "order_detail";
+export type ClientConfirmationSubjectType = "measurement_profile" | "order_detail" | "fitting_session";
 
 export type ClientConfirmationForDelivery = { id: string; tokenHash: string };
 

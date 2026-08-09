@@ -1,9 +1,10 @@
 import "server-only";
 
-import { and, eq, isNull, sql } from "drizzle-orm";
+import { and, eq, isNotNull, isNull, sql } from "drizzle-orm";
 import { getDatabase } from "@/db";
 import {
   auditEntries,
+  clients,
   items,
   looks,
   orders,
@@ -161,6 +162,54 @@ export async function listOrderVendorsForRating(organizationId: string, orderId:
     )
     .where(and(eq(vendorAssignments.organizationId, organizationId), eq(looks.orderId, orderId)))
     .orderBy(vendors.id);
+}
+
+/**
+ * Pending rating prompts, derived rather than stored.
+ *
+ * A prompt is any (completed Order x Vendor with an assignment on it) that has no rating yet. There
+ * is no prompts table and no dismissal: "exactly once per unit" is structural, because the pair
+ * either has a rating row or it does not. Re-completing an Order, replaying the action, or adding a
+ * Vendor after completion all produce the right answer without a backfill.
+ *
+ * The prompt clears the moment the rating is saved.
+ */
+export async function listPendingRatingPrompts(organizationId: string) {
+  const db = getDatabase();
+  return db
+    .selectDistinctOn([orders.id, vendors.id], {
+      orderId: orders.id,
+      orderTitle: orders.title,
+      completedAt: orders.completedAt,
+      clientName: clients.fullName,
+      vendorId: vendors.id,
+      vendorName: vendors.name,
+    })
+    .from(vendorAssignments)
+    .innerJoin(items, eq(items.id, vendorAssignments.itemId))
+    .innerJoin(looks, eq(looks.id, items.lookId))
+    .innerJoin(orders, eq(orders.id, looks.orderId))
+    .innerJoin(clients, eq(clients.id, orders.clientId))
+    .innerJoin(vendors, eq(vendors.id, vendorAssignments.vendorId))
+    .leftJoin(
+      vendorRatings,
+      and(
+        eq(vendorRatings.orderId, orders.id),
+        eq(vendorRatings.vendorId, vendors.id),
+        isNull(vendorRatings.archivedAt),
+      ),
+    )
+    .where(
+      and(
+        eq(vendorAssignments.organizationId, organizationId),
+        // Only completed Orders prompt: rating a Vendor mid-production would be judging unfinished
+        // work.
+        isNotNull(orders.completedAt),
+        isNull(orders.archivedAt),
+        isNull(vendorRatings.id),
+      ),
+    )
+    .orderBy(orders.id, vendors.id);
 }
 
 export async function countVendorRatings(organizationId: string): Promise<number> {

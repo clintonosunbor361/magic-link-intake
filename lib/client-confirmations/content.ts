@@ -1,6 +1,7 @@
 import "server-only";
 
 import { getClient } from "@/lib/clients/repository";
+import { getFittingConfirmationContent } from "@/lib/fittings/repository";
 import { getMeasurementProfileClient, listMeasurementProfileSnapshot } from "@/lib/measurement-profiles/repository";
 import { getOrderWithLooksAndItems } from "@/lib/orders/repository";
 
@@ -40,6 +41,26 @@ export type OrderDetailConfirmationContent = {
     items: { id: string; label: string; quantity: number }[];
   }[];
 };
+
+export type FittingConfirmationContent = {
+  clientFullName: string;
+  orderTitle: string;
+  lookName: string | null;
+  scheduledAt: Date;
+  clientSummary: string;
+};
+
+/**
+ * The Fitting payload the client sees: when the session happened, which Look it covered, and the
+ * summary staff wrote for them. Internal fitting notes are deliberately absent — they are the
+ * client-invisible half of the record, the same rule production notes follow.
+ */
+export async function getFittingSessionConfirmationContent(
+  organizationId: string,
+  fittingSessionId: string,
+): Promise<FittingConfirmationContent | null> {
+  return getFittingConfirmationContent(organizationId, fittingSessionId);
+}
 
 export async function getOrderDetailConfirmationContent(
   organizationId: string,

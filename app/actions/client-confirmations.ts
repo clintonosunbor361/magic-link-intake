@@ -174,3 +174,59 @@ export async function markOrderConfirmationCopiedAction(formData: FormData) {
   revalidatePath(`/orders/${orderId}`);
   redirect(`/orders/${orderId}/confirmations/${confirmationId}/created?token=${encodeURIComponent(token)}&copied=1`);
 }
+
+// Fitting confirmations reuse the same delivery mechanics as the other two subjects; only the
+// return path and the email's subject label differ.
+function fittingCreatedPath(orderId: string, confirmationId: string, token: string): string {
+  return `/orders/${orderId}/fittings/${confirmationId}/created?token=${encodeURIComponent(token)}`;
+}
+
+export async function sendFittingConfirmationEmailAction(formData: FormData) {
+  const session = await requireStaffSession();
+  const orderId = readFormString(formData, "orderId");
+  const confirmationId = readFormString(formData, "confirmationId");
+  const token = readFormString(formData, "token");
+
+  try {
+    await sendConfirmationEmail(
+      {
+        organizationId: session.organizationId,
+        confirmationId,
+        token,
+        actorId: session.userId,
+        recipientEmail: readFormString(formData, "recipientEmail"),
+        confirmationUrl: await confirmationUrl(token),
+        subjectLabel: "your fitting",
+        clientName: readFormString(formData, "clientName"),
+      },
+      createClientConfirmationRepository(),
+      { sendConfirmationEmail: sendConfirmationEmailViaResend },
+    );
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "The confirmation email could not be sent.";
+    redirect(`${fittingCreatedPath(orderId, confirmationId, token)}&error=${encodeURIComponent(message)}`);
+  }
+
+  revalidatePath(`/orders/${orderId}/fittings`);
+  redirect(`${fittingCreatedPath(orderId, confirmationId, token)}&sent=1`);
+}
+
+export async function markFittingConfirmationCopiedAction(formData: FormData) {
+  const session = await requireStaffSession();
+  const orderId = readFormString(formData, "orderId");
+  const confirmationId = readFormString(formData, "confirmationId");
+  const token = readFormString(formData, "token");
+
+  try {
+    await markConfirmationCopied(
+      { organizationId: session.organizationId, confirmationId, token, actorId: session.userId },
+      createClientConfirmationRepository(),
+    );
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "The confirmation could not be updated.";
+    redirect(`${fittingCreatedPath(orderId, confirmationId, token)}&error=${encodeURIComponent(message)}`);
+  }
+
+  revalidatePath(`/orders/${orderId}/fittings`);
+  redirect(`${fittingCreatedPath(orderId, confirmationId, token)}&copied=1`);
+}

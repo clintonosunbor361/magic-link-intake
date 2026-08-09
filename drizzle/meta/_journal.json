@@ -157,10 +157,24 @@
       "breakpoints": true
     },
     {
-      "idx": 21,
+      "idx": 22,
       "version": "7",
       "when": 1786231321502,
       "tag": "0022_supabase_grants",
+      "breakpoints": true
+    },
+    {
+      "idx": 23,
+      "version": "7",
+      "when": 1786233707846,
+      "tag": "0023_famous_smiling_tiger",
+      "breakpoints": true
+    },
+    {
+      "idx": 24,
+      "version": "7",
+      "when": 1786233707847,
+      "tag": "0024_supabase_grants",
       "breakpoints": true
     }
   ]

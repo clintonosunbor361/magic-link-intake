@@ -1,7 +1,11 @@
 import { InactiveLink } from "@/components/inactive-link";
 import { Wordmark } from "@/components/wordmark";
 import { getConfirmationForToken } from "@/lib/client-confirmations/repository";
-import { getMeasurementProfileConfirmationContent, getOrderDetailConfirmationContent } from "@/lib/client-confirmations/content";
+import {
+  getFittingSessionConfirmationContent,
+  getMeasurementProfileConfirmationContent,
+  getOrderDetailConfirmationContent,
+} from "@/lib/client-confirmations/content";
 import { CLIENT_CONFIRMATION_DECISIONS } from "@/lib/client-confirmations/decision-service";
 import { formatMinorUnits } from "@/lib/forms/money";
 
@@ -34,7 +38,9 @@ export default async function ConfirmPage({ params, searchParams }: ConfirmPageP
   const content =
     confirmation.subjectType === "measurement_profile"
       ? await getMeasurementProfileConfirmationContent(confirmation.organizationId, confirmation.subjectId)
-      : await getOrderDetailConfirmationContent(confirmation.organizationId, confirmation.subjectId);
+      : confirmation.subjectType === "fitting_session"
+        ? await getFittingSessionConfirmationContent(confirmation.organizationId, confirmation.subjectId)
+        : await getOrderDetailConfirmationContent(confirmation.organizationId, confirmation.subjectId);
   if (!content) return <InactiveLink {...INACTIVE_PROPS} />;
 
   const isCompleted = confirmation.status === "Completed";
@@ -44,7 +50,11 @@ export default async function ConfirmPage({ params, searchParams }: ConfirmPageP
       <section className="glass-panel w-full max-w-3xl rounded-[2rem] px-6 py-8 sm:px-10 sm:py-10 lg:px-12 lg:py-12">
         <Wordmark />
         <h1 className="mt-10 text-3xl font-extrabold leading-tight tracking-tight text-kuartz-navy sm:text-4xl">
-          {confirmation.subjectType === "measurement_profile" ? "Confirm your measurements" : "Confirm your order details"}
+          {confirmation.subjectType === "measurement_profile"
+            ? "Confirm your measurements"
+            : confirmation.subjectType === "fitting_session"
+              ? "Confirm your fitting"
+              : "Confirm your order details"}
         </h1>
         <p className="mt-2 text-sm text-kuartz-muted">{content.clientFullName}</p>
 
@@ -55,7 +65,20 @@ export default async function ConfirmPage({ params, searchParams }: ConfirmPageP
         ) : null}
 
         <div className="mt-8">
-          {"fields" in content ? (
+          {"clientSummary" in content ? (
+            <div className="space-y-4">
+              <p className="font-semibold text-kuartz-navy">{content.orderTitle}</p>
+              <p className="text-sm text-kuartz-muted">
+                Fitting on {content.scheduledAt.toISOString().slice(0, 10)}
+                {content.lookName ? ` · ${content.lookName}` : ""}
+              </p>
+              {content.clientSummary ? (
+                <p className="whitespace-pre-line text-sm leading-6 text-kuartz-navy">{content.clientSummary}</p>
+              ) : (
+                <p className="text-sm text-kuartz-muted">No summary was recorded for this fitting.</p>
+              )}
+            </div>
+          ) : "fields" in content ? (
             <div className="space-y-3">
               {content.fields.length ? (
                 content.fields.map((field) => (

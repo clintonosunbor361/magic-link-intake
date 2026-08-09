@@ -3,6 +3,8 @@ import { drizzle } from "drizzle-orm/postgres-js";
 import { createClient } from "@supabase/supabase-js";
 import postgres from "postgres";
 import {
+  accessoryStatuses,
+  accessoryTypes,
   auditEntries,
   consultationNoteSources,
   itemTypeMeasurementRequirements,
@@ -45,6 +47,27 @@ const DEFAULT_PRODUCTION_STATUSES: { name: string; isCompleted: boolean }[] = [
   { name: "Issue / Delay", isCompleted: false },
   { name: "Ready for Fitting", isCompleted: false },
   { name: "Completed", isCompleted: true },
+];
+
+const DEFAULT_ACCESSORY_TYPES = [
+  "Shoes",
+  "Watches",
+  "Cufflinks",
+  "Shirts",
+  "Pocket Squares",
+  "Fragrances",
+  "Eyewear",
+  "Jewelry",
+  "Other",
+];
+
+// Same shape as the production list: first entry is where new Accessories start, and exactly one
+// entry carries delivered semantics.
+const DEFAULT_ACCESSORY_STATUSES: { name: string; isCompleted: boolean }[] = [
+  { name: "Not Started", isCompleted: false },
+  { name: "Sourcing", isCompleted: false },
+  { name: "Ordered", isCompleted: false },
+  { name: "Delivered", isCompleted: true },
 ];
 
 const DEFAULT_MEASUREMENT_FIELD_DEFINITIONS: { name: string; unit: string }[] = [
@@ -134,6 +157,21 @@ try {
     );
     await db.insert(productionStatuses).values(
       DEFAULT_PRODUCTION_STATUSES.map((status, index) => ({
+        organizationId: organization.id,
+        name: status.name,
+        isCompleted: status.isCompleted,
+        sortOrder: index,
+      })),
+    );
+    await db.insert(accessoryTypes).values(
+      DEFAULT_ACCESSORY_TYPES.map((name, index) => ({
+        organizationId: organization.id,
+        name,
+        sortOrder: index,
+      })),
+    );
+    await db.insert(accessoryStatuses).values(
+      DEFAULT_ACCESSORY_STATUSES.map((status, index) => ({
         organizationId: organization.id,
         name: status.name,
         isCompleted: status.isCompleted,

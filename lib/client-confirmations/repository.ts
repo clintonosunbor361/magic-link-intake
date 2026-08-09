@@ -2,10 +2,16 @@ import "server-only";
 
 import { and, eq, gt, isNull } from "drizzle-orm";
 import { getDatabase } from "@/db";
-import { auditEntries, clientConfirmations, measurementProfiles, orders } from "@/db/schema";
+import { auditEntries, clientConfirmations, fittingSessions, measurementProfiles, orders } from "@/db/schema";
 import { hashToken } from "@/lib/tokens";
-import type { ClientConfirmationRepository } from "@/lib/client-confirmations/service";
+import type { ClientConfirmationRepository, ClientConfirmationSubjectType } from "@/lib/client-confirmations/service";
 import type { ClientConfirmationDecision, ClientConfirmationDecisionRepository } from "@/lib/client-confirmations/decision-service";
+
+const SUBJECT_AUDIT_LABELS: Record<ClientConfirmationSubjectType, string> = {
+  measurement_profile: "measurement",
+  order_detail: "order detail",
+  fitting_session: "fitting",
+};
 
 function auditActionForDecision(decision: ClientConfirmationDecision): string {
   return decision === "confirmed" ? "client_confirmation.confirmed" : "client_confirmation.correction_requested";
@@ -20,6 +26,14 @@ export function createClientConfirmationRepository(): ClientConfirmationReposito
           .select({ id: measurementProfiles.id })
           .from(measurementProfiles)
           .where(and(eq(measurementProfiles.organizationId, organizationId), eq(measurementProfiles.id, subjectId)))
+          .limit(1);
+        return !!row;
+      }
+      if (subjectType === "fitting_session") {
+        const [row] = await db
+          .select({ id: fittingSessions.id })
+          .from(fittingSessions)
+          .where(and(eq(fittingSessions.organizationId, organizationId), eq(fittingSessions.id, subjectId)))
           .limit(1);
         return !!row;
       }
@@ -64,7 +78,7 @@ export function createClientConfirmationRepository(): ClientConfirmationReposito
           action: "client_confirmation.created",
           entityType: "client_confirmation",
           entityId: confirmation.id,
-          summary: `Sent a ${input.subjectType === "measurement_profile" ? "measurement" : "order detail"} confirmation link to the client.`,
+          summary: `Sent a ${SUBJECT_AUDIT_LABELS[input.subjectType]} confirmation link to the client.`,
           metadata: { subjectType: input.subjectType, subjectId: input.subjectId },
         });
 
@@ -171,7 +185,7 @@ export function getClientConfirmationStatus(
 
 export async function listConfirmationsForSubject(
   organizationId: string,
-  subjectType: "measurement_profile" | "order_detail",
+  subjectType: ClientConfirmationSubjectType,
   subjectId: string,
 ) {
   const db = getDatabase();
@@ -203,7 +217,7 @@ export async function listConfirmationsForSubject(
 export type ClientConfirmationView = {
   id: string;
   organizationId: string;
-  subjectType: "measurement_profile" | "order_detail";
+  subjectType: ClientConfirmationSubjectType;
   subjectId: string;
   status: ClientConfirmationStatus;
   decisionStatus: "pending" | "confirmed" | "correction_requested";
