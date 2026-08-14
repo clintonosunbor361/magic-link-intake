@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { archiveOrder, restoreOrder, updateOrderDetails } from "@/lib/orders/order-service";
+import { archiveOrder, createActiveOrder, restoreOrder, updateOrderDetails } from "@/lib/orders/order-service";
 
 const validFields = {
   title: "Tayo Wedding",
@@ -8,6 +8,20 @@ const validFields = {
   ffDiscount: false,
   ffDiscountAmountMinor: null,
 };
+
+describe("createActiveOrder", () => {
+  it("creates an Order and its first Look as one repository operation", async () => {
+    const repository = { clientBelongsToOrganization: vi.fn().mockResolvedValue(true), createOrderWithFirstLook: vi.fn().mockResolvedValue({ orderId: "order-1", lookId: "look-1" }) };
+    const result = await createActiveOrder({ organizationId: "org-1", actorStaffId: "staff-1", fields: { ...validFields, clientId: "client-1", primaryOwnerStaffId: "staff-1", firstLook: { name: "Reception", lookDate: null, notes: "" } } }, repository);
+    expect(result).toEqual({ orderId: "order-1", lookId: "look-1" });
+    expect(repository.createOrderWithFirstLook).toHaveBeenCalledOnce();
+  });
+
+  it("rejects a Client outside the organization", async () => {
+    const repository = { clientBelongsToOrganization: vi.fn().mockResolvedValue(false), createOrderWithFirstLook: vi.fn() };
+    await expect(createActiveOrder({ organizationId: "org-1", actorStaffId: "staff-1", fields: { ...validFields, clientId: "client-x", primaryOwnerStaffId: "staff-1", firstLook: { name: "Reception", lookDate: null, notes: "" } } }, repository)).rejects.toThrow("Client was not found.");
+  });
+});
 
 describe("updateOrderDetails", () => {
   it("updates Order fields with a version bump", async () => {

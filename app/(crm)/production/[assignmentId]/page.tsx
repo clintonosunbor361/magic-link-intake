@@ -4,6 +4,8 @@ import { addProductionNoteAction, changeProductionStatusAction } from "@/app/act
 import { recordVendorPaymentAction, voidVendorPaymentAction } from "@/app/actions/payments";
 import { UrgencyBadge } from "@/components/production/urgency-badge";
 import { Button } from "@/components/ui/button";
+import { Breadcrumbs } from "@/components/ui/breadcrumbs";
+import { MoneyInput } from "@/components/ui/money-input";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Input } from "@/components/ui/input";
 import { NativeSelect } from "@/components/ui/native-select";
@@ -66,13 +68,7 @@ export default async function AssignmentDetailPage({
   const returnTo = `/production/${assignmentId}`;
 
   return (
-    <div>
-      <Link
-        href="/production"
-        className="text-sm font-semibold text-kuartz-secondary underline-offset-4 transition-colors duration-200 hover:text-kuartz-ink hover:underline"
-      >
-        ← Production
-      </Link>
+    <div><Breadcrumbs items={[{ label: "Production", href: "/production" }, { label: briefContext?.sources.itemLabel ?? briefContext?.sources.itemTypeName ?? "Assignment" }]} />
 
       <header className="mt-4 border-b border-kuartz-line pb-8">
         <p className="eyebrow">Vendor assignment</p>
@@ -276,13 +272,12 @@ export default async function AssignmentDetailPage({
               <h2 className="section-title">Record a Vendor payment</h2>
               <form
                 action={recordVendorPaymentAction}
-                encType="multipart/form-data"
                 className="mt-4 space-y-4 border-t border-kuartz-line pt-5"
               >
                 <input type="hidden" name="assignmentId" value={assignment.id} />
                 <label className="form-group">
                   <span>Amount (₦)</span>
-                  <Input name="amount" required inputMode="decimal" />
+                  <MoneyInput name="amount" required />
                 </label>
                 <label className="form-group">
                   <span>Paid on</span>

@@ -17,6 +17,7 @@ export type InternalEnquiryFields = {
   leadSource: string;
   ownerStaffId: string;
   internalNotes: string;
+  linkedClientId: string | null;
 };
 
 export type InternalEnquiryInput = InternalEnquiryFields & { acknowledgedDuplicates: boolean };
@@ -28,6 +29,7 @@ export type EnquiryRepository = {
   createInternalEnquiry(
     input: InternalEnquiryFields & { organizationId: string },
   ): Promise<{ id: string }>;
+  clientBelongsToOrganization?(organizationId: string, clientId: string): Promise<boolean>;
   getEnquiryLifecycle(organizationId: string, enquiryId: string): Promise<EnquiryLifecycleRecord | null>;
   setArchivedState(input: {
     organizationId: string;
@@ -48,6 +50,13 @@ export async function createInternalEnquiry(
 ): Promise<CreateInternalEnquiryResult> {
   if (!input.enquiry.fullName.trim()) throw new Error("Full name is required.");
   if (!input.enquiry.primaryPhone.trim()) throw new Error("Primary phone is required.");
+  if (
+    input.enquiry.linkedClientId &&
+    (!repository.clientBelongsToOrganization ||
+      !(await repository.clientBelongsToOrganization(input.actor.organizationId, input.enquiry.linkedClientId)))
+  ) {
+    throw new Error("Client was not found.");
+  }
 
   const candidates = await repository.getDuplicateCandidates(input.actor.organizationId);
   const matches = findDuplicateMatches(

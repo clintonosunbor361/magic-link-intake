@@ -8,6 +8,8 @@ import {
 } from "@/app/actions/payments";
 import { SendInvoiceButton } from "@/components/finance/send-invoice-button";
 import { Button } from "@/components/ui/button";
+import { Breadcrumbs } from "@/components/ui/breadcrumbs";
+import { MoneyInput } from "@/components/ui/money-input";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Input } from "@/components/ui/input";
 import { requireStaffSession } from "@/lib/auth/session";
@@ -59,14 +61,7 @@ export default async function OrderInvoicePage({
   const editable = invoice?.lifecycle === "draft";
 
   return (
-    <div>
-      <Link
-        href={`/orders/${id}`}
-        className="text-sm font-semibold text-kuartz-secondary underline-offset-4 transition-colors duration-200 hover:text-kuartz-ink hover:underline"
-      >
-        ← {order.title}
-      </Link>
-
+    <div><Breadcrumbs items={[{ label: "Orders", href: "/orders" }, { label: order.title, href: `/orders/${id}` }, { label: "Invoice" }]} />
       <header className="mt-4 border-b border-kuartz-line pb-8">
         <p className="eyebrow">Invoice</p>
         <h1 className="page-title">{invoice ? invoice.invoiceNumber : "Create the Invoice"}</h1>
@@ -189,7 +184,7 @@ export default async function OrderInvoicePage({
                             <input type="hidden" name="version" value={payment.version} />
                             <label className="form-group w-28">
                               <span className="text-xs">Amount (₦)</span>
-                              <Input name="amount" defaultValue={formatMinorUnits(payment.amountMinor)} required />
+                              <MoneyInput name="amount" defaultValue={formatMinorUnits(payment.amountMinor)} required />
                             </label>
                             <label className="form-group w-36">
                               <span className="text-xs">Paid on</span>
@@ -237,7 +232,7 @@ export default async function OrderInvoicePage({
                     <input type="hidden" name="invoiceId" value={invoice.id} />
                     <label className="form-group">
                       <span>Amount (₦)</span>
-                      <Input name="amount" required inputMode="decimal" />
+                      <MoneyInput name="amount" required />
                     </label>
                     <label className="form-group">
                       <span>Paid on</span>
@@ -365,7 +360,7 @@ function InvoiceFields({
               </label>
               <label className="form-group">
                 <span className="sr-only">Unit price</span>
-                <Input name="lineUnitPrice" defaultValue={row.unitPrice} placeholder="Unit price (₦)" inputMode="decimal" />
+                <MoneyInput name="lineUnitPrice" defaultValue={row.unitPrice} placeholder="Unit price (₦)" />
               </label>
             </div>
           ))}

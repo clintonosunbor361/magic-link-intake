@@ -6,13 +6,7 @@ import { requireStaffSession } from "@/lib/auth/session";
 import { readFormString } from "@/lib/forms/read-string";
 import { convertEnquiryToClientAndOrder } from "@/lib/enquiries/conversion-service";
 import { createConversionRepository } from "@/lib/enquiries/repository";
-
-function toMinorUnits(raw: string): number {
-  const [wholePart, fractionPart = ""] = raw.trim().split(".");
-  const wholeDigits = wholePart.replace(/\D/g, "") || "0";
-  const centsDigits = `${fractionPart}00`.slice(0, 2);
-  return Number(wholeDigits) * 100 + Number(centsDigits);
-}
+import { parseMoneyToMinorUnits } from "@/lib/forms/money";
 
 export async function convertEnquiryAction(formData: FormData) {
   const session = await requireStaffSession();
@@ -21,11 +15,11 @@ export async function convertEnquiryAction(formData: FormData) {
   const existingClientId = readFormString(formData, "existingClientId") || null;
   const title = readFormString(formData, "title");
   const eventType = readFormString(formData, "eventType");
-  const finalAgreedPriceMinor = toMinorUnits(readFormString(formData, "finalAgreedPrice"));
+  const finalAgreedPriceMinor = parseMoneyToMinorUnits(readFormString(formData, "finalAgreedPrice"));
   const primaryOwnerStaffId = readFormString(formData, "primaryOwnerStaffId") || session.userId;
   const ffDiscount = formData.get("ffDiscount") === "on";
   const ffDiscountAmountRaw = readFormString(formData, "ffDiscountAmount");
-  const ffDiscountAmountMinor = ffDiscountAmountRaw ? toMinorUnits(ffDiscountAmountRaw) : null;
+  const ffDiscountAmountMinor = ffDiscountAmountRaw ? parseMoneyToMinorUnits(ffDiscountAmountRaw) : null;
   const lookName = readFormString(formData, "lookName");
   const lookDate = readFormString(formData, "lookDate") || null;
   const lookNotes = readFormString(formData, "lookNotes");

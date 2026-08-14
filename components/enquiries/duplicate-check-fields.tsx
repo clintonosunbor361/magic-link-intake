@@ -16,10 +16,10 @@ type DuplicateMatchView = {
   reason: "phone" | "email" | "exact_name" | "similar_name";
 };
 
-export function DuplicateCheckFields() {
-  const [fullName, setFullName] = useState("");
-  const [primaryPhone, setPrimaryPhone] = useState("");
-  const [email, setEmail] = useState("");
+export function DuplicateCheckFields({ initialValues, linkedClient = false }: { initialValues?: { fullName: string; primaryPhone: string; email: string }; linkedClient?: boolean }) {
+  const [fullName, setFullName] = useState(initialValues?.fullName ?? "");
+  const [primaryPhone, setPrimaryPhone] = useState(initialValues?.primaryPhone ?? "");
+  const [email, setEmail] = useState(initialValues?.email ?? "");
   const [matches, setMatches] = useState<DuplicateMatchView[] | null>(null);
   const [checking, setChecking] = useState(false);
   const [acknowledged, setAcknowledged] = useState(false);
@@ -81,15 +81,15 @@ export function DuplicateCheckFields() {
           />
         </label>
       </div>
-      <Button
+      {linkedClient ? <input type="hidden" name="acknowledgedDuplicates" value="on" /> : <Button
         type="button"
         variant="outline"
         onClick={checkDuplicates}
         disabled={checking || !fullName.trim() || !primaryPhone.trim()}
       >
         {checking ? "Checking…" : "Check for duplicates"}
-      </Button>
-      {matches ? (
+      </Button>}
+      {!linkedClient && matches ? (
         matches.length ? (
           <div className="space-y-2 rounded-[0.8rem] border border-[#d9aaa7] bg-[#f7e5e3] p-4">
             <p className="text-sm font-semibold text-kuartz-danger">Possible existing contacts found:</p>

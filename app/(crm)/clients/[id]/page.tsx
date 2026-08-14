@@ -22,6 +22,7 @@ import { getOrCreateMeasurementProfile } from "@/lib/measurement-profiles/servic
 import { listConfirmationsForSubject } from "@/lib/client-confirmations/repository";
 import { getSignedPrivateViewUrl } from "@/lib/storage/r2";
 import { formatMinorUnits } from "@/lib/forms/money";
+import { listOpenEnquiriesForClient } from "@/lib/enquiries/repository";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
@@ -41,7 +42,7 @@ export default async function ClientDetailPage({
   const client = await getClient(session.organizationId, id);
   if (!client) notFound();
 
-  const orders = await listOrdersForClient(session.organizationId, id);
+  const [orders, openEnquiries] = await Promise.all([listOrdersForClient(session.organizationId, id), listOpenEnquiriesForClient(session.organizationId, id)]);
 
   const measurementProfile = await getOrCreateMeasurementProfile(
     { organizationId: session.organizationId, clientId: id },
@@ -61,10 +62,12 @@ export default async function ClientDetailPage({
 
   return (
     <div>
+      <nav aria-label="Breadcrumb" className="mb-4 text-sm"><Link href="/clients" className="font-semibold text-kuartz-secondary hover:text-kuartz-ink hover:underline">Clients</Link><span className="mx-2 text-kuartz-muted">/</span><span aria-current="page" className="text-kuartz-muted">{client.fullName}</span></nav>
       <header className="border-b border-kuartz-line pb-8">
         <p className="eyebrow">Client</p>
         <h1 className="page-title">{client.fullName}</h1>
         <p className="page-description">Client since {dateFormatter.format(client.createdAt)}</p>
+        {!isArchived ? <div className="mt-5 flex flex-wrap gap-3"><Button asChild><Link href={`/enquiries/new?clientId=${client.id}`}>New Enquiry</Link></Button><Button asChild variant="outline"><Link href={`/clients/${client.id}/orders/new`}>New Order</Link></Button></div> : null}
       </header>
 
       {error ? (
@@ -107,6 +110,11 @@ export default async function ClientDetailPage({
                 Save identity
               </Button>
             </form>
+          </div>
+
+          <div>
+            <h2 className="section-title">Open Enquiries</h2>
+            <div className="mt-4 divide-y divide-kuartz-line border-y border-kuartz-line">{openEnquiries.length ? openEnquiries.map((enquiry)=><div key={enquiry.id} className="py-4 text-sm"><Link href={`/enquiries/${enquiry.id}`} className="font-semibold text-kuartz-ink hover:underline">{enquiry.eventType}</Link><p className="mt-1 line-clamp-2 text-kuartz-secondary">{enquiry.brief || "No brief yet"}</p></div>) : <p className="py-6 text-sm text-kuartz-muted">No tentative work for this Client.</p>}</div>
           </div>
 
           <div>
@@ -239,7 +247,6 @@ export default async function ClientDetailPage({
               </div>
               <form
                 action={uploadMeasurementProfileAttachmentAction}
-                encType="multipart/form-data"
                 className="mt-4 flex flex-wrap items-end gap-3"
               >
                 <input type="hidden" name="clientId" value={client.id} />

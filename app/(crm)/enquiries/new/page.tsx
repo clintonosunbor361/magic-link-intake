@@ -7,22 +7,24 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { NativeSelect } from "@/components/ui/native-select";
 import { DuplicateCheckFields } from "@/components/enquiries/duplicate-check-fields";
+import { getClient } from "@/lib/clients/repository";
 
 export default async function NewEnquiryPage({
   searchParams,
 }: {
-  searchParams: Promise<{ error?: string }>;
+  searchParams: Promise<{ error?: string; clientId?: string }>;
 }) {
   const session = await requireStaffSession();
-  const { error } = await searchParams;
+  const { error, clientId } = await searchParams;
   const staff = await listStaffMembers(session.organizationId);
+  const linkedClient = clientId ? await getClient(session.organizationId, clientId) : null;
 
   return (
     <div>
       <header className="border-b border-kuartz-line pb-8">
         <p className="eyebrow">Enquiries</p>
         <h1 className="page-title">New Enquiry</h1>
-        <p className="page-description">Capture a person who has contacted Kuartz directly.</p>
+        <p className="page-description">{linkedClient ? `Capture tentative new work for ${linkedClient.fullName}.` : "Capture a person who has contacted Kuartz directly."}</p>
       </header>
       {error ? (
         <p className="form-alert mt-6" role="alert">
@@ -30,7 +32,8 @@ export default async function NewEnquiryPage({
         </p>
       ) : null}
       <form action={createInternalEnquiryAction} className="mt-9 max-w-2xl space-y-5">
-        <DuplicateCheckFields />
+        {linkedClient ? <input type="hidden" name="linkedClientId" value={linkedClient.id} /> : null}
+        <DuplicateCheckFields linkedClient={Boolean(linkedClient)} initialValues={linkedClient ? { fullName: linkedClient.fullName, primaryPhone: linkedClient.primaryPhone, email: linkedClient.email ?? "" } : undefined} />
 
         <label className="checkbox-field">
           <input type="checkbox" name="whatsappSameAsPrimary" defaultChecked className="h-5 w-5" />

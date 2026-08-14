@@ -22,6 +22,7 @@ function optionValue<T extends readonly string[]>(formData: FormData, key: strin
 
 export async function createInternalEnquiryAction(formData: FormData) {
   const session = await requireStaffSession();
+  const linkedClientId = readFormString(formData, "linkedClientId") || null;
 
   const fullName = readFormString(formData, "fullName");
   const primaryPhone = readFormString(formData, "primaryPhone");
@@ -55,6 +56,7 @@ export async function createInternalEnquiryAction(formData: FormData) {
           leadSource,
           ownerStaffId,
           internalNotes,
+          linkedClientId,
           acknowledgedDuplicates,
         },
       },
@@ -62,12 +64,12 @@ export async function createInternalEnquiryAction(formData: FormData) {
     );
   } catch (error) {
     const message = error instanceof Error ? error.message : "The Enquiry could not be created.";
-    redirect(`/enquiries/new?error=${encodeURIComponent(message)}`);
+    redirect(`/enquiries/new?error=${encodeURIComponent(message)}${linkedClientId ? `&clientId=${encodeURIComponent(linkedClientId)}` : ""}`);
   }
 
   if (!result.ok) {
     redirect(
-      "/enquiries/new?error=Potential+duplicate+contacts+were+found.+Review+them+and+confirm+to+continue.",
+      `/enquiries/new?error=Potential+duplicate+contacts+were+found.+Review+them+and+confirm+to+continue.${linkedClientId ? `&clientId=${encodeURIComponent(linkedClientId)}` : ""}`,
     );
   }
 

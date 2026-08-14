@@ -12,10 +12,10 @@ type ClientResult = {
   latestOrderTitle: string | null;
 };
 
-export function ClientPicker() {
+export function ClientPicker({ initialSelected = null }: { initialSelected?: ClientResult | null }) {
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<ClientResult[] | null>(null);
-  const [selected, setSelected] = useState<ClientResult | null>(null);
+  const [selected, setSelected] = useState<ClientResult | null>(initialSelected);
   const [searching, setSearching] = useState(false);
 
   async function search() {

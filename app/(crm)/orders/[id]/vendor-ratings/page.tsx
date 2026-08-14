@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { rateVendorAction } from "@/app/actions/vendor-ratings";
 import { Button } from "@/components/ui/button";
+import { Breadcrumbs } from "@/components/ui/breadcrumbs";
 import { EmptyState } from "@/components/ui/empty-state";
 import { NativeSelect } from "@/components/ui/native-select";
 import { requireStaffSession } from "@/lib/auth/session";
@@ -22,7 +23,7 @@ export default async function OrderVendorRatingsPage({
   searchParams,
 }: {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ error?: string }>;
+  searchParams: Promise<{ error?: string; from?: string }>;
 }) {
   const session = await requireStaffSession();
   const [{ id }, query] = await Promise.all([params, searchParams]);
@@ -34,12 +35,7 @@ export default async function OrderVendorRatingsPage({
 
   return (
     <div>
-      <Link
-        href={`/orders/${id}`}
-        className="text-sm font-semibold text-kuartz-secondary underline-offset-4 transition-colors duration-200 hover:text-kuartz-ink hover:underline"
-      >
-        ← {order.title}
-      </Link>
+      <Breadcrumbs items={[{ label: "Orders", href: "/orders" }, { label: order.title, href: `/orders/${id}` }, { label: "Vendor ratings" }]} />
 
       <header className="mt-4 border-b border-kuartz-line pb-8">
         <p className="eyebrow">Vendor ratings</p>
@@ -55,6 +51,7 @@ export default async function OrderVendorRatingsPage({
           {query.error}
         </p>
       ) : null}
+      {query.from === "completion" ? <div className="form-success mt-6 flex flex-wrap items-center justify-between gap-3"><span>Order completed. Vendor ratings are optional and can be finished now or later.</span><Link href={`/orders/${id}`} className="font-semibold underline">Skip for now</Link></div> : null}
 
       {vendorRows.length ? (
         <section className="mt-9 space-y-8">

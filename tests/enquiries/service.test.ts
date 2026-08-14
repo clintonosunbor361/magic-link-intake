@@ -15,6 +15,7 @@ const baseEnquiry = {
   ownerStaffId: "staff-1",
   internalNotes: "",
   acknowledgedDuplicates: false,
+  linkedClientId: null,
 };
 
 describe("createInternalEnquiry", () => {

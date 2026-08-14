@@ -2,8 +2,8 @@ import "server-only";
 
 import { and, desc, eq, isNull, ne, or, sql } from "drizzle-orm";
 import { getDatabase } from "@/db";
-import { clients, items, itemTypes, looks, orders } from "@/db/schema";
-import type { OrderRepository } from "@/lib/orders/order-service";
+import { auditEntries, clients, items, itemTypes, looks, orders } from "@/db/schema";
+import type { ActiveOrderCreationRepository, OrderRepository } from "@/lib/orders/order-service";
 import type { LookRepository } from "@/lib/orders/look-service";
 import type { ItemRepository } from "@/lib/orders/item-service";
 
@@ -57,6 +57,33 @@ export function createOrderRepository(): OrderRepository {
         )
         .returning({ id: orders.id });
       if (!rows.length) throw new Error("This Order changed. Reload and try again.");
+    },
+  };
+}
+
+export function createActiveOrderRepository(): ActiveOrderCreationRepository {
+  const db = getDatabase();
+  return {
+    async clientBelongsToOrganization(organizationId, clientId) {
+      const [row] = await db.select({ id: clients.id }).from(clients).where(and(eq(clients.organizationId, organizationId), eq(clients.id, clientId), isNull(clients.archivedAt))).limit(1);
+      return Boolean(row);
+    },
+    async createOrderWithFirstLook(input) {
+      return db.transaction(async (tx) => {
+        const [order] = await tx.insert(orders).values({
+          organizationId: input.organizationId,
+          clientId: input.clientId,
+          title: input.title,
+          eventType: input.eventType,
+          finalAgreedPriceMinor: input.finalAgreedPriceMinor,
+          primaryOwnerStaffId: input.primaryOwnerStaffId,
+          ffDiscount: input.ffDiscount,
+          ffDiscountAmountMinor: input.ffDiscountAmountMinor,
+        }).returning({ id: orders.id });
+        const [look] = await tx.insert(looks).values({ organizationId: input.organizationId, orderId: order.id, name: input.firstLook.name, lookDate: input.firstLook.lookDate, notes: input.firstLook.notes }).returning({ id: looks.id });
+        await tx.insert(auditEntries).values({ organizationId: input.organizationId, actorId: input.actorStaffId, action: "order.created", entityType: "order", entityId: order.id, summary: `Created Active Order "${input.title}" for an existing Client.`, metadata: { clientId: input.clientId, lookId: look.id, finalAgreedPriceMinor: input.finalAgreedPriceMinor } });
+        return { orderId: order.id, lookId: look.id };
+      });
     },
   };
 }

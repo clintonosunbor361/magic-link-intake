@@ -7,6 +7,7 @@ import { getRequestOrigin } from "@/lib/request-origin";
 import { CopyLinkButton } from "@/components/copy-link-button";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Breadcrumbs } from "@/components/ui/breadcrumbs";
 
 export default async function ApprovalBatchCreatedPage({
   params,
@@ -27,6 +28,7 @@ export default async function ApprovalBatchCreatedPage({
 
   return (
     <div>
+      <Breadcrumbs items={[{ label: "Orders", href: "/orders" }, { label: order.title, href: `/orders/${order.id}` }, { label: "Share approval" }]} />
       <header className="border-b border-kuartz-line pb-8">
         <p className="eyebrow">Order</p>
         <h1 className="page-title">Approval batch created</h1>
@@ -46,34 +48,31 @@ export default async function ApprovalBatchCreatedPage({
       {copied ? <p className="form-success mt-6">Marked as copied.</p> : null}
 
       {approvalLink ? (
-        <section className="mt-9 space-y-8">
-          <div>
-            <h2 className="section-title">Approval link</h2>
+        <section className="mt-9 grid gap-6 lg:grid-cols-2">
+          <div className="border border-kuartz-line bg-white/55 p-5">
+            <p className="eyebrow">Style Direction approval · {order.clientFullName}</p><h2 className="section-title mt-2">Share another way</h2>
             <p className="mt-2 text-sm text-kuartz-muted">
               This link is shown only once — send it now or copy it. Creating another batch for this Order invalidates
               this link.
             </p>
             <div className="mt-3 flex flex-wrap items-center gap-3">
-              <code className="rounded-[0.6rem] border border-kuartz-line bg-white/70 px-3 py-2 text-sm">{approvalLink}</code>
-              <CopyLinkButton url={approvalLink} />
+              <code className="w-full break-all rounded-[0.6rem] border border-kuartz-line bg-white/70 px-3 py-2 text-sm">{approvalLink}</code>
               <form action={markApprovalBatchCopiedAction}>
                 <input type="hidden" name="orderId" value={order.id} />
                 <input type="hidden" name="batchId" value={batchId} />
                 <input type="hidden" name="token" value={token} />
-                <Button type="submit" variant="ghost">
-                  Mark as copied for WhatsApp
-                </Button>
+                <CopyLinkButton url={approvalLink} submitAfterCopy />
               </form>
             </div>
           </div>
 
-          <form action={sendApprovalBatchEmailAction} className="space-y-3">
+          <form action={sendApprovalBatchEmailAction} className="space-y-3 border border-kuartz-line bg-white/55 p-5">
             <input type="hidden" name="orderId" value={order.id} />
             <input type="hidden" name="batchId" value={batchId} />
             <input type="hidden" name="token" value={token} />
             <input type="hidden" name="orderTitle" value={order.title} />
             <input type="hidden" name="clientName" value={order.clientFullName} />
-            <h3 className="section-title">Send via email</h3>
+            <p className="eyebrow">Expires after seven days</p><h3 className="section-title mt-2">Send by email</h3>
             <label className="form-group">
               <span>Recipient email</span>
               <Input type="email" name="recipientEmail" defaultValue={order.clientEmail ?? ""} required />
@@ -82,6 +81,7 @@ export default async function ApprovalBatchCreatedPage({
               Send
             </Button>
           </form>
+          <div className="lg:col-span-2"><Button asChild variant="ghost"><Link href={`/orders/${order.id}`}>Done</Link></Button></div>
         </section>
       ) : (
         <p className="mt-6 text-sm text-kuartz-muted">

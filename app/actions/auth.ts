@@ -3,6 +3,7 @@
 import { redirect } from "next/navigation";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { readFormString } from "@/lib/forms/read-string";
+import { getRequestOrigin } from "@/lib/request-origin";
 
 export type SignInState = { error: string | null };
 
@@ -28,10 +29,14 @@ export async function requestPasswordResetAction(formData: FormData) {
   const email = readFormString(formData, "email");
   const supabase = await createSupabaseServerClient();
   if (!supabase) redirect("/setup");
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
-  await supabase.auth.resetPasswordForEmail(email, {
-    redirectTo: `${appUrl}/auth/callback?next=/auth/update-password`,
+  const origin = await getRequestOrigin();
+  const { error } = await supabase.auth.resetPasswordForEmail(email, {
+    redirectTo: `${origin}/auth/callback?next=/auth/update-password`,
   });
+  if (error) {
+    console.error("Password reset request failed.", { code: error.code, status: error.status });
+    redirect("/auth/forgot-password?error=temporary_failure");
+  }
   redirect("/auth/forgot-password?sent=1");
 }
 

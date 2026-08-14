@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { NativeSelect } from "@/components/ui/native-select";
 import { formatMinorUnits } from "@/lib/forms/money";
+import { MoneyInput } from "@/components/ui/money-input";
 import type { AssignmentDetail } from "@/lib/production/assignment-repository";
 import { describeUrgency } from "@/lib/production/urgency";
 import type { VendorListRow } from "@/lib/vendors/repository";
@@ -124,7 +125,7 @@ export function ItemAssignmentDrawer({
                 <span>
                   Agreed cost (₦) <span className="font-normal text-kuartz-secondary">(optional)</span>
                 </span>
-                <Input
+                <MoneyInput
                   name="agreedVendorCostMinor"
                   inputMode="decimal"
                   defaultValue={
@@ -182,7 +183,7 @@ export function ItemAssignmentDrawer({
                     <span>
                       Agreed cost (₦) <span className="font-normal text-kuartz-secondary">(optional)</span>
                     </span>
-                    <Input name="agreedVendorCostMinor" inputMode="decimal" />
+                    <MoneyInput name="agreedVendorCostMinor" />
                   </label>
                 </div>
                 <label className="form-group">
@@ -218,7 +219,7 @@ export function ItemAssignmentDrawer({
                   <span>
                     Agreed cost (₦) <span className="font-normal text-kuartz-secondary">(optional)</span>
                   </span>
-                  <Input name="agreedVendorCostMinor" inputMode="decimal" />
+                  <MoneyInput name="agreedVendorCostMinor" />
                 </label>
                 <Button type="submit">Assign Vendor</Button>
               </div>
@@ -311,7 +312,7 @@ export function LookBulkAssignForm({
               <span>
                 Agreed cost (₦) <span className="font-normal text-kuartz-secondary">(optional)</span>
               </span>
-              <Input name="agreedVendorCostMinor" inputMode="decimal" disabled={!unassignedCount} />
+              <MoneyInput name="agreedVendorCostMinor" disabled={!unassignedCount} />
             </label>
             <Button type="submit" variant="outline" disabled={!unassignedCount}>
               Assign Look

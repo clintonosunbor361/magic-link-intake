@@ -59,6 +59,8 @@ import { getLiveAssignmentDetailForItem } from "@/lib/production/assignment-repo
 import { listVendorsWithStats } from "@/lib/vendors/repository";
 import { ItemAssignmentDrawer, LookBulkAssignForm } from "@/components/production/assignment-drawer";
 import { Button } from "@/components/ui/button";
+import { Breadcrumbs } from "@/components/ui/breadcrumbs";
+import { MoneyInput } from "@/components/ui/money-input";
 import { Input } from "@/components/ui/input";
 import { NativeSelect } from "@/components/ui/native-select";
 
@@ -149,6 +151,7 @@ export default async function OrderDetailPage({
 
   return (
     <div>
+      <Breadcrumbs items={[{ label: "Orders", href: "/orders" }, { label: order.title }]} />
       <header className="border-b border-kuartz-line pb-8">
         <p className="eyebrow">Order</p>
         <h1 className="page-title">{order.title}</h1>
@@ -195,13 +198,13 @@ export default async function OrderDetailPage({
                 </label>
                 <label className="form-group">
                   <span>Final agreed price (₦)</span>
-                  <Input name="finalAgreedPrice" defaultValue={formatMinorUnits(order.finalAgreedPriceMinor)} required />
+                  <MoneyInput name="finalAgreedPrice" defaultValue={formatMinorUnits(order.finalAgreedPriceMinor)} required />
                 </label>
                 <label className="form-group">
                   <span>
                     FF discount amount (₦) <span className="font-normal text-kuartz-secondary">(optional)</span>
                   </span>
-                  <Input
+                  <MoneyInput
                     name="ffDiscountAmount"
                     defaultValue={order.ffDiscountAmountMinor != null ? formatMinorUnits(order.ffDiscountAmountMinor) : ""}
                   />
@@ -656,7 +659,7 @@ export default async function OrderDetailPage({
                                 <img src={currentUrl} alt={formatStyleDirectionLabel(file.category)} className="mt-3 max-h-64 rounded-[0.8rem] border border-kuartz-line object-contain" />
                               ) : null}
 
-                              <form action={reviseStyleDirectionFileAction} encType="multipart/form-data" className="mt-4 flex flex-wrap items-end gap-3">
+                              <form action={reviseStyleDirectionFileAction} className="mt-4 flex flex-wrap items-end gap-3">
                                 <input type="hidden" name="orderId" value={order.id} />
                                 <input type="hidden" name="fileId" value={file.id} />
                                 <input type="hidden" name="version" value={file.version} />
@@ -731,7 +734,6 @@ export default async function OrderDetailPage({
 
             <form
               action={uploadStyleDirectionFileAction}
-              encType="multipart/form-data"
               aria-label="Add a Style Direction File"
               className="mt-6 space-y-3"
             >

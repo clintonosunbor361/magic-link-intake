@@ -1,18 +1,22 @@
 import "server-only";
 
-import { and, asc, eq, gte, isNull, lte, sql } from "drizzle-orm";
+import { and, asc, eq, gt, gte, isNull, lte, sql } from "drizzle-orm";
 import { getDatabase } from "@/db";
 import {
   clients,
+  clientConfirmations,
   enquiries,
   enquiryTasks,
   fittingSessions,
   items,
   itemTypes,
   looks,
+  measurementProfiles,
   orders,
   productionStatuses,
   staffProfiles,
+  styleDirectionApprovalBatches,
+  styleDirectionApprovalBatchItems,
   styleDirectionFiles,
   vendorAssignments,
   vendors,
@@ -129,31 +133,46 @@ export async function listDelayedAssignments(organizationId: string, today: Busi
     .orderBy(asc(vendorAssignments.deadline));
 }
 
-/** Style Direction files awaiting a client decision, across every Order. */
-export async function listPendingApprovals(organizationId: string) {
+/** Every active Approval or Confirmation awaiting a Client response. */
+export async function listAwaitingClientResponses(organizationId: string, now = new Date()) {
   const db = getDatabase();
-  return db
+  const approvals = await db
     .select({
-      fileId: styleDirectionFiles.id,
-      category: styleDirectionFiles.category,
+      key: styleDirectionApprovalBatchItems.id,
+      type: sql<string>`'Style Direction approval'`,
       orderId: orders.id,
-      orderTitle: orders.title,
+      label: orders.title,
       clientName: clients.fullName,
-      updatedAt: styleDirectionFiles.updatedAt,
+      createdAt: styleDirectionApprovalBatches.createdAt,
+      expiresAt: styleDirectionApprovalBatches.expiresAt,
     })
-    .from(styleDirectionFiles)
-    .innerJoin(orders, eq(orders.id, styleDirectionFiles.orderId))
+    .from(styleDirectionApprovalBatchItems)
+    .innerJoin(styleDirectionApprovalBatches, eq(styleDirectionApprovalBatches.id, styleDirectionApprovalBatchItems.batchId))
+    .innerJoin(styleDirectionFiles, eq(styleDirectionFiles.id, styleDirectionApprovalBatchItems.styleDirectionFileId))
+    .innerJoin(orders, eq(orders.id, styleDirectionApprovalBatches.orderId))
     .innerJoin(clients, eq(clients.id, orders.clientId))
     .where(
       and(
-        eq(styleDirectionFiles.organizationId, organizationId),
-        eq(styleDirectionFiles.requiresClientApproval, true),
-        eq(styleDirectionFiles.approvalStatus, "pending"),
+        eq(styleDirectionApprovalBatches.organizationId, organizationId),
+        eq(styleDirectionApprovalBatchItems.decisionStatus, "pending"),
+        isNull(styleDirectionApprovalBatches.completedAt),
+        isNull(styleDirectionApprovalBatches.supersededAt),
+        gt(styleDirectionApprovalBatches.expiresAt, now),
         isNull(styleDirectionFiles.archivedAt),
         isNull(orders.archivedAt),
       ),
-    )
-    .orderBy(asc(styleDirectionFiles.updatedAt));
+    );
+
+  const activeConfirmation = and(eq(clientConfirmations.organizationId, organizationId), eq(clientConfirmations.decisionStatus, "pending"), isNull(clientConfirmations.completedAt), isNull(clientConfirmations.supersededAt), gt(clientConfirmations.expiresAt, now));
+  const orderConfirmations = await db.select({ key: clientConfirmations.id, type: sql<string>`'Order confirmation'`, orderId: orders.id, label: orders.title, clientName: clients.fullName, createdAt: clientConfirmations.createdAt, expiresAt: clientConfirmations.expiresAt }).from(clientConfirmations).innerJoin(orders, eq(orders.id, clientConfirmations.subjectId)).innerJoin(clients, eq(clients.id, orders.clientId)).where(and(activeConfirmation, eq(clientConfirmations.subjectType, "order_detail"), isNull(orders.archivedAt)));
+  const measurementConfirmations = await db.select({ key: clientConfirmations.id, type: sql<string>`'Measurement confirmation'`, orderId: sql<string | null>`null`, clientId: clients.id, label: sql<string>`${clients.fullName} || ' measurements'`, clientName: clients.fullName, createdAt: clientConfirmations.createdAt, expiresAt: clientConfirmations.expiresAt }).from(clientConfirmations).innerJoin(measurementProfiles, eq(measurementProfiles.id, clientConfirmations.subjectId)).innerJoin(clients, eq(clients.id, measurementProfiles.clientId)).where(and(activeConfirmation, eq(clientConfirmations.subjectType, "measurement_profile"), isNull(measurementProfiles.archivedAt), isNull(clients.archivedAt)));
+  const fittingConfirmations = await db.select({ key: clientConfirmations.id, type: sql<string>`'Fitting confirmation'`, orderId: orders.id, label: orders.title, clientName: clients.fullName, createdAt: clientConfirmations.createdAt, expiresAt: clientConfirmations.expiresAt }).from(clientConfirmations).innerJoin(fittingSessions, eq(fittingSessions.id, clientConfirmations.subjectId)).innerJoin(orders, eq(orders.id, fittingSessions.orderId)).innerJoin(clients, eq(clients.id, orders.clientId)).where(and(activeConfirmation, eq(clientConfirmations.subjectType, "fitting_session"), isNull(fittingSessions.archivedAt), isNull(orders.archivedAt)));
+  return [
+    ...approvals.map((row) => ({ ...row, href: `/orders/${row.orderId}` })),
+    ...orderConfirmations.map((row) => ({ ...row, href: `/orders/${row.orderId}` })),
+    ...measurementConfirmations.map((row) => ({ ...row, href: `/clients/${row.clientId}` })),
+    ...fittingConfirmations.map((row) => ({ ...row, href: `/orders/${row.orderId}/fittings` })),
+  ].sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime());
 }
 
 /** Open follow-up to-dos, due or overdue as of today. */

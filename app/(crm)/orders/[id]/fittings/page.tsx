@@ -11,6 +11,7 @@ import {
   updateFittingSummaryAction,
 } from "@/app/actions/fittings";
 import { Button } from "@/components/ui/button";
+import { Breadcrumbs } from "@/components/ui/breadcrumbs";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Input } from "@/components/ui/input";
 import { NativeSelect } from "@/components/ui/native-select";
@@ -60,14 +61,7 @@ export default async function OrderFittingsPage({
   );
 
   return (
-    <div>
-      <Link
-        href={`/orders/${id}`}
-        className="text-sm font-semibold text-kuartz-secondary underline-offset-4 transition-colors duration-200 hover:text-kuartz-ink hover:underline"
-      >
-        ← {order.title}
-      </Link>
-
+    <div><Breadcrumbs items={[{ label: "Orders", href: "/orders" }, { label: order.title, href: `/orders/${id}` }, { label: "Fittings" }]} />
       <header className="mt-4 border-b border-kuartz-line pb-8">
         <p className="eyebrow">Fittings</p>
         <h1 className="page-title">Fitting sessions</h1>

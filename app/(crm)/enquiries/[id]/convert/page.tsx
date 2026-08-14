@@ -8,6 +8,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { NativeSelect } from "@/components/ui/native-select";
 import { ClientPicker } from "@/components/enquiries/client-picker";
+import { getClient } from "@/lib/clients/repository";
+import { MoneyInput } from "@/components/ui/money-input";
 
 export default async function ConvertEnquiryPage({
   params,
@@ -24,7 +26,7 @@ export default async function ConvertEnquiryPage({
   if (!enquiry) notFound();
   if (enquiry.convertedAt || enquiry.archivedAt) redirect(`/enquiries/${id}`);
 
-  const staff = await listStaffMembers(session.organizationId);
+  const [staff, linkedClient] = await Promise.all([listStaffMembers(session.organizationId), enquiry.linkedClientId ? getClient(session.organizationId, enquiry.linkedClientId) : null]);
 
   return (
     <div>
@@ -48,7 +50,7 @@ export default async function ConvertEnquiryPage({
             Link to an existing Client, or leave unselected to create a new Client from this Enquiry&apos;s details.
           </p>
           <div className="mt-4">
-            <ClientPicker />
+            <ClientPicker initialSelected={linkedClient ? { id: linkedClient.id, fullName: linkedClient.fullName, primaryPhone: linkedClient.primaryPhone, email: linkedClient.email, latestOrderTitle: null } : null} />
           </div>
         </div>
 
@@ -72,7 +74,7 @@ export default async function ConvertEnquiryPage({
               </label>
               <label className="form-group">
                 <span>Final agreed price (₦)</span>
-                <Input name="finalAgreedPrice" type="number" min="1" step="0.01" required />
+                <MoneyInput name="finalAgreedPrice" required />
               </label>
             </div>
             <label className="form-group">
@@ -91,7 +93,7 @@ export default async function ConvertEnquiryPage({
             </label>
             <label className="form-group">
               <span>Amount discounted (₦) <span className="font-normal text-kuartz-secondary">(optional)</span></span>
-              <Input name="ffDiscountAmount" type="number" min="0" step="0.01" />
+              <MoneyInput name="ffDiscountAmount" />
             </label>
           </div>
         </div>

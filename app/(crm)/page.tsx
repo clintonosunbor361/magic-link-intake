@@ -9,7 +9,7 @@ import {
   dashboardToday,
   listDelayedAssignments,
   listDueFollowUps,
-  listPendingApprovals,
+  listAwaitingClientResponses,
   listUpcomingFittings,
   listUpcomingLookDates,
 } from "@/lib/dashboard/repository";
@@ -18,6 +18,7 @@ import { countUnreadNotifications, listNotifications } from "@/lib/notifications
 import { TRIGGER_LABELS } from "@/lib/notifications/triggers";
 import { getOrganizationTimezone } from "@/lib/organizations/repository";
 import { computeUrgencyBand, urgencyToneClasses } from "@/lib/production/urgency";
+import { listPendingRatingPrompts } from "@/lib/vendors/rating-repository";
 
 const dateFormatter = new Intl.DateTimeFormat("en-NG", { dateStyle: "medium" });
 const dateTimeFormatter = new Intl.DateTimeFormat("en-NG", { dateStyle: "medium", timeStyle: "short" });
@@ -34,19 +35,21 @@ export default async function OverviewPage() {
     upcomingLooks,
     upcomingFittings,
     delayed,
-    pendingApprovals,
+    awaitingResponses,
     followUps,
     recentNotifications,
     unreadCount,
+    pendingRatings,
   ] = await Promise.all([
     countActiveClients(session.organizationId),
     listUpcomingLookDates(session.organizationId, today),
     listUpcomingFittings(session.organizationId, now),
     listDelayedAssignments(session.organizationId, today),
-    listPendingApprovals(session.organizationId),
+    listAwaitingClientResponses(session.organizationId, now),
     listDueFollowUps(session.organizationId, today),
     listNotifications(session.organizationId, { unreadOnly: true, limit: PANEL_LIMIT }),
     countUnreadNotifications(session.organizationId),
+    listPendingRatingPrompts(session.organizationId),
   ]);
 
   const metrics = [
@@ -58,8 +61,8 @@ export default async function OverviewPage() {
       hint: delayed.length ? "past deadline" : "all on track",
     },
     {
-      label: "Pending approvals",
-      value: String(pendingApprovals.length),
+      label: "Awaiting client response",
+      value: String(awaitingResponses.length),
       href: "/orders",
       hint: "awaiting the client",
     },
@@ -101,7 +104,7 @@ export default async function OverviewPage() {
         )}
       </header>
 
-      <section className="mt-9 grid gap-4 sm:grid-cols-2 xl:grid-cols-3" aria-label="Key figures">
+      <section className="mt-9 grid gap-4 sm:grid-cols-2 xl:grid-cols-4" aria-label="Key figures">
         {metrics.map((metric) => (
           <Link
             key={metric.label}
@@ -118,11 +121,11 @@ export default async function OverviewPage() {
       <section className="mt-10 grid gap-10 xl:grid-cols-[minmax(0,1.4fr)_minmax(18rem,0.6fr)]">
         <div className="space-y-10">
           <Panel
-            title="Behind schedule"
+            title="Needs attention"
             href="/production"
-            linkLabel="Production"
-            empty="Nothing is past its deadline."
-            rows={delayed.slice(0, PANEL_LIMIT).map((row) => ({
+            linkLabel="Open Production"
+            empty="Nothing is overdue or blocked."
+            rows={[...delayed.map((row) => ({
               key: row.assignmentId,
               href: `/production/${row.assignmentId}`,
               primary: row.itemLabel ?? row.itemTypeName,
@@ -131,8 +134,8 @@ export default async function OverviewPage() {
                 text: `Overdue by ${Math.abs(daysBetween(today, row.deadline))}d`,
                 tone: urgencyToneClasses("overdue"),
               },
-            }))}
-            total={delayed.length}
+            })), ...followUps.map((row) => ({ key: row.id, href: `/enquiries/${row.enquiryId}`, primary: row.title, secondary: `${row.enquiryName} · ${row.assigneeName}`, badge: { text: countdownLabel(daysBetween(today, row.dueDate)), tone: urgencyToneClasses("overdue") } }))].slice(0, PANEL_LIMIT)}
+            total={delayed.length + followUps.length}
           />
 
           <Panel
@@ -169,23 +172,7 @@ export default async function OverviewPage() {
             total={upcomingFittings.length}
           />
 
-          <Panel
-            title="Follow-ups due"
-            href="/enquiries"
-            linkLabel="Enquiries"
-            empty="No follow-ups due."
-            rows={followUps.slice(0, PANEL_LIMIT).map((row) => ({
-              key: row.id,
-              href: `/enquiries/${row.enquiryId}`,
-              primary: row.title,
-              secondary: `${row.enquiryName} · ${row.assigneeName}`,
-              badge: {
-                text: countdownLabel(daysBetween(today, row.dueDate)),
-                tone: urgencyToneClasses(computeUrgencyBand({ deadline: row.dueDate, today })),
-              },
-            }))}
-            total={followUps.length}
-          />
+          <Panel title="Vendor ratings to finish" href="/vendor-ratings" linkLabel="Ratings" empty="No completed Vendor work is waiting for a rating." rows={pendingRatings.slice(0, PANEL_LIMIT).map((row) => ({ key: `${row.orderId}-${row.vendorId}`, href: `/orders/${row.orderId}/vendor-ratings`, primary: row.vendorName, secondary: `${row.clientName} · ${row.orderTitle}` }))} total={pendingRatings.length} />
         </div>
 
         <aside className="space-y-10">
@@ -220,22 +207,22 @@ export default async function OverviewPage() {
 
           <div>
             <div className="flex items-end justify-between gap-4">
-              <h2 className="section-title">Pending approvals</h2>
+              <h2 className="section-title">Awaiting client response</h2>
               <Link href="/orders" className="text-sm font-semibold text-kuartz-ink underline">
                 Orders
               </Link>
             </div>
-            {pendingApprovals.length ? (
+            {awaitingResponses.length ? (
               <ol className="mt-4 divide-y divide-kuartz-line border-y border-kuartz-line">
-                {pendingApprovals.slice(0, PANEL_LIMIT).map((row) => (
-                  <li key={row.fileId} className="py-3">
+                {awaitingResponses.slice(0, PANEL_LIMIT).map((row) => (
+                  <li key={row.key} className="py-3">
                     <p className="text-sm font-semibold text-kuartz-ink">
-                      <Link href={`/orders/${row.orderId}`} className="underline-offset-4 hover:underline">
-                        {row.orderTitle}
+                      <Link href={row.href} className="underline-offset-4 hover:underline">
+                        {row.label}
                       </Link>
                     </p>
                     <p className="mt-1 text-xs text-kuartz-muted">
-                      {row.clientName} · sent {dateFormatter.format(row.updatedAt)}
+                      {row.type} · {row.clientName} · requested {dateFormatter.format(row.createdAt)}
                     </p>
                   </li>
                 ))}

@@ -12,6 +12,30 @@ export type OrderFields = {
 
 export type OrderLifecycleRecord = { id: string; version: number; archivedAt: Date | null };
 
+export type CreateActiveOrderInput = OrderFields & {
+  clientId: string;
+  primaryOwnerStaffId: string;
+  firstLook: { name: string; lookDate: string | null; notes: string };
+};
+
+export type ActiveOrderCreationRepository = {
+  clientBelongsToOrganization(organizationId: string, clientId: string): Promise<boolean>;
+  createOrderWithFirstLook(input: CreateActiveOrderInput & { organizationId: string; actorStaffId: string }): Promise<{ orderId: string; lookId: string }>;
+};
+
+export async function createActiveOrder(
+  input: { organizationId: string; actorStaffId: string; fields: CreateActiveOrderInput },
+  repository: ActiveOrderCreationRepository,
+) {
+  if (!(await repository.clientBelongsToOrganization(input.organizationId, input.fields.clientId))) throw new Error("Client was not found.");
+  if (!input.fields.title.trim()) throw new Error("Order title is required.");
+  if (!input.fields.eventType.trim()) throw new Error("Event type is required.");
+  if (!Number.isInteger(input.fields.finalAgreedPriceMinor) || input.fields.finalAgreedPriceMinor <= 0) throw new Error("Final agreed price must be greater than zero.");
+  if (!input.fields.primaryOwnerStaffId) throw new Error("Primary owner is required.");
+  if (!input.fields.firstLook.name.trim()) throw new Error("Look name is required.");
+  return repository.createOrderWithFirstLook({ organizationId: input.organizationId, actorStaffId: input.actorStaffId, ...input.fields });
+}
+
 export type OrderRepository = {
   getOrderLifecycle(organizationId: string, orderId: string): Promise<OrderLifecycleRecord | null>;
   updateOrderDetails(

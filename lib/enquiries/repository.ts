@@ -20,6 +20,10 @@ import type { ConversionRepository } from "@/lib/enquiries/conversion-service";
 export function createEnquiryRepository(): EnquiryRepository {
   const db = getDatabase();
   return {
+    async clientBelongsToOrganization(organizationId, clientId) {
+      const [row] = await db.select({ id: clients.id }).from(clients).where(and(eq(clients.organizationId, organizationId), eq(clients.id, clientId), isNull(clients.archivedAt))).limit(1);
+      return Boolean(row);
+    },
     async getDuplicateCandidates(organizationId) {
       const [enquiryRows, clientRows] = await Promise.all([
         db
@@ -74,6 +78,7 @@ export function createEnquiryRepository(): EnquiryRepository {
           leadSource: input.leadSource || null,
           ownerStaffId: input.ownerStaffId || null,
           internalNotes: input.internalNotes || null,
+          linkedClientId: input.linkedClientId,
         })
         .returning({ id: enquiries.id });
       return row;
@@ -197,6 +202,7 @@ export function createConversionRepository(): ConversionRepository {
             version: enquiries.version,
             convertedAt: enquiries.convertedAt,
             fullName: enquiries.fullName,
+            linkedClientId: enquiries.linkedClientId,
             primaryPhone: enquiries.primaryPhone,
             whatsappPhone: enquiries.whatsappPhone,
             email: enquiries.email,
@@ -211,7 +217,7 @@ export function createConversionRepository(): ConversionRepository {
           throw new Error("This Enquiry changed. Reload and try again.");
         }
 
-        let clientId = input.existingClientId;
+        let clientId = input.existingClientId ?? locked.linkedClientId;
         if (!clientId) {
           const [newClient] = await tx
             .insert(clients)
@@ -278,7 +284,7 @@ export function createConversionRepository(): ConversionRepository {
             clientId,
             orderId: order.id,
             lookId: look.id,
-            reusedExistingClient: Boolean(input.existingClientId),
+            reusedExistingClient: Boolean(clientId),
             finalAgreedPriceMinor: input.order.finalAgreedPriceMinor,
             ffDiscount: input.order.ffDiscount,
           },
@@ -347,6 +353,11 @@ export async function getEnquiry(organizationId: string, enquiryId: string) {
     .where(and(eq(enquiries.organizationId, organizationId), eq(enquiries.id, enquiryId)))
     .limit(1);
   return row ?? null;
+}
+
+export async function listOpenEnquiriesForClient(organizationId: string, clientId: string) {
+  const db = getDatabase();
+  return db.select({ id: enquiries.id, eventType: enquiries.eventType, brief: enquiries.brief, createdAt: enquiries.createdAt }).from(enquiries).where(and(eq(enquiries.organizationId, organizationId), eq(enquiries.linkedClientId, clientId), isNull(enquiries.convertedAt), isNull(enquiries.archivedAt))).orderBy(desc(enquiries.createdAt));
 }
 
 export async function getConvertedRecordReferences(

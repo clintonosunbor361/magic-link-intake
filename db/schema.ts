@@ -257,6 +257,7 @@ export const enquiries = pgTable(
     leadSource: text("lead_source"),
     ownerStaffId: uuid("owner_staff_id").references(() => staffProfiles.id),
     internalNotes: text("internal_notes"),
+    linkedClientId: uuid("linked_client_id").references(() => clients.id),
     convertedAt: timestamp("converted_at", { withTimezone: true }),
     convertedClientId: uuid("converted_client_id").references(() => clients.id),
     convertedOrderId: uuid("converted_order_id").references(() => orders.id),
@@ -269,6 +270,7 @@ export const enquiries = pgTable(
     index("enquiries_org_phone_idx").on(table.organizationId, table.primaryPhoneNormalized),
     index("enquiries_org_email_idx").on(table.organizationId, table.emailNormalized),
     index("enquiries_org_name_idx").on(table.organizationId, table.nameNormalized),
+    index("enquiries_linked_client_idx").on(table.linkedClientId),
     pgPolicy("staff can view organization enquiries", {
       for: "select",
       to: "authenticated",

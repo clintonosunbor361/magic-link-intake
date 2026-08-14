@@ -5,10 +5,35 @@ import { redirect } from "next/navigation";
 import { requireStaffSession } from "@/lib/auth/session";
 import { readFormString } from "@/lib/forms/read-string";
 import { parseMoneyToMinorUnits } from "@/lib/forms/money";
-import { createItemRepository, createLookRepository, createOrderRepository } from "@/lib/orders/repository";
-import { archiveOrder, restoreOrder, updateOrderDetails } from "@/lib/orders/order-service";
+import { createActiveOrderRepository, createItemRepository, createLookRepository, createOrderRepository } from "@/lib/orders/repository";
+import { archiveOrder, createActiveOrder, restoreOrder, updateOrderDetails } from "@/lib/orders/order-service";
 import { archiveLook, createLook, restoreLook, updateLook } from "@/lib/orders/look-service";
 import { archiveItem, createItem, restoreItem, updateItem } from "@/lib/orders/item-service";
+
+export async function createActiveOrderAction(formData: FormData) {
+  const session = await requireStaffSession();
+  const clientId = readFormString(formData, "clientId");
+  const discount = readFormString(formData, "ffDiscountAmount");
+  let orderId: string;
+  try {
+    ({ orderId } = await createActiveOrder({ organizationId: session.organizationId, actorStaffId: session.userId, fields: {
+      clientId,
+      title: readFormString(formData, "title"),
+      eventType: readFormString(formData, "eventType"),
+      finalAgreedPriceMinor: parseMoneyToMinorUnits(readFormString(formData, "finalAgreedPrice")),
+      primaryOwnerStaffId: readFormString(formData, "primaryOwnerStaffId") || session.userId,
+      ffDiscount: formData.get("ffDiscount") === "on",
+      ffDiscountAmountMinor: discount ? parseMoneyToMinorUnits(discount) : null,
+      firstLook: { name: readFormString(formData, "lookName"), lookDate: readFormString(formData, "lookDate") || null, notes: readFormString(formData, "lookNotes") },
+    } }, createActiveOrderRepository()));
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "The Order could not be created.";
+    redirect(`/clients/${clientId}/orders/new?error=${encodeURIComponent(message)}`);
+  }
+  revalidatePath(`/clients/${clientId}`);
+  revalidatePath("/orders");
+  redirect(`/orders/${orderId}`);
+}
 
 export async function updateOrderAction(formData: FormData) {
   const session = await requireStaffSession();
