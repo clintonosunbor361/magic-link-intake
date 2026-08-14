@@ -16,15 +16,15 @@ const config: Config = {
           secondary: "#50586c",
           muted: "#606777",
           subtle: "#676d7d",
-          line: "#d9d8d1",
-          lineSoft: "#eceae2",
-          control: "#cfcec7",
+          line: "#d8e0eb",
+          lineSoft: "#eef2f7",
+          control: "#c9d4e3",
           graphite: "#15163f",
-          smoke: "#8c95a5",
+          smoke: "#8d97a8",
           lime: "#d2ff67",
           limeDeep: "#bdf447",
           paper: "#ffffff",
-          canvas: "#f4f3ee",
+          canvas: "#f7f8fb",
           danger: "#7e403d",
           success: "#44582a",
         },
@@ -55,3 +55,4 @@ const config: Config = {
 };
 
 export default config;
+
