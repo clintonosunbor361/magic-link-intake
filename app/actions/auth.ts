@@ -26,17 +26,21 @@ export async function signOutAction() {
 }
 
 export async function requestPasswordResetAction(formData: FormData) {
-  const email = readFormString(formData, "email");
+  const email = readFormString(formData, "email").toLowerCase();
+  if (!email) redirect("/auth/forgot-password?error=Enter+your+email+address.");
+
   const supabase = await createSupabaseServerClient();
   if (!supabase) redirect("/setup");
-  const origin = await getRequestOrigin();
+
+  const appUrl = (process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000").replace(/\/$/, "");
   const { error } = await supabase.auth.resetPasswordForEmail(email, {
-    redirectTo: `${origin}/auth/callback?next=/auth/update-password`,
+    redirectTo: `${appUrl}/auth/callback?next=${encodeURIComponent("/auth/update-password")}`,
   });
+
   if (error) {
-    console.error("Password reset request failed.", { code: error.code, status: error.status });
-    redirect("/auth/forgot-password?error=temporary_failure");
+    redirect(`/auth/forgot-password?error=${encodeURIComponent(passwordResetErrorMessage(error.message))}`);
   }
+
   redirect("/auth/forgot-password?sent=1");
 }
 
@@ -52,4 +56,20 @@ export async function updatePasswordAction(formData: FormData) {
   const { error } = await supabase.auth.updateUser({ password });
   if (error) redirect(`/auth/update-password?error=The+password+could+not+be+updated.${contextParam}`);
   redirect("/");
+}
+
+function passwordResetErrorMessage(message: string): string {
+  if (/authorized/i.test(message)) {
+    return "Supabase refused to send this email. Use an organization member email while testing, or configure custom SMTP.";
+  }
+
+  if (/redirect|url/i.test(message)) {
+    return "Supabase rejected the recovery redirect URL. Add this app URL to Supabase Auth redirect URLs.";
+  }
+
+  if (/rate|limit/i.test(message)) {
+    return "Supabase rate-limited recovery emails. Wait and try again, or configure custom SMTP.";
+  }
+
+  return "Supabase could not send the recovery email. Check Auth logs and SMTP settings.";
 }
