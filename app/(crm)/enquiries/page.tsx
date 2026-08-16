@@ -33,8 +33,8 @@ export default async function EnquiriesInboxPage({
             Everyone who has contacted Kuartz but has not yet agreed an Order.
           </p>
         </div>
-        <div className="flex flex-col items-start gap-4 lg:items-end">
-          <Button asChild>
+        <div className="flex w-full flex-col items-stretch gap-4 sm:w-auto sm:items-start lg:items-end">
+          <Button asChild className="w-full sm:w-60">
             <Link href="/enquiries/new">New Enquiry</Link>
           </Button>
           <LinkGenerator />

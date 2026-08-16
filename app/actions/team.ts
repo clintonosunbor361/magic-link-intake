@@ -8,6 +8,7 @@ import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { changeStaffRole } from "@/lib/team/service";
 import { addInvitedStaffMember, createStaffRepository } from "@/lib/team/repository";
 import { readFormString } from "@/lib/forms/read-string";
+import { getRequestOrigin } from "@/lib/request-origin";
 
 function roleValue(formData: FormData): StaffRole {
   const candidate = readFormString(formData, "role");
@@ -23,10 +24,10 @@ export async function inviteStaffMemberAction(formData: FormData) {
   if (!fullName || !email) redirect("/settings/team?error=Name+and+email+are+required.");
 
   const admin = createSupabaseAdminClient();
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
+  const appUrl = await getRequestOrigin();
   const { data, error } = await admin.auth.admin.inviteUserByEmail(email, {
     data: { full_name: fullName },
-    redirectTo: `${appUrl}/auth/callback?next=${encodeURIComponent("/auth/update-password?context=invite")}`,
+    redirectTo: `${appUrl}/auth/invite`,
   });
   if (error || !data.user) redirect("/settings/team?error=The+invitation+could+not+be+sent.");
 

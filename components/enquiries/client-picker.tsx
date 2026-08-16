@@ -12,7 +12,15 @@ type ClientResult = {
   latestOrderTitle: string | null;
 };
 
-export function ClientPicker({ initialSelected = null }: { initialSelected?: ClientResult | null }) {
+export function ClientPicker({
+  initialSelected = null,
+  fieldName = "existingClientId",
+  noResultsMessage = "No matching Clients. A new Client will be created.",
+}: {
+  initialSelected?: ClientResult | null;
+  fieldName?: string;
+  noResultsMessage?: string;
+}) {
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<ClientResult[] | null>(null);
   const [selected, setSelected] = useState<ClientResult | null>(initialSelected);
@@ -35,7 +43,7 @@ export function ClientPicker({ initialSelected = null }: { initialSelected?: Cli
 
   return (
     <div className="space-y-3">
-      <input type="hidden" name="existingClientId" value={selected?.id ?? ""} />
+      <input type="hidden" name={fieldName} value={selected?.id ?? ""} />
       {selected ? (
         <div className="flex items-center justify-between rounded-[0.8rem] border border-[#afc67d] bg-[#eaf5cf] px-4 py-3 text-sm">
           <div>
@@ -56,6 +64,7 @@ export function ClientPicker({ initialSelected = null }: { initialSelected?: Cli
         <>
           <div className="flex gap-2">
             <Input
+              aria-label="Search Clients"
               value={query}
               onChange={(event) => setQuery(event.target.value)}
               placeholder="Search existing Clients by name or phone"
@@ -84,7 +93,7 @@ export function ClientPicker({ initialSelected = null }: { initialSelected?: Cli
               ))}
             </ul>
           ) : results ? (
-            <p className="text-sm text-kuartz-secondary">No matching Clients. A new Client will be created.</p>
+            <p className="text-sm text-kuartz-secondary" role="status">{noResultsMessage}</p>
           ) : null}
         </>
       )}

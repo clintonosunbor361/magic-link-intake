@@ -3,6 +3,7 @@
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Check, Copy, Link2, Loader2, Sparkles } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 type CreateLinkResponse = {
   url: string;
@@ -52,12 +53,13 @@ export function LinkGenerator() {
   }
 
   return (
-    <div className="space-y-4">
-      <button
+    <div className="w-full space-y-4">
+      <Button
         type="button"
+        variant="outline"
         onClick={generateLink}
         disabled={isBusy}
-        className="primary-action w-full sm:w-auto"
+        className="w-full gap-2 sm:w-60"
       >
         {isBusy ? (
           <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
@@ -65,7 +67,7 @@ export function LinkGenerator() {
           <Sparkles className="h-4 w-4" aria-hidden="true" />
         )}
         Generate intake link
-      </button>
+      </Button>
 
       {generatedUrl ? (
         <div className="rounded-[1.35rem] border border-white/80 bg-white/55 p-3 shadow-sm backdrop-blur-xl">

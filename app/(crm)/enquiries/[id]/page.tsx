@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { ArrowLeft } from "lucide-react";
 import {
   addFollowUpNoteAction,
   archiveEnquiryAction,
@@ -8,13 +9,13 @@ import {
   reopenTaskAction,
   restoreEnquiryAction,
 } from "@/app/actions/enquiries";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { NativeSelect } from "@/components/ui/native-select";
 import { requireStaffSession } from "@/lib/auth/session";
 import { mayArchive, mayRestore } from "@/lib/domain/record-lifecycle";
 import { getConvertedRecordReferences, getEnquiry, listFollowUpNotes, listTasks } from "@/lib/enquiries/repository";
 import { listStaffMembers } from "@/lib/team/repository";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { NativeSelect } from "@/components/ui/native-select";
 
 const dateFormatter = new Intl.DateTimeFormat("en-NG", { dateStyle: "medium", timeStyle: "short" });
 const dayFormatter = new Intl.DateTimeFormat("en-NG", { dateStyle: "medium" });
@@ -48,6 +49,12 @@ export default async function EnquiryDetailPage({
 
   return (
     <div>
+      <Button asChild variant="ghost" className="mb-3 -ml-2 gap-2">
+        <Link href="/enquiries">
+          <ArrowLeft size={16} aria-hidden="true" />
+          Back to Enquiries
+        </Link>
+      </Button>
       <header className="border-b border-kuartz-line pb-8">
         <p className="eyebrow">Enquiry</p>
         <h1 className="page-title">{enquiry.fullName}</h1>

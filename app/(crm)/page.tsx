@@ -108,13 +108,12 @@ export default async function OverviewPage() {
 
       <section className="grid gap-5 xl:grid-cols-[minmax(18rem,0.85fr)_minmax(18rem,1fr)]" aria-label="Operations snapshot">
         <PipelineCard rows={pipelineRows} totalSignal={totalSignal} maxValue={maxPipelineValue} />
-        <TodayCard fittings={upcomingFittings} looks={upcomingLooks} />
+        <FollowUpsCard followUps={followUps} today={today} />
       </section>
 
-      <section className="grid gap-5 xl:grid-cols-[minmax(16rem,0.78fr)_minmax(0,1.35fr)_minmax(17rem,0.78fr)]" aria-label="Priority work">
-        <SpotlightCard followUp={followUps[0]} awaitingResponse={awaitingResponses[0]} />
+      <section className="grid gap-5 xl:grid-cols-[minmax(0,1.45fr)_minmax(18rem,0.65fr)]" aria-label="Priority work">
         <WorkInMotionCard rows={workRows} delayedCount={delayed.length} />
-        <FollowUpsCard followUps={followUps} today={today} />
+        <TodayCard fittings={upcomingFittings} looks={upcomingLooks} />
       </section>
 
       <NextLookCard look={nextLook} fittings={upcomingFittings} />
@@ -131,14 +130,7 @@ export default async function OverviewPage() {
 }
 
 function NotificationCta({ unreadCount }: { unreadCount: number }) {
-  if (!unreadCount) {
-    return (
-      <span className="inline-flex w-fit items-center gap-2 rounded-full border border-kuartz-line bg-white/70 px-4 py-2 text-xs font-semibold text-kuartz-secondary">
-        <span className="h-2 w-2 rounded-full bg-kuartz-lime" />
-        Nothing unread
-      </span>
-    );
-  }
+  if (!unreadCount) return null;
 
   return (
     <Link
@@ -221,60 +213,6 @@ function TodayCard({ fittings, looks }: { fittings: UpcomingFitting[]; looks: Up
           No fittings scheduled soon. {looks.length ? `${looks.length} Look date${looks.length === 1 ? "" : "s"} ahead.` : "No upcoming Look dates."}
         </p>
       )}
-    </section>
-  );
-}
-
-function SpotlightCard({
-  followUp,
-  awaitingResponse,
-}: {
-  followUp?: FollowUp;
-  awaitingResponse?: AwaitingResponse;
-}) {
-  if (!followUp && !awaitingResponse) {
-    return (
-      <section className="rounded-[1.45rem] border border-white/85 bg-white/86 p-5 shadow-[0_22px_65px_rgba(21,22,63,0.08)] backdrop-blur-xl sm:p-6">
-        <p className="text-[0.68rem] font-bold uppercase tracking-[0.16em] text-kuartz-muted">Spotlight</p>
-        <EmptyState className="mt-4 rounded-[1rem] border border-dashed border-kuartz-line py-8" title="Clear" description="No client item needs a spotlight right now." />
-      </section>
-    );
-  }
-
-  if (followUp) {
-    return (
-      <section className="rounded-[1.45rem] border border-white/85 bg-white/86 p-5 shadow-[0_22px_65px_rgba(21,22,63,0.08)] backdrop-blur-xl sm:p-6">
-        <div className="flex items-start justify-between gap-3">
-          <p className="text-[0.68rem] font-bold uppercase tracking-[0.16em] text-kuartz-muted">Follow-up spotlight</p>
-          <span className="rounded-full bg-kuartz-lime px-2.5 py-1 text-[0.68rem] font-extrabold text-kuartz-ink">Due</span>
-        </div>
-        <h2 className="mt-5 text-lg font-extrabold text-kuartz-ink">{followUp.enquiryName}</h2>
-        <p className="mt-1 text-sm text-kuartz-muted">{followUp.assigneeName}</p>
-        <p className="mt-5 rounded-[1rem] border border-kuartz-line bg-white/72 p-4 text-sm leading-6 text-kuartz-secondary">
-          {followUp.title}
-        </p>
-        <Link href={`/enquiries/${followUp.enquiryId}`} className="mt-5 inline-flex min-h-10 items-center gap-2 rounded-full bg-kuartz-ink px-4 text-sm font-extrabold text-white transition hover:-translate-y-px hover:bg-kuartz-navy">
-          Open enquiry <ArrowRight size={14} />
-        </Link>
-      </section>
-    );
-  }
-
-  if (!awaitingResponse) {
-    return null;
-  }
-
-  return (
-    <section className="rounded-[1.45rem] border border-white/85 bg-white/86 p-5 shadow-[0_22px_65px_rgba(21,22,63,0.08)] backdrop-blur-xl sm:p-6">
-      <p className="text-[0.68rem] font-bold uppercase tracking-[0.16em] text-kuartz-muted">Approval spotlight</p>
-      <h2 className="mt-5 text-lg font-extrabold text-kuartz-ink">{awaitingResponse.clientName}</h2>
-      <p className="mt-1 text-sm text-kuartz-muted">{awaitingResponse.label}</p>
-      <p className="mt-5 rounded-[1rem] border border-kuartz-line bg-white/72 p-4 text-sm leading-6 text-kuartz-secondary">
-        {awaitingResponse.type} requested {dateFormatter.format(awaitingResponse.createdAt)} is still waiting on the client.
-      </p>
-      <Link href={awaitingResponse.href} className="mt-5 inline-flex min-h-10 items-center gap-2 rounded-full bg-kuartz-ink px-4 text-sm font-extrabold text-white transition hover:-translate-y-px hover:bg-kuartz-navy">
-        Open work <ArrowRight size={14} />
-      </Link>
     </section>
   );
 }
@@ -425,7 +363,10 @@ function NotificationsPanel({ notifications }: { notifications: NotificationRow[
           ))}
         </ol>
       ) : (
-        <p className="mt-4 border-y border-kuartz-line py-5 text-sm text-kuartz-muted">Nothing unread.</p>
+        <EmptyState
+          title="Nothing unread"
+          description="New notifications will appear here when work needs your attention."
+        />
       )}
     </section>
   );

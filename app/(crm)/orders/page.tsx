@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { Plus } from "lucide-react";
 import { requireStaffSession } from "@/lib/auth/session";
 import { listOrders } from "@/lib/orders/repository";
 import { formatMinorUnits } from "@/lib/forms/money";
@@ -25,10 +26,15 @@ export default async function OrdersPage({
 
   return (
     <div>
-      <header className="border-b border-kuartz-line pb-8">
-        <p className="eyebrow">Orders</p>
-        <h1 className="page-title">All Orders</h1>
-        <p className="page-description">Every agreed Order across every Client.</p>
+      <header className="flex flex-col gap-5 border-b border-kuartz-line pb-8 sm:flex-row sm:items-end sm:justify-between">
+        <div>
+          <p className="eyebrow">Orders</p>
+          <h1 className="page-title">All Orders</h1>
+          <p className="page-description">Every agreed Order across every Client.</p>
+        </div>
+        <Button asChild className="h-11 min-h-11 w-full self-start gap-2 py-0 sm:w-auto">
+          <Link href="/orders/new"><Plus size={17} aria-hidden="true" /> Add Order</Link>
+        </Button>
       </header>
 
       <form method="get" className="mt-8 flex flex-wrap items-center gap-4">
@@ -105,7 +111,7 @@ export default async function OrdersPage({
           <EmptyState
             className="mt-4"
             title="No Orders yet"
-            description="Convert an Enquiry into a Client and Order to see it here."
+            description="Add confirmed work for an existing Client, or convert an Enquiry into a Client and Order."
           />
         )}
         {orders.length && (page > 1 || hasNextPage) ? (

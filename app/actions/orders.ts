@@ -13,6 +13,7 @@ import { archiveItem, createItem, restoreItem, updateItem } from "@/lib/orders/i
 export async function createActiveOrderAction(formData: FormData) {
   const session = await requireStaffSession();
   const clientId = readFormString(formData, "clientId");
+  const creationSource = readFormString(formData, "creationSource");
   const discount = readFormString(formData, "ffDiscountAmount");
   let orderId: string;
   try {
@@ -28,7 +29,8 @@ export async function createActiveOrderAction(formData: FormData) {
     } }, createActiveOrderRepository()));
   } catch (error) {
     const message = error instanceof Error ? error.message : "The Order could not be created.";
-    redirect(`/clients/${clientId}/orders/new?error=${encodeURIComponent(message)}`);
+    const errorPath = creationSource === "orders" ? "/orders/new" : `/clients/${clientId}/orders/new`;
+    redirect(`${errorPath}?error=${encodeURIComponent(message)}`);
   }
   revalidatePath(`/clients/${clientId}`);
   revalidatePath("/orders");
