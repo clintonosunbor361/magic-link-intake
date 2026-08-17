@@ -13,6 +13,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Breadcrumbs } from "@/components/ui/breadcrumbs";
 import { EmptyState } from "@/components/ui/empty-state";
+import { FormDisclosure } from "@/components/ui/form-disclosure";
 import { Input } from "@/components/ui/input";
 import { NativeSelect } from "@/components/ui/native-select";
 import { requireStaffSession } from "@/lib/auth/session";
@@ -192,7 +193,8 @@ export default async function OrderFittingsPage({
                     ) : (
                       <p className="mt-3 text-sm text-kuartz-muted">No notes yet.</p>
                     )}
-                    <form action={addFittingNoteAction} className="mt-3 flex flex-wrap items-end gap-2">
+                    <FormDisclosure title="Fitting notes" buttonLabel="Add note">
+                    <form action={addFittingNoteAction} className="flex flex-wrap items-end gap-2 border-t border-kuartz-line pt-4">
                       <input type="hidden" name="orderId" value={id} />
                       <input type="hidden" name="sessionId" value={fitting.id} />
                       <label className="form-group flex-1">
@@ -203,6 +205,7 @@ export default async function OrderFittingsPage({
                         Add note
                       </Button>
                     </form>
+                    </FormDisclosure>
                   </div>
 
                   <div className="mt-6">
@@ -285,8 +288,8 @@ export default async function OrderFittingsPage({
         </div>
 
         <aside>
-          <h2 className="section-title">Schedule a Fitting</h2>
-          <form action={scheduleFittingAction} className="mt-4 space-y-4 border-t border-kuartz-line pt-5">
+          <FormDisclosure title="Fittings" buttonLabel="Schedule Fitting">
+          <form action={scheduleFittingAction} className="space-y-4 border-t border-kuartz-line pt-5">
             <input type="hidden" name="orderId" value={id} />
             <label className="form-group">
               <span>Date and time</span>
@@ -315,6 +318,7 @@ export default async function OrderFittingsPage({
               Schedule Fitting
             </Button>
           </form>
+          </FormDisclosure>
           <p className="mt-3 text-xs leading-5 text-kuartz-muted">
             A repeat fitting is simply another session — schedule as many as the Order needs.
           </p>

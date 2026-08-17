@@ -2,7 +2,7 @@ import "server-only";
 
 import { and, desc, eq, gt, isNull } from "drizzle-orm";
 import { getDatabase } from "@/db";
-import { enquiries, magicLinkTokens } from "@/db/schema";
+import { clients, magicLinkTokens } from "@/db/schema";
 import { normalizeEmail, normalizeName, normalizePhone } from "@/lib/enquiries/duplicate-match";
 import type { IntakeSubmissionInput } from "@/lib/intake-options";
 import { generateToken, hashToken } from "@/lib/tokens";
@@ -78,16 +78,14 @@ export async function consumeTokenWithSubmission(
 
     if (!tokenRow) return { ok: false as const };
 
-    const [enquiryRow] = await tx
-      .insert(enquiries)
+    const [clientRow] = await tx
+      .insert(clients)
       .values({
         organizationId: tokenRow.organizationId,
-        channel: "external_form",
         fullName: submission.fullName,
         nameNormalized: normalizeName(submission.fullName),
         primaryPhone: submission.primaryPhone,
         primaryPhoneNormalized: normalizePhone(submission.primaryPhone),
-        whatsappSameAsPrimary: submission.whatsappSameAsPrimary,
         whatsappPhone: submission.whatsappPhone,
         email: submission.email || null,
         emailNormalized: submission.email ? normalizeEmail(submission.email) : null,
@@ -96,16 +94,16 @@ export async function consumeTokenWithSubmission(
         budgetRange: submission.budgetRange,
         brief: submission.brief,
       })
-      .returning({ id: enquiries.id });
+      .returning({ id: clients.id });
 
     await tx
       .update(magicLinkTokens)
-      .set({ consumedAt: new Date(now), enquiryId: enquiryRow.id })
+      .set({ consumedAt: new Date(now), clientId: clientRow.id })
       .where(eq(magicLinkTokens.id, tokenRow.id));
 
     const savedSubmission: IntakeSubmission = {
       ...submission,
-      id: enquiryRow.id,
+      id: clientRow.id,
       tokenHash: hash,
       submittedAt: now,
     };

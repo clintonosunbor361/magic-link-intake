@@ -5,6 +5,7 @@ export const LIFECYCLE_ENTITIES = [
   "enquiry_note",
   "enquiry_task",
   "client",
+  "client_task",
   "order",
   "look",
   "item",
@@ -55,7 +56,7 @@ export function getRecordLifecyclePolicy(entity: LifecycleEntity): RecordLifecyc
 
 export function mayArchive(entity: LifecycleEntity, role: StaffRole): boolean {
   if (!getRecordLifecyclePolicy(entity).archive) return false;
-  return entity === "enquiry" || entity === "enquiry_note" || entity === "enquiry_task"
+  return entity === "enquiry" || entity === "enquiry_note" || entity === "enquiry_task" || entity === "client_task"
     ? true
     : role === "super_admin";
 }

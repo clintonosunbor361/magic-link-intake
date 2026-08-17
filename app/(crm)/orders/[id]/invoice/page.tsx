@@ -9,6 +9,7 @@ import {
 import { SendInvoiceButton } from "@/components/finance/send-invoice-button";
 import { Button } from "@/components/ui/button";
 import { Breadcrumbs } from "@/components/ui/breadcrumbs";
+import { FormDisclosure } from "@/components/ui/form-disclosure";
 import { MoneyInput } from "@/components/ui/money-input";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Input } from "@/components/ui/input";
@@ -226,8 +227,8 @@ export default async function OrderInvoicePage({
             {canManage ? (
               <>
                 <div>
-                  <h2 className="section-title">Record a payment</h2>
-                  <form action={recordClientPaymentAction} className="mt-4 space-y-4 border-t border-kuartz-line pt-5">
+                  <FormDisclosure title="Payments" buttonLabel="Record payment">
+                  <form action={recordClientPaymentAction} className="space-y-4 border-t border-kuartz-line pt-5">
                     <input type="hidden" name="orderId" value={id} />
                     <input type="hidden" name="invoiceId" value={invoice.id} />
                     <label className="form-group">
@@ -248,6 +249,7 @@ export default async function OrderInvoicePage({
                       Record payment
                     </Button>
                   </form>
+                  </FormDisclosure>
                 </div>
 
                 {invoice.lifecycle !== "void" ? (

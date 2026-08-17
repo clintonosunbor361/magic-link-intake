@@ -7,11 +7,18 @@ import {
 } from "@/lib/enquiries/duplicate-match";
 
 describe("normalizePhone", () => {
-  it("strips formatting and keeps the last 10 digits", () => {
-    expect(normalizePhone("+234 801 234 5678")).toBe("8012345678");
-    expect(normalizePhone("08012345678")).toBe("8012345678");
-    expect(normalizePhone("8012345678")).toBe("8012345678");
-    expect(normalizePhone("(080) 123-45678")).toBe("8012345678");
+  it("normalizes Nigerian local numbers to a country-aware value", () => {
+    expect(normalizePhone("+234 801 234 5678")).toBe("2348012345678");
+    expect(normalizePhone("2348012345678")).toBe("2348012345678");
+    expect(normalizePhone("08012345678")).toBe("2348012345678");
+    expect(normalizePhone("8012345678")).toBe("2348012345678");
+    expect(normalizePhone("(080) 123-45678")).toBe("2348012345678");
+  });
+
+  it("preserves explicit non-Nigerian country codes", () => {
+    expect(normalizePhone("+1 801 234 5678")).toBe("18012345678");
+    expect(normalizePhone("+44 20 7123 4567")).toBe("442071234567");
+    expect(normalizePhone("+1 801 234 5678")).not.toBe(normalizePhone("+234 801 234 5678"));
   });
 
   it("returns the digits as-is when shorter than 10", () => {

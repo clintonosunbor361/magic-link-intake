@@ -1,4 +1,5 @@
 import { resolveVersionedUpdate } from "@/lib/domain/concurrency";
+import { normalizeEmail, normalizePhone } from "@/lib/enquiries/duplicate-match";
 
 export type ConversionOrderInput = {
   title: string;
@@ -21,10 +22,25 @@ export type EnquiryForConversion = {
   convertedAt: Date | null;
   archivedAt: Date | null;
   fullName: string;
+  linkedClientId: string | null;
+  primaryPhone: string;
+  email: string | null;
+};
+export type ConversionClientConflict = {
+  id: string;
+  fullName: string;
+  primaryPhone: string;
+  email: string | null;
+  reason: "phone" | "email";
 };
 
 export type ConversionRepository = {
   getEnquiryForConversion(organizationId: string, enquiryId: string): Promise<EnquiryForConversion | null>;
+  findClientIdentityConflict(input: {
+    organizationId: string;
+    primaryPhoneNormalized: string;
+    emailNormalized: string | null;
+  }): Promise<ConversionClientConflict | null>;
   convertEnquiry(input: {
     organizationId: string;
     enquiryId: string;
@@ -61,6 +77,20 @@ export async function convertEnquiryToClientAndOrder(
   }
   if (!input.order.primaryOwnerStaffId) throw new Error("Primary owner is required.");
   if (!input.look.name.trim()) throw new Error("Look name is required.");
+  if (!input.existingClientId && !enquiry.linkedClientId) {
+    const conflict = await repository.findClientIdentityConflict({
+      organizationId: input.organizationId,
+      primaryPhoneNormalized: normalizePhone(enquiry.primaryPhone),
+      emailNormalized: enquiry.email ? normalizeEmail(enquiry.email) : null,
+    });
+    if (conflict) {
+      throw new Error(
+        conflict.reason === "phone"
+          ? `An existing Client already uses this phone number: ${conflict.fullName} (${conflict.primaryPhone}). Attach this Enquiry to that Client before converting.`
+          : `An existing Client already uses this email address: ${conflict.fullName} (${conflict.email}). Attach this Enquiry to that Client before converting.`,
+      );
+    }
+  }
 
   const version = resolveVersionedUpdate({
     expectedVersion: input.expectedVersion,

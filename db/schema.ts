@@ -64,6 +64,7 @@ export const fittingSessionStatus = pgEnum("fitting_session_status", [
 // key — the four parents live in four different tables.
 export const notificationSourceType = pgEnum("notification_source_type", [
   "enquiry_task",
+  "client_task",
   "vendor_assignment",
   "accessory_item",
   "fitting_session",
@@ -212,6 +213,13 @@ export const clients = pgTable(
     whatsappPhone: text("whatsapp_phone"),
     email: text("email"),
     emailNormalized: text("email_normalized"),
+    preferredContactChannel: text("preferred_contact_channel"),
+    eventType: text("event_type"),
+    budgetRange: text("budget_range"),
+    brief: text("brief").default("").notNull(),
+    leadSource: text("lead_source"),
+    ownerStaffId: uuid("owner_staff_id").references(() => staffProfiles.id),
+    internalNotes: text("internal_notes"),
     version: integer("version").default(1).notNull(),
     archivedAt: timestamp("archived_at", { withTimezone: true }),
     ...timestamps,
@@ -999,6 +1007,47 @@ export const enquiryTasks = pgTable(
   ],
 ).enableRLS();
 
+export const clientTasks = pgTable(
+  "client_tasks",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    organizationId: uuid("organization_id")
+      .references(() => organizations.id)
+      .notNull(),
+    clientId: uuid("client_id")
+      .references(() => clients.id)
+      .notNull(),
+    title: text("title").notNull(),
+    dueDate: date("due_date").notNull(),
+    assignedToStaffId: uuid("assigned_to_staff_id")
+      .references(() => staffProfiles.id)
+      .notNull(),
+    note: text("note").default("").notNull(),
+    createdByStaffId: uuid("created_by_staff_id")
+      .references(() => staffProfiles.id)
+      .notNull(),
+    status: enquiryTaskStatus("status").default("open").notNull(),
+    version: integer("version").default(1).notNull(),
+    archivedAt: timestamp("archived_at", { withTimezone: true }),
+    ...timestamps,
+  },
+  (table) => [
+    index("client_tasks_client_idx").on(table.clientId),
+    index("client_tasks_org_due_idx").on(table.organizationId, table.dueDate),
+    index("client_tasks_assigned_idx").on(table.assignedToStaffId, table.status),
+    pgPolicy("staff can view organization client tasks", {
+      for: "select",
+      to: "authenticated",
+      using: sql`exists (
+        select 1 from organization_memberships membership
+        where membership.organization_id = ${table.organizationId}
+          and membership.user_id = auth.uid()
+          and membership.archived_at is null
+      )`,
+    }),
+  ],
+).enableRLS();
+
 export const magicLinkTokens = pgTable(
   "magic_link_tokens",
   {
@@ -1013,6 +1062,7 @@ export const magicLinkTokens = pgTable(
     expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
     consumedAt: timestamp("consumed_at", { withTimezone: true }),
     enquiryId: uuid("enquiry_id").references(() => enquiries.id),
+    clientId: uuid("client_id").references(() => clients.id),
     createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
   },
   (table) => [
@@ -1824,6 +1874,7 @@ export type ItemTypeMeasurementRequirement = typeof itemTypeMeasurementRequireme
 export type ClientConfirmation = typeof clientConfirmations.$inferSelect;
 export type EnquiryNote = typeof enquiryNotes.$inferSelect;
 export type EnquiryTask = typeof enquiryTasks.$inferSelect;
+export type ClientTask = typeof clientTasks.$inferSelect;
 export type MagicLinkToken = typeof magicLinkTokens.$inferSelect;
 export type Vendor = typeof vendors.$inferSelect;
 export type VendorSpecialty = typeof vendorSpecialties.$inferSelect;

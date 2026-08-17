@@ -28,7 +28,7 @@ export default async function NewOrderPage({
         <p className="eyebrow">Confirmed work</p>
         <h1 className="page-title">Add Order</h1>
         <p className="page-description">
-          Create an Active Order for an existing Client. If price or scope is still tentative, create an Enquiry instead.
+          Create an Active Order for an existing Client once price and scope are agreed.
         </p>
       </header>
 
@@ -45,7 +45,7 @@ export default async function NewOrderPage({
           <div className="mt-4">
             <ClientPicker
               fieldName="clientId"
-              noResultsMessage="No matching active Clients. Create or convert a Client before adding an Order."
+              noResultsMessage="No matching active Clients. Add the Client before creating an Order."
             />
           </div>
         </section>

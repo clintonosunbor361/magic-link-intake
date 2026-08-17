@@ -23,6 +23,7 @@ export type InternalEnquiryFields = {
 export type InternalEnquiryInput = InternalEnquiryFields & { acknowledgedDuplicates: boolean };
 
 export type EnquiryLifecycleRecord = { id: string; version: number; archivedAt: Date | null };
+export type EditableEnquiryRecord = EnquiryLifecycleRecord & { convertedAt: Date | null };
 
 export type EnquiryRepository = {
   getDuplicateCandidates(organizationId: string): Promise<DuplicateCandidate[]>;
@@ -31,6 +32,15 @@ export type EnquiryRepository = {
   ): Promise<{ id: string }>;
   clientBelongsToOrganization?(organizationId: string, clientId: string): Promise<boolean>;
   getEnquiryLifecycle(organizationId: string, enquiryId: string): Promise<EnquiryLifecycleRecord | null>;
+  getEditableEnquiry(organizationId: string, enquiryId: string): Promise<EditableEnquiryRecord | null>;
+  updateEnquiryDetails(
+    input: InternalEnquiryFields & {
+      organizationId: string;
+      enquiryId: string;
+      expectedVersion: number;
+      nextVersion: number;
+    },
+  ): Promise<void>;
   setArchivedState(input: {
     organizationId: string;
     enquiryId: string;
@@ -79,6 +89,64 @@ export async function createInternalEnquiry(
   });
 
   return { ok: true, enquiryId: created.id };
+}
+
+export async function updateEnquiryDetails(
+  input: {
+    actor: { organizationId: string; role: StaffRole };
+    enquiryId: string;
+    expectedVersion: number;
+    fields: InternalEnquiryFields;
+  },
+  repository: EnquiryRepository,
+) {
+  if (!input.fields.fullName.trim()) throw new Error("Full name is required.");
+  if (!input.fields.primaryPhone.trim()) throw new Error("Primary phone is required.");
+  if (
+    input.fields.linkedClientId &&
+    (!repository.clientBelongsToOrganization ||
+      !(await repository.clientBelongsToOrganization(input.actor.organizationId, input.fields.linkedClientId)))
+  ) {
+    throw new Error("Client was not found.");
+  }
+
+  const candidates = await repository.getDuplicateCandidates(input.actor.organizationId);
+  const matches = findDuplicateMatches(
+    {
+      primaryPhoneNormalized: normalizePhone(input.fields.primaryPhone),
+      emailNormalized: input.fields.email ? normalizeEmail(input.fields.email) : null,
+      nameNormalized: normalizeName(input.fields.fullName),
+    },
+    candidates.filter((candidate) => !(candidate.kind === "enquiry" && candidate.id === input.enquiryId)),
+  );
+  const strongMatch = matches.find((match) => match.strength === "strong");
+  if (strongMatch) {
+    throw new Error(
+      strongMatch.reason === "phone"
+        ? `Another ${strongMatch.candidate.kind === "client" ? "Client" : "Enquiry"} already uses this phone number: ${strongMatch.candidate.fullName} (${strongMatch.candidate.primaryPhone}).`
+        : `Another ${strongMatch.candidate.kind === "client" ? "Client" : "Enquiry"} already uses this email address: ${strongMatch.candidate.fullName} (${strongMatch.candidate.email}).`,
+    );
+  }
+
+  const current = await repository.getEditableEnquiry(input.actor.organizationId, input.enquiryId);
+  if (!current) throw new Error("Enquiry was not found.");
+  if (current.archivedAt) throw new Error("Restore this Enquiry before editing it.");
+  if (current.convertedAt) throw new Error("Converted Enquiries cannot be edited.");
+
+  return resolveVersionedTransition({
+    expectedVersion: input.expectedVersion,
+    fetchCurrent: async () => current,
+    notFoundMessage: "Enquiry was not found.",
+    staleMessage: "This Enquiry changed. Reload and try again.",
+    persist: (nextVersion) =>
+      repository.updateEnquiryDetails({
+        organizationId: input.actor.organizationId,
+        enquiryId: input.enquiryId,
+        expectedVersion: input.expectedVersion,
+        nextVersion,
+        ...input.fields,
+      }),
+  });
 }
 
 export async function archiveEnquiry(

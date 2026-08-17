@@ -9,6 +9,7 @@ import { requireStaffSession } from "@/lib/auth/session";
 import { canManageConsultationNoteSources } from "@/lib/domain/access-control";
 import { listConsultationNoteSources } from "@/lib/consultation-note-sources/repository";
 import { Button } from "@/components/ui/button";
+import { FormDisclosure } from "@/components/ui/form-disclosure";
 import { Input } from "@/components/ui/input";
 
 export default async function ConsultationNoteSourcesPage({
@@ -89,8 +90,8 @@ export default async function ConsultationNoteSourcesPage({
           </div>
         </div>
         <aside>
-          <h2 className="section-title">Add a source</h2>
-          <form action={createConsultationNoteSourceAction} className="mt-4 space-y-4 border-t border-kuartz-line pt-5">
+          <FormDisclosure title="Sources" buttonLabel="Add source">
+          <form action={createConsultationNoteSourceAction} className="space-y-4 border-t border-kuartz-line pt-5">
             <input type="hidden" name="sortOrder" value={nextSortOrder} />
             <label className="form-group">
               <span>Name</span>
@@ -100,6 +101,7 @@ export default async function ConsultationNoteSourcesPage({
               Add source
             </Button>
           </form>
+          </FormDisclosure>
         </aside>
       </section>
     </div>

@@ -8,7 +8,7 @@ import {
   countActiveClients,
   dashboardToday,
   listDelayedAssignments,
-  listDueFollowUps,
+  listDueTodos,
   listAwaitingClientResponses,
   listUpcomingFittings,
   listUpcomingLookDates,
@@ -27,7 +27,7 @@ const PANEL_LIMIT = 5;
 type UpcomingLook = Awaited<ReturnType<typeof listUpcomingLookDates>>[number];
 type UpcomingFitting = Awaited<ReturnType<typeof listUpcomingFittings>>[number];
 type DelayedAssignment = Awaited<ReturnType<typeof listDelayedAssignments>>[number];
-type FollowUp = Awaited<ReturnType<typeof listDueFollowUps>>[number];
+type Todo = Awaited<ReturnType<typeof listDueTodos>>[number];
 type AwaitingResponse = Awaited<ReturnType<typeof listAwaitingClientResponses>>[number];
 type NotificationRow = Awaited<ReturnType<typeof listNotifications>>[number];
 type RatingPrompt = Awaited<ReturnType<typeof listPendingRatingPrompts>>[number];
@@ -60,7 +60,7 @@ export default async function OverviewPage() {
     upcomingFittings,
     delayed,
     awaitingResponses,
-    followUps,
+    todos,
     recentNotifications,
     unreadCount,
     pendingRatings,
@@ -70,7 +70,7 @@ export default async function OverviewPage() {
     listUpcomingFittings(session.organizationId, now),
     listDelayedAssignments(session.organizationId, today),
     listAwaitingClientResponses(session.organizationId, now),
-    listDueFollowUps(session.organizationId, today),
+    listDueTodos(session.organizationId, today),
     listNotifications(session.organizationId, { unreadOnly: true, limit: PANEL_LIMIT }),
     countUnreadNotifications(session.organizationId),
     listPendingRatingPrompts(session.organizationId),
@@ -82,7 +82,7 @@ export default async function OverviewPage() {
     { label: "Look dates", value: upcomingLooks.length, href: "/orders", hint: "next 60 days" },
     { label: "Fittings", value: upcomingFittings.length, href: "/orders", hint: "next 30 days" },
     { label: "Approvals", value: awaitingResponses.length, href: "/orders", hint: "client decisions" },
-    { label: "Follow-ups", value: followUps.length, href: "/enquiries", hint: "due now" },
+    { label: "To-dos", value: todos.length, href: "/clients", hint: "due now" },
   ];
   const totalSignal = pipelineRows.reduce((sum, row) => sum + row.value, 0);
   const maxPipelineValue = Math.max(1, ...pipelineRows.map((row) => row.value));
@@ -108,7 +108,7 @@ export default async function OverviewPage() {
 
       <section className="grid gap-5 xl:grid-cols-[minmax(18rem,0.85fr)_minmax(18rem,1fr)]" aria-label="Operations snapshot">
         <PipelineCard rows={pipelineRows} totalSignal={totalSignal} maxValue={maxPipelineValue} />
-        <FollowUpsCard followUps={followUps} today={today} />
+        <TodosCard todos={todos} today={today} />
       </section>
 
       <section className="grid gap-5 xl:grid-cols-[minmax(0,1.45fr)_minmax(18rem,0.65fr)]" aria-label="Priority work">
@@ -254,31 +254,31 @@ function WorkInMotionCard({ rows, delayedCount }: { rows: WorkRow[]; delayedCoun
   );
 }
 
-function FollowUpsCard({ followUps, today }: { followUps: FollowUp[]; today: string }) {
+function TodosCard({ todos, today }: { todos: Todo[]; today: string }) {
   return (
     <section className="rounded-[1.45rem] bg-[#151a2f] p-5 text-white shadow-[0_28px_80px_rgba(21,22,63,0.22)] sm:p-6">
       <div className="flex items-start justify-between gap-4">
         <div>
-          <p className="text-[0.68rem] font-bold uppercase tracking-[0.16em] text-white/58">Follow-ups</p>
+          <p className="text-[0.68rem] font-bold uppercase tracking-[0.16em] text-white/58">To-dos</p>
           <h2 className="mt-2 text-xl font-extrabold">Due now</h2>
         </div>
         <span className="rounded-full bg-kuartz-lime px-2.5 py-1 text-[0.68rem] font-extrabold text-kuartz-ink">
-          {followUps.length} open
+          {todos.length} open
         </span>
       </div>
 
-      {followUps.length ? (
+      {todos.length ? (
         <ol className="mt-5 space-y-3">
-          {followUps.slice(0, 5).map((row) => {
+          {todos.slice(0, 5).map((row) => {
             const days = daysBetween(today, row.dueDate);
             return (
               <li key={row.id} className="grid grid-cols-[auto_minmax(0,1fr)] gap-3 rounded-[0.9rem] border border-white/10 bg-white/[0.04] p-3">
                 <span className="mt-1 h-3 w-3 rounded-sm border border-white/30" aria-hidden="true" />
                 <div className="min-w-0">
-                  <Link href={`/enquiries/${row.enquiryId}`} className="block truncate text-sm font-semibold text-white hover:underline">
+                  <Link href={`/clients/${row.clientId}`} className="block truncate text-sm font-semibold text-white hover:underline">
                     {row.title}
                   </Link>
-                  <p className="mt-1 text-xs text-white/56">{row.enquiryName} - {countdownLabel(days)}</p>
+                  <p className="mt-1 text-xs text-white/56">{row.clientName} - {countdownLabel(days)}</p>
                 </div>
               </li>
             );

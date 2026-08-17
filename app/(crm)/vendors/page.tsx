@@ -3,6 +3,7 @@ import { createVendorAction } from "@/app/actions/vendors";
 import { SpecialtyTags, VendorJobStats, VendorScores } from "@/components/vendors/vendor-scores";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
+import { FormDisclosure } from "@/components/ui/form-disclosure";
 import { Input } from "@/components/ui/input";
 import { requireStaffSession } from "@/lib/auth/session";
 import { listVendorSpecialties } from "@/lib/vendor-specialties/repository";
@@ -120,8 +121,8 @@ export default async function VendorsPage({
         </div>
 
         <aside>
-          <h2 className="section-title">Add a Vendor</h2>
-          <form action={createVendorAction} className="mt-4 space-y-4 border-t border-kuartz-line pt-5">
+          <FormDisclosure title="Vendors" buttonLabel="Add Vendor">
+          <form action={createVendorAction} className="space-y-4 border-t border-kuartz-line pt-5">
             <input type="hidden" name="returnTo" value="/vendors" />
             <label className="form-group">
               <span>Name</span>
@@ -171,6 +172,7 @@ export default async function VendorsPage({
               Add Vendor
             </Button>
           </form>
+          </FormDisclosure>
         </aside>
       </section>
     </div>

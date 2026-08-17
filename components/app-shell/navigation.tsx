@@ -9,7 +9,6 @@ import {
   Factory,
   House,
   Menu,
-  MessageSquareText,
   Settings,
   Store,
   UsersRound,
@@ -22,7 +21,6 @@ type NavItem = { href: string; label: string; icon: typeof House; activePrefix?:
 
 const operationalNavigation: NavItem[] = [
   { href: "/", label: "Overview", icon: House },
-  { href: "/enquiries", label: "Enquiries", icon: MessageSquareText },
   { href: "/clients", label: "Clients", icon: UsersRound },
   { href: "/orders", label: "Orders", icon: BriefcaseBusiness },
   // Vendors sits between Orders and Production because that is the workflow order: you assign a

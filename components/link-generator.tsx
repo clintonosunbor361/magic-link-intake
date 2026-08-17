@@ -53,13 +53,13 @@ export function LinkGenerator() {
   }
 
   return (
-    <div className="w-full space-y-4">
+    <div className="w-full max-w-full space-y-3 sm:w-72">
       <Button
         type="button"
         variant="outline"
         onClick={generateLink}
         disabled={isBusy}
-        className="w-full gap-2 sm:w-60"
+        className="w-full gap-2"
       >
         {isBusy ? (
           <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
@@ -70,16 +70,16 @@ export function LinkGenerator() {
       </Button>
 
       {generatedUrl ? (
-        <div className="rounded-[1.35rem] border border-white/80 bg-white/55 p-3 shadow-sm backdrop-blur-xl">
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-            <div className="flex min-w-0 flex-1 items-center gap-2 rounded-full border border-kuartz-line/80 bg-white/60 px-4 py-3 text-sm text-kuartz-muted backdrop-blur-xl">
+        <div className="max-w-full overflow-hidden rounded-[1rem] border border-kuartz-line bg-white/75 p-3 shadow-sm backdrop-blur-xl">
+          <div className="flex min-w-0 flex-col gap-3">
+            <div className="flex min-w-0 items-center gap-2 rounded-[0.8rem] border border-kuartz-line/80 bg-white/70 px-3 py-2.5 text-sm text-kuartz-muted backdrop-blur-xl">
               <Link2 className="h-4 w-4 shrink-0 text-kuartz-graphite" aria-hidden="true" />
               <span className="truncate">{generatedUrl}</span>
             </div>
             <button
               type="button"
               onClick={copyLink}
-              className="inline-flex min-h-12 items-center justify-center gap-2 rounded-full border border-kuartz-line bg-white/70 px-4 py-2 text-sm font-semibold text-kuartz-graphite shadow-sm backdrop-blur-xl transition hover:bg-white focus:outline-none focus:ring-4 focus:ring-slate-300/25"
+              className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-[0.8rem] border border-kuartz-line bg-white/70 px-4 py-2 text-sm font-semibold text-kuartz-graphite shadow-sm backdrop-blur-xl transition hover:bg-white focus:outline-none focus:ring-4 focus:ring-slate-300/25"
             >
               {copied ? (
                 <Check className="h-4 w-4" aria-hidden="true" />

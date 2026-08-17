@@ -18,7 +18,7 @@ export default async function NewClientOrderPage({ params, searchParams }: { par
   if (!client || client.archivedAt) notFound();
   return <div>
     <Breadcrumbs items={[{ label: "Clients", href: "/clients" }, { label: client.fullName, href: `/clients/${id}` }, { label: "New Order" }]} />
-    <header className="mt-4 border-b border-kuartz-line pb-8"><p className="eyebrow">Already agreed</p><h1 className="page-title">New Order</h1><p className="page-description">Create confirmed work for {client.fullName}. If price or scope is still tentative, create an Enquiry instead.</p></header>
+    <header className="mt-4 border-b border-kuartz-line pb-8"><p className="eyebrow">Already agreed</p><h1 className="page-title">New Order</h1><p className="page-description">Create confirmed work for {client.fullName} once price and scope are agreed.</p></header>
     {error ? <p className="form-alert mt-6" role="alert">{error}</p> : null}
     <form action={createActiveOrderAction} className="mt-9 max-w-2xl space-y-6">
       <input type="hidden" name="clientId" value={id} />

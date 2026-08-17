@@ -7,8 +7,7 @@ import {
   accessoryStatuses,
   accessoryTypes,
   clients,
-  enquiries,
-  enquiryTasks,
+  clientTasks,
   fittingSessions,
   items,
   itemTypes,
@@ -110,21 +109,21 @@ export async function collectDeadlineSources(
   const [taskRows, assignmentRows, accessoryRows, lookRows, fittingRows] = await Promise.all([
     db
       .select({
-        id: enquiryTasks.id,
-        title: enquiryTasks.title,
-        dueDate: enquiryTasks.dueDate,
-        assignedToStaffId: enquiryTasks.assignedToStaffId,
-        enquiryId: enquiryTasks.enquiryId,
-        enquiryName: enquiries.fullName,
+        id: clientTasks.id,
+        title: clientTasks.title,
+        dueDate: clientTasks.dueDate,
+        assignedToStaffId: clientTasks.assignedToStaffId,
+        clientId: clientTasks.clientId,
+        clientName: clients.fullName,
       })
-      .from(enquiryTasks)
-      .innerJoin(enquiries, eq(enquiries.id, enquiryTasks.enquiryId))
+      .from(clientTasks)
+      .innerJoin(clients, eq(clients.id, clientTasks.clientId))
       .where(
         and(
-          eq(enquiryTasks.organizationId, organizationId),
-          eq(enquiryTasks.status, "open"),
-          isNull(enquiryTasks.archivedAt),
-          isNull(enquiries.archivedAt),
+          eq(clientTasks.organizationId, organizationId),
+          eq(clientTasks.status, "open"),
+          isNull(clientTasks.archivedAt),
+          isNull(clients.archivedAt),
         ),
       ),
     db
@@ -218,12 +217,12 @@ export async function collectDeadlineSources(
 
   for (const task of taskRows) {
     sources.push({
-      sourceType: "enquiry_task",
+      sourceType: "client_task",
       sourceId: task.id,
       dueDate: task.dueDate,
       subject: task.title,
-      context: task.enquiryName,
-      href: `/enquiries/${task.enquiryId}`,
+      context: task.clientName,
+      href: `/clients/${task.clientId}`,
       recipientStaffId: task.assignedToStaffId,
     });
   }

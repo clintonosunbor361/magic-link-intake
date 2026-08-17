@@ -5,6 +5,7 @@ import { recordVendorPaymentAction, voidVendorPaymentAction } from "@/app/action
 import { UrgencyBadge } from "@/components/production/urgency-badge";
 import { Button } from "@/components/ui/button";
 import { Breadcrumbs } from "@/components/ui/breadcrumbs";
+import { FormDisclosure } from "@/components/ui/form-disclosure";
 import { MoneyInput } from "@/components/ui/money-input";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Input } from "@/components/ui/input";
@@ -253,8 +254,8 @@ export default async function AssignmentDetailPage({
           </div>
 
           <div>
-            <h2 className="section-title">Add a production note</h2>
-            <form action={addProductionNoteAction} className="mt-4 space-y-4 border-t border-kuartz-line pt-5">
+            <FormDisclosure title="Production notes" buttonLabel="Add note">
+            <form action={addProductionNoteAction} className="space-y-4 border-t border-kuartz-line pt-5">
               <input type="hidden" name="assignmentId" value={assignment.id} />
               <input type="hidden" name="returnTo" value={returnTo} />
               <label className="form-group">
@@ -265,14 +266,15 @@ export default async function AssignmentDetailPage({
                 Add note
               </Button>
             </form>
+            </FormDisclosure>
           </div>
 
           {canManage ? (
             <div>
-              <h2 className="section-title">Record a Vendor payment</h2>
+              <FormDisclosure title="Vendor payments" buttonLabel="Record payment">
               <form
                 action={recordVendorPaymentAction}
-                className="mt-4 space-y-4 border-t border-kuartz-line pt-5"
+                className="space-y-4 border-t border-kuartz-line pt-5"
               >
                 <input type="hidden" name="assignmentId" value={assignment.id} />
                 <label className="form-group">
@@ -304,6 +306,7 @@ export default async function AssignmentDetailPage({
                   Record payment
                 </Button>
               </form>
+              </FormDisclosure>
             </div>
           ) : null}
 

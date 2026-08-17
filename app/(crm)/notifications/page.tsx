@@ -12,7 +12,8 @@ import { computeUrgencyBand, urgencyToneClasses } from "@/lib/production/urgency
 const dateTimeFormatter = new Intl.DateTimeFormat("en-NG", { dateStyle: "medium", timeStyle: "short" });
 
 const SOURCE_LABELS: Record<string, string> = {
-  enquiry_task: "Follow-up",
+  enquiry_task: "To-do",
+  client_task: "To-do",
   vendor_assignment: "Production",
   accessory_item: "Accessory",
   fitting_session: "Fitting",
@@ -147,7 +148,7 @@ export default async function NotificationsPage({
           description={
             unreadOnly
               ? "Every reminder has been dealt with."
-              : "Reminders appear here as deadlines approach across follow-ups, production, accessories and fittings."
+              : "Reminders appear here as deadlines approach across to-dos, production, accessories and fittings."
           }
         />
       )}

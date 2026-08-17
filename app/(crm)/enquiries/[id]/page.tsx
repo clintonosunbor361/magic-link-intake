@@ -1,20 +1,19 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
-import {
-  addFollowUpNoteAction,
-  archiveEnquiryAction,
-  completeTaskAction,
-  createTaskAction,
-  reopenTaskAction,
-  restoreEnquiryAction,
-} from "@/app/actions/enquiries";
+import { archiveEnquiryAction, restoreEnquiryAction } from "@/app/actions/enquiries";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { NativeSelect } from "@/components/ui/native-select";
+import { DuplicateWarning } from "@/components/enquiries/duplicate-warning";
+import { FollowUpNotesSection, TasksSection } from "@/components/enquiries/enquiry-follow-up-sections";
 import { requireStaffSession } from "@/lib/auth/session";
 import { mayArchive, mayRestore } from "@/lib/domain/record-lifecycle";
-import { getConvertedRecordReferences, getEnquiry, listFollowUpNotes, listTasks } from "@/lib/enquiries/repository";
+import {
+  getConvertedRecordReferences,
+  getDuplicateMatchesForEnquiry,
+  getEnquiry,
+  listFollowUpNotes,
+  listTasks,
+} from "@/lib/enquiries/repository";
 import { listStaffMembers } from "@/lib/team/repository";
 
 const dateFormatter = new Intl.DateTimeFormat("en-NG", { dateStyle: "medium", timeStyle: "short" });
@@ -34,18 +33,22 @@ export default async function EnquiryDetailPage({
   const enquiry = await getEnquiry(session.organizationId, id);
   if (!enquiry) notFound();
 
-  const [notes, tasks, staff, convertedReferences] = await Promise.all([
+  const [notes, tasks, staff, convertedReferences, duplicateMatches] = await Promise.all([
     listFollowUpNotes(id),
     listTasks(id),
     listStaffMembers(session.organizationId),
     enquiry.convertedClientId && enquiry.convertedOrderId
       ? getConvertedRecordReferences(session.organizationId, enquiry.convertedClientId, enquiry.convertedOrderId)
       : Promise.resolve(null),
+    enquiry.convertedAt || enquiry.archivedAt
+      ? Promise.resolve([])
+      : getDuplicateMatchesForEnquiry(session.organizationId, enquiry.id),
   ]);
 
   const owner = staff.find((member) => member.userId === enquiry.ownerStaffId);
   const isArchived = Boolean(enquiry.archivedAt);
   const isConverted = Boolean(enquiry.convertedAt);
+  const canEditEnquiry = !isConverted && !isArchived;
 
   return (
     <div>
@@ -59,7 +62,7 @@ export default async function EnquiryDetailPage({
         <p className="eyebrow">Enquiry</p>
         <h1 className="page-title">{enquiry.fullName}</h1>
         <p className="page-description">
-          {enquiry.channel === "external_form" ? "Submitted via intake link" : "Created by staff"} ·{" "}
+          {enquiry.channel === "external_form" ? "Submitted via intake link" : "Created by staff"} -{" "}
           {dateFormatter.format(enquiry.createdAt)}
         </p>
       </header>
@@ -84,10 +87,13 @@ export default async function EnquiryDetailPage({
               </Link>
               .
             </>
-          ) : "Converted into a Client and Active Order."}
+          ) : (
+            "Converted into a Client and Active Order."
+          )}
         </p>
       ) : null}
       {isArchived ? <p className="form-alert mt-6">This Enquiry is archived.</p> : null}
+      {canEditEnquiry ? <DuplicateWarning matches={duplicateMatches} /> : null}
 
       <section className="mt-9 grid gap-10 xl:grid-cols-[minmax(0,1fr)_22rem]">
         <div className="space-y-8">
@@ -104,7 +110,7 @@ export default async function EnquiryDetailPage({
               </div>
               <div>
                 <dt className="text-xs font-semibold uppercase tracking-wide text-kuartz-secondary">Email</dt>
-                <dd className="mt-1 text-sm text-kuartz-ink">{enquiry.email || "—"}</dd>
+                <dd className="mt-1 text-sm text-kuartz-ink">{enquiry.email || "-"}</dd>
               </div>
               <div>
                 <dt className="text-xs font-semibold uppercase tracking-wide text-kuartz-secondary">Preferred contact</dt>
@@ -116,13 +122,13 @@ export default async function EnquiryDetailPage({
               </div>
               <div>
                 <dt className="text-xs font-semibold uppercase tracking-wide text-kuartz-secondary">Budget range</dt>
-                <dd className="mt-1 text-sm text-kuartz-ink">{enquiry.budgetRange || "—"}</dd>
+                <dd className="mt-1 text-sm text-kuartz-ink">{enquiry.budgetRange || "-"}</dd>
               </div>
               {enquiry.channel === "internal_staff" ? (
                 <>
                   <div>
                     <dt className="text-xs font-semibold uppercase tracking-wide text-kuartz-secondary">Lead source</dt>
-                    <dd className="mt-1 text-sm text-kuartz-ink">{enquiry.leadSource || "—"}</dd>
+                    <dd className="mt-1 text-sm text-kuartz-ink">{enquiry.leadSource || "-"}</dd>
                   </div>
                   <div>
                     <dt className="text-xs font-semibold uppercase tracking-wide text-kuartz-secondary">Primary owner</dt>
@@ -140,115 +146,50 @@ export default async function EnquiryDetailPage({
             ) : null}
           </div>
 
-          <div>
-            <h2 className="section-title">Follow-up notes</h2>
-            <div className="mt-4 space-y-3 border-y border-kuartz-line py-4">
-              {notes.length ? (
-                notes.map((note) => (
-                  <div key={note.id} className="border-b border-kuartz-lineSoft pb-3 last:border-none last:pb-0">
-                    <p className="text-sm text-kuartz-ink">{note.note}</p>
-                    <p className="mt-1 text-xs text-kuartz-secondary">
-                      {note.createdByName ?? "Staff"} · {dateFormatter.format(note.createdAt)}
-                      {note.nextFollowUpDate ? ` · Next follow-up ${dayFormatter.format(new Date(note.nextFollowUpDate))}` : ""}
-                    </p>
-                  </div>
-                ))
-              ) : (
-                <p className="py-4 text-sm text-kuartz-secondary">No follow-up notes yet.</p>
-              )}
-            </div>
-            <form action={addFollowUpNoteAction} className="mt-4 space-y-3">
-              <input type="hidden" name="enquiryId" value={enquiry.id} />
-              <label className="form-group">
-                <span>Add a note</span>
-                <textarea
-                  name="note"
-                  required
-                  className="min-h-[4.5rem] w-full rounded-[0.8rem] border border-kuartz-control bg-white/70 px-3.5 py-3 text-sm text-kuartz-ink outline-none focus:border-[#88925f] focus:bg-white focus:ring-4 focus:ring-kuartz-lime/20"
-                />
-              </label>
-              <div className="grid gap-4 sm:grid-cols-2">
-                <label className="form-group">
-                  <span>Date</span>
-                  <Input type="date" name="occurredOn" defaultValue={new Date().toISOString().slice(0, 10)} required />
-                </label>
-                <label className="form-group">
-                  <span>Next follow-up <span className="font-normal text-kuartz-secondary">(optional)</span></span>
-                  <Input type="date" name="nextFollowUpDate" />
-                </label>
-              </div>
-              <Button type="submit" variant="outline">
-                Add note
-              </Button>
-            </form>
-          </div>
+          <FollowUpNotesSection
+            enquiryId={enquiry.id}
+            canAdd={canEditEnquiry}
+            notes={notes.map((note) => ({
+              id: note.id,
+              note: note.note,
+              createdByName: note.createdByName,
+              createdAtLabel: dateFormatter.format(note.createdAt),
+              nextFollowUpDateLabel: note.nextFollowUpDate ? dayFormatter.format(new Date(note.nextFollowUpDate)) : null,
+            }))}
+          />
 
-          <div>
-            <h2 className="section-title">Tasks</h2>
-            <div className="mt-4 space-y-3 border-y border-kuartz-line py-4">
-              {tasks.length ? (
-                tasks.map((task) => (
-                  <div key={task.id} className="flex items-center justify-between gap-4 border-b border-kuartz-lineSoft pb-3 last:border-none last:pb-0">
-                    <div>
-                      <p className={`text-sm font-medium ${task.status === "done" ? "text-kuartz-secondary line-through" : "text-kuartz-ink"}`}>
-                        {task.title}
-                      </p>
-                      <p className="mt-1 text-xs text-kuartz-secondary">
-                        Due {dayFormatter.format(new Date(task.dueDate))} · {task.assignedToName ?? "Unassigned"}
-                      </p>
-                    </div>
-                    <form action={task.status === "done" ? reopenTaskAction : completeTaskAction}>
-                      <input type="hidden" name="enquiryId" value={enquiry.id} />
-                      <input type="hidden" name="taskId" value={task.id} />
-                      <input type="hidden" name="version" value={task.version} />
-                      <Button type="submit" variant="outline">
-                        {task.status === "done" ? "Reopen" : "Mark done"}
-                      </Button>
-                    </form>
-                  </div>
-                ))
-              ) : (
-                <p className="py-4 text-sm text-kuartz-secondary">No tasks yet.</p>
-              )}
-            </div>
-            <form action={createTaskAction} className="mt-4 space-y-3">
-              <input type="hidden" name="enquiryId" value={enquiry.id} />
-              <label className="form-group">
-                <span>Task title</span>
-                <Input name="title" required />
-              </label>
-              <div className="grid gap-4 sm:grid-cols-2">
-                <label className="form-group">
-                  <span>Due date</span>
-                  <Input type="date" name="dueDate" required />
-                </label>
-                <label className="form-group">
-                  <span>Assign to</span>
-                  <NativeSelect name="assignedToStaffId" defaultValue={session.userId}>
-                    {staff.map((member) => (
-                      <option key={member.userId} value={member.userId}>
-                        {member.fullName}
-                      </option>
-                    ))}
-                  </NativeSelect>
-                </label>
-              </div>
-              <label className="form-group">
-                <span>Note <span className="font-normal text-kuartz-secondary">(optional)</span></span>
-                <Input name="note" />
-              </label>
-              <Button type="submit" variant="outline">
-                Add task
-              </Button>
-            </form>
-          </div>
+          <TasksSection
+            enquiryId={enquiry.id}
+            canAdd={canEditEnquiry}
+            currentUserId={session.userId}
+            staff={staff}
+            tasks={tasks.map((task) => ({
+              id: task.id,
+              title: task.title,
+              dueDateLabel: dayFormatter.format(new Date(task.dueDate)),
+              status: task.status,
+              version: task.version,
+              assignedToName: task.assignedToName,
+            }))}
+          />
         </div>
 
         <aside className="space-y-4">
-          {!isConverted && !isArchived ? (
-            <Button asChild className="w-full">
-              <Link href={`/enquiries/${enquiry.id}/convert`}>Convert to Client + Order</Link>
-            </Button>
+          {canEditEnquiry ? (
+            <>
+              <Link
+                href={`/enquiries/${enquiry.id}/convert`}
+                className="inline-flex min-h-11 w-full items-center justify-center rounded-[0.9rem] border border-kuartz-lime bg-kuartz-lime px-4 text-sm font-extrabold text-kuartz-ink shadow-[0_14px_34px_rgba(166,211,64,0.22)] transition-[transform,background,color,border-color,box-shadow] duration-150 hover:-translate-y-px hover:bg-kuartz-limeDeep focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-kuartz-lime/30 active:scale-[0.98]"
+              >
+                Convert to Client + Order
+              </Link>
+              <Link
+                href={`/enquiries/${enquiry.id}/edit`}
+                className="inline-flex min-h-11 w-full items-center justify-center rounded-[0.9rem] border border-kuartz-control bg-white/85 px-4 text-sm font-extrabold text-kuartz-ink shadow-sm transition-[transform,background,color,border-color,box-shadow] duration-150 hover:-translate-y-px hover:border-kuartz-ink hover:bg-white focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-kuartz-lime/30 active:scale-[0.98]"
+              >
+                Edit Enquiry
+              </Link>
+            </>
           ) : null}
 
           {!isArchived && mayArchive("enquiry", session.role) ? (

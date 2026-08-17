@@ -9,6 +9,7 @@ import { requireStaffSession } from "@/lib/auth/session";
 import { canManageMeasurementFieldDefinitions } from "@/lib/domain/access-control";
 import { listMeasurementFieldDefinitions } from "@/lib/measurement-field-definitions/repository";
 import { Button } from "@/components/ui/button";
+import { FormDisclosure } from "@/components/ui/form-disclosure";
 import { Input } from "@/components/ui/input";
 
 export default async function MeasurementFieldsPage({
@@ -93,8 +94,8 @@ export default async function MeasurementFieldsPage({
           </div>
         </div>
         <aside>
-          <h2 className="section-title">Add a field</h2>
-          <form action={createMeasurementFieldDefinitionAction} className="mt-4 space-y-4 border-t border-kuartz-line pt-5">
+          <FormDisclosure title="Measurement fields" buttonLabel="Add field">
+          <form action={createMeasurementFieldDefinitionAction} className="space-y-4 border-t border-kuartz-line pt-5">
             <input type="hidden" name="sortOrder" value={nextSortOrder} />
             <label className="form-group">
               <span>Name</span>
@@ -108,6 +109,7 @@ export default async function MeasurementFieldsPage({
               Add field
             </Button>
           </form>
+          </FormDisclosure>
         </aside>
       </section>
     </div>

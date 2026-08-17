@@ -11,11 +11,18 @@ import { DEFAULT_ORGANIZATION_TIMEZONE } from "@/lib/domain/business-date";
  */
 export async function getOrganizationTimezone(organizationId: string): Promise<string> {
   const db = getDatabase();
-  const [row] = await db
-    .select({ timezone: organizations.timezone })
-    .from(organizations)
-    .where(eq(organizations.id, organizationId))
-    .limit(1);
+  try {
+    const [row] = await db
+      .select({ timezone: organizations.timezone })
+      .from(organizations)
+      .where(eq(organizations.id, organizationId))
+      .limit(1);
 
-  return row?.timezone ?? DEFAULT_ORGANIZATION_TIMEZONE;
+    return row?.timezone ?? DEFAULT_ORGANIZATION_TIMEZONE;
+  } catch (error) {
+    if (error instanceof Error && error.message.includes("timezone")) {
+      return DEFAULT_ORGANIZATION_TIMEZONE;
+    }
+    throw error;
+  }
 }

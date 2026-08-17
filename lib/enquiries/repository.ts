@@ -12,7 +12,12 @@ import {
   orders,
   staffProfiles,
 } from "@/db/schema";
-import { normalizeEmail, normalizeName, normalizePhone } from "@/lib/enquiries/duplicate-match";
+import {
+  findDuplicateMatches,
+  normalizeEmail,
+  normalizeName,
+  normalizePhone,
+} from "@/lib/enquiries/duplicate-match";
 import type { EnquiryRepository } from "@/lib/enquiries/service";
 import type { FollowUpRepository } from "@/lib/enquiries/follow-up-service";
 import type { ConversionRepository } from "@/lib/enquiries/conversion-service";
@@ -90,6 +95,54 @@ export function createEnquiryRepository(): EnquiryRepository {
         .where(and(eq(enquiries.organizationId, organizationId), eq(enquiries.id, enquiryId)))
         .limit(1);
       return row ?? null;
+    },
+    async getEditableEnquiry(organizationId, enquiryId) {
+      const [row] = await db
+        .select({
+          id: enquiries.id,
+          version: enquiries.version,
+          archivedAt: enquiries.archivedAt,
+          convertedAt: enquiries.convertedAt,
+        })
+        .from(enquiries)
+        .where(and(eq(enquiries.organizationId, organizationId), eq(enquiries.id, enquiryId)))
+        .limit(1);
+      return row ?? null;
+    },
+    async updateEnquiryDetails(input) {
+      const rows = await db
+        .update(enquiries)
+        .set({
+          fullName: input.fullName,
+          nameNormalized: normalizeName(input.fullName),
+          primaryPhone: input.primaryPhone,
+          primaryPhoneNormalized: normalizePhone(input.primaryPhone),
+          whatsappSameAsPrimary: input.whatsappSameAsPrimary,
+          whatsappPhone: input.whatsappSameAsPrimary ? input.primaryPhone : input.whatsappPhone || null,
+          email: input.email || null,
+          emailNormalized: input.email ? normalizeEmail(input.email) : null,
+          preferredContactChannel: input.preferredContactChannel,
+          eventType: input.eventType,
+          budgetRange: input.budgetRange || null,
+          brief: input.brief,
+          leadSource: input.leadSource || null,
+          ownerStaffId: input.ownerStaffId || null,
+          internalNotes: input.internalNotes || null,
+          linkedClientId: input.linkedClientId,
+          version: input.nextVersion,
+          updatedAt: new Date(),
+        })
+        .where(
+          and(
+            eq(enquiries.organizationId, input.organizationId),
+            eq(enquiries.id, input.enquiryId),
+            eq(enquiries.version, input.expectedVersion),
+            isNull(enquiries.convertedAt),
+            isNull(enquiries.archivedAt),
+          ),
+        )
+        .returning({ id: enquiries.id });
+      if (!rows.length) throw new Error("This Enquiry changed. Reload and try again.");
     },
     async setArchivedState(input) {
       const rows = await db
@@ -188,11 +241,48 @@ export function createConversionRepository(): ConversionRepository {
           convertedAt: enquiries.convertedAt,
           archivedAt: enquiries.archivedAt,
           fullName: enquiries.fullName,
+          linkedClientId: enquiries.linkedClientId,
+          primaryPhone: enquiries.primaryPhone,
+          email: enquiries.email,
         })
         .from(enquiries)
         .where(and(eq(enquiries.organizationId, organizationId), eq(enquiries.id, enquiryId)))
         .limit(1);
       return row ?? null;
+    },
+    async findClientIdentityConflict(input) {
+      const rows = await db
+        .select({
+          id: clients.id,
+          fullName: clients.fullName,
+          primaryPhone: clients.primaryPhone,
+          primaryPhoneNormalized: clients.primaryPhoneNormalized,
+          email: clients.email,
+          emailNormalized: clients.emailNormalized,
+        })
+        .from(clients)
+        .where(
+          and(
+            eq(clients.organizationId, input.organizationId),
+            isNull(clients.archivedAt),
+            input.emailNormalized
+              ? or(
+                  eq(clients.primaryPhoneNormalized, input.primaryPhoneNormalized),
+                  eq(clients.emailNormalized, input.emailNormalized),
+                )
+              : eq(clients.primaryPhoneNormalized, input.primaryPhoneNormalized),
+          ),
+        )
+        .limit(1);
+      const row = rows[0];
+      if (!row) return null;
+      return {
+        id: row.id,
+        fullName: row.fullName,
+        primaryPhone: row.primaryPhone,
+        email: row.email,
+        reason: row.primaryPhoneNormalized === input.primaryPhoneNormalized ? "phone" : "email",
+      };
     },
     async convertEnquiry(input) {
       return db.transaction(async (tx) => {
@@ -353,6 +443,21 @@ export async function getEnquiry(organizationId: string, enquiryId: string) {
     .where(and(eq(enquiries.organizationId, organizationId), eq(enquiries.id, enquiryId)))
     .limit(1);
   return row ?? null;
+}
+
+export async function getDuplicateMatchesForEnquiry(organizationId: string, enquiryId: string) {
+  const enquiry = await getEnquiry(organizationId, enquiryId);
+  if (!enquiry) return [];
+
+  const candidates = await createEnquiryRepository().getDuplicateCandidates(organizationId);
+  return findDuplicateMatches(
+    {
+      primaryPhoneNormalized: enquiry.primaryPhoneNormalized,
+      emailNormalized: enquiry.emailNormalized,
+      nameNormalized: enquiry.nameNormalized,
+    },
+    candidates.filter((candidate) => !(candidate.kind === "enquiry" && candidate.id === enquiry.id)),
+  );
 }
 
 export async function listOpenEnquiriesForClient(organizationId: string, clientId: string) {

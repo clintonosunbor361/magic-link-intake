@@ -7,6 +7,7 @@ import {
 import { SettingsNav } from "@/components/settings-nav";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
+import { FormDisclosure } from "@/components/ui/form-disclosure";
 import { Input } from "@/components/ui/input";
 import { listAccessoryTypes } from "@/lib/accessory-types/repository";
 import { requireStaffSession } from "@/lib/auth/session";
@@ -85,8 +86,8 @@ export default async function AccessoryTypesPage({
         </div>
 
         <aside>
-          <h2 className="section-title">Add a type</h2>
-          <form action={createAccessoryTypeAction} className="mt-4 space-y-4 border-t border-kuartz-line pt-5">
+          <FormDisclosure title="Accessory types" buttonLabel="Add type">
+          <form action={createAccessoryTypeAction} className="space-y-4 border-t border-kuartz-line pt-5">
             <input type="hidden" name="sortOrder" value={nextSortOrder} />
             <label className="form-group">
               <span>Name</span>
@@ -96,6 +97,7 @@ export default async function AccessoryTypesPage({
               Add accessory type
             </Button>
           </form>
+          </FormDisclosure>
         </aside>
       </section>
     </div>

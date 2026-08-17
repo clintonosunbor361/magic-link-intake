@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { archiveEnquiry, createInternalEnquiry, restoreEnquiry } from "@/lib/enquiries/service";
+import { archiveEnquiry, createInternalEnquiry, restoreEnquiry, updateEnquiryDetails } from "@/lib/enquiries/service";
 
 const baseEnquiry = {
   fullName: "Teni Adesina",
@@ -17,6 +17,7 @@ const baseEnquiry = {
   acknowledgedDuplicates: false,
   linkedClientId: null,
 };
+const { acknowledgedDuplicates: _acknowledgedDuplicates, ...baseEditableEnquiry } = baseEnquiry;
 
 describe("createInternalEnquiry", () => {
   it("creates the Enquiry when there are no duplicate matches", async () => {
@@ -24,6 +25,8 @@ describe("createInternalEnquiry", () => {
       getDuplicateCandidates: vi.fn().mockResolvedValue([]),
       createInternalEnquiry: vi.fn().mockResolvedValue({ id: "enq-new" }),
       getEnquiryLifecycle: vi.fn(),
+      getEditableEnquiry: vi.fn(),
+      updateEnquiryDetails: vi.fn(),
       setArchivedState: vi.fn(),
     };
 
@@ -54,6 +57,8 @@ describe("createInternalEnquiry", () => {
       ]),
       createInternalEnquiry: vi.fn(),
       getEnquiryLifecycle: vi.fn(),
+      getEditableEnquiry: vi.fn(),
+      updateEnquiryDetails: vi.fn(),
       setArchivedState: vi.fn(),
     };
 
@@ -86,6 +91,8 @@ describe("createInternalEnquiry", () => {
       ]),
       createInternalEnquiry: vi.fn().mockResolvedValue({ id: "enq-new" }),
       getEnquiryLifecycle: vi.fn(),
+      getEditableEnquiry: vi.fn(),
+      updateEnquiryDetails: vi.fn(),
       setArchivedState: vi.fn(),
     };
 
@@ -106,6 +113,8 @@ describe("createInternalEnquiry", () => {
       getDuplicateCandidates: vi.fn(),
       createInternalEnquiry: vi.fn(),
       getEnquiryLifecycle: vi.fn(),
+      getEditableEnquiry: vi.fn(),
+      updateEnquiryDetails: vi.fn(),
       setArchivedState: vi.fn(),
     };
 
@@ -119,12 +128,129 @@ describe("createInternalEnquiry", () => {
   });
 });
 
+describe("updateEnquiryDetails", () => {
+  it("updates an unconverted Enquiry", async () => {
+    const repository = {
+      getDuplicateCandidates: vi.fn().mockResolvedValue([]),
+      createInternalEnquiry: vi.fn(),
+      getEnquiryLifecycle: vi.fn(),
+      getEditableEnquiry: vi.fn().mockResolvedValue({ id: "enq-1", version: 1, archivedAt: null, convertedAt: null }),
+      updateEnquiryDetails: vi.fn().mockResolvedValue(undefined),
+      setArchivedState: vi.fn(),
+    };
+
+    const result = await updateEnquiryDetails(
+      {
+        actor: { organizationId: "org-1", role: "admin_assistant" },
+        enquiryId: "enq-1",
+        expectedVersion: 1,
+        fields: { ...baseEditableEnquiry, fullName: "Teni A." },
+      },
+      repository,
+    );
+
+    expect(result).toEqual({ ok: true, nextVersion: 2 });
+    expect(repository.updateEnquiryDetails).toHaveBeenCalledWith(
+      expect.objectContaining({ enquiryId: "enq-1", fullName: "Teni A.", nextVersion: 2 }),
+    );
+  });
+
+  it("blocks editing a converted Enquiry", async () => {
+    const repository = {
+      getDuplicateCandidates: vi.fn().mockResolvedValue([]),
+      createInternalEnquiry: vi.fn(),
+      getEnquiryLifecycle: vi.fn(),
+      getEditableEnquiry: vi.fn().mockResolvedValue({
+        id: "enq-1",
+        version: 1,
+        archivedAt: null,
+        convertedAt: new Date(),
+      }),
+      updateEnquiryDetails: vi.fn(),
+      setArchivedState: vi.fn(),
+    };
+
+    await expect(
+      updateEnquiryDetails(
+        {
+          actor: { organizationId: "org-1", role: "admin_assistant" },
+          enquiryId: "enq-1",
+          expectedVersion: 1,
+          fields: baseEditableEnquiry,
+        },
+        repository,
+      ),
+    ).rejects.toThrow("Converted Enquiries cannot be edited.");
+    expect(repository.updateEnquiryDetails).not.toHaveBeenCalled();
+  });
+
+  it("rejects a stale edit", async () => {
+    const repository = {
+      getDuplicateCandidates: vi.fn().mockResolvedValue([]),
+      createInternalEnquiry: vi.fn(),
+      getEnquiryLifecycle: vi.fn(),
+      getEditableEnquiry: vi.fn().mockResolvedValue({ id: "enq-1", version: 2, archivedAt: null, convertedAt: null }),
+      updateEnquiryDetails: vi.fn(),
+      setArchivedState: vi.fn(),
+    };
+
+    await expect(
+      updateEnquiryDetails(
+        {
+          actor: { organizationId: "org-1", role: "admin_assistant" },
+          enquiryId: "enq-1",
+          expectedVersion: 1,
+          fields: baseEditableEnquiry,
+        },
+        repository,
+      ),
+    ).rejects.toThrow("This Enquiry changed. Reload and try again.");
+  });
+
+  it("blocks changing an Enquiry to a phone already used elsewhere", async () => {
+    const repository = {
+      getDuplicateCandidates: vi.fn().mockResolvedValue([
+        {
+          id: "client-1",
+          kind: "client" as const,
+          fullName: "Tayo Ade",
+          nameNormalized: "ade tayo",
+          primaryPhone: "+234 704 567 1233",
+          primaryPhoneNormalized: "2347045671233",
+          email: "tayo@example.com",
+          emailNormalized: "tayo@example.com",
+        },
+      ]),
+      createInternalEnquiry: vi.fn(),
+      getEnquiryLifecycle: vi.fn(),
+      getEditableEnquiry: vi.fn(),
+      updateEnquiryDetails: vi.fn(),
+      setArchivedState: vi.fn(),
+    };
+
+    await expect(
+      updateEnquiryDetails(
+        {
+          actor: { organizationId: "org-1", role: "admin_assistant" },
+          enquiryId: "enq-1",
+          expectedVersion: 1,
+          fields: { ...baseEditableEnquiry, primaryPhone: "07045671233" },
+        },
+        repository,
+      ),
+    ).rejects.toThrow("already uses this phone number");
+    expect(repository.getEditableEnquiry).not.toHaveBeenCalled();
+  });
+});
+
 describe("archiveEnquiry", () => {
   it("allows an Admin Assistant to archive an Enquiry", async () => {
     const repository = {
       getDuplicateCandidates: vi.fn(),
       createInternalEnquiry: vi.fn(),
       getEnquiryLifecycle: vi.fn().mockResolvedValue({ id: "enq-1", version: 1, archivedAt: null }),
+      getEditableEnquiry: vi.fn(),
+      updateEnquiryDetails: vi.fn(),
       setArchivedState: vi.fn().mockResolvedValue(undefined),
     };
 
@@ -144,6 +270,8 @@ describe("archiveEnquiry", () => {
       getDuplicateCandidates: vi.fn(),
       createInternalEnquiry: vi.fn(),
       getEnquiryLifecycle: vi.fn().mockResolvedValue({ id: "enq-1", version: 2, archivedAt: null }),
+      getEditableEnquiry: vi.fn(),
+      updateEnquiryDetails: vi.fn(),
       setArchivedState: vi.fn(),
     };
 
@@ -163,6 +291,8 @@ describe("restoreEnquiry", () => {
       getDuplicateCandidates: vi.fn(),
       createInternalEnquiry: vi.fn(),
       getEnquiryLifecycle: vi.fn().mockResolvedValue({ id: "enq-1", version: 3, archivedAt: new Date() }),
+      getEditableEnquiry: vi.fn(),
+      updateEnquiryDetails: vi.fn(),
       setArchivedState: vi.fn().mockResolvedValue(undefined),
     };
 

@@ -60,6 +60,7 @@ import { listVendorsWithStats } from "@/lib/vendors/repository";
 import { ItemAssignmentDrawer, LookBulkAssignForm } from "@/components/production/assignment-drawer";
 import { Button } from "@/components/ui/button";
 import { Breadcrumbs } from "@/components/ui/breadcrumbs";
+import { FormDisclosure } from "@/components/ui/form-disclosure";
 import { MoneyInput } from "@/components/ui/money-input";
 import { Input } from "@/components/ui/input";
 import { NativeSelect } from "@/components/ui/native-select";
@@ -180,6 +181,21 @@ export default async function OrderDetailPage({
       ) : null}
       {isArchived ? <p className="form-alert mt-6">This Order is archived.</p> : null}
 
+      <nav aria-label="Order workflow" className="mt-6 flex flex-wrap gap-3">
+        <Button asChild variant="outline">
+          <a href="#looks">Looks</a>
+        </Button>
+        <Button asChild variant="outline">
+          <a href="#style-direction">Style Direction</a>
+        </Button>
+        <Button asChild variant="outline">
+          <Link href={`/clients/${order.clientId}`}>Measurements</Link>
+        </Button>
+        <Button asChild variant="outline">
+          <Link href="/production">Production</Link>
+        </Button>
+      </nav>
+
       <section className="mt-9 grid gap-10 xl:grid-cols-[minmax(0,1fr)_22rem]">
         <div className="space-y-8">
           <div>
@@ -220,8 +236,36 @@ export default async function OrderDetailPage({
             </form>
           </div>
 
-          <div>
-            <h2 className="section-title">Looks</h2>
+          <div id="looks" className="scroll-mt-8">
+            <FormDisclosure title="Looks" buttonLabel="Add Look">
+              <form action={createLookAction} aria-label="Add a Look" className="space-y-3 rounded-[0.95rem] border border-kuartz-line bg-[#fbfaf7] p-4 shadow-[0_18px_48px_rgba(24,24,38,0.08)]">
+                <input type="hidden" name="orderId" value={order.id} />
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <label className="form-group">
+                    <span>Name</span>
+                    <Input name="name" required />
+                  </label>
+                  <label className="form-group">
+                    <span>
+                      Look date <span className="font-normal text-kuartz-secondary">(optional)</span>
+                    </span>
+                    <Input type="date" name="lookDate" />
+                  </label>
+                </div>
+                <label className="form-group">
+                  <span>
+                    Notes <span className="font-normal text-kuartz-secondary">(optional)</span>
+                  </span>
+                  <textarea
+                    name="notes"
+                    className="min-h-[3.5rem] w-full rounded-[0.8rem] border border-kuartz-control bg-white/70 px-3.5 py-3 text-sm text-kuartz-ink outline-none focus:border-[#88925f] focus:bg-white focus:ring-4 focus:ring-kuartz-lime/20"
+                  />
+                </label>
+                <Button type="submit" variant="outline">
+                  Add Look
+                </Button>
+              </form>
+            </FormDisclosure>
             <div className="mt-4 space-y-6">
               {order.looks.map((look) => (
                 <div key={look.id} role="group" aria-label={look.name} className="border-y border-kuartz-line py-5">
@@ -375,10 +419,11 @@ export default async function OrderDetailPage({
                       vendors={vendors}
                     />
 
-                    <form
+                    <FormDisclosure title="Items" buttonLabel="Add Item">
+                      <form
                       action={createItemAction}
                       aria-label={`Add Item — ${look.name}`}
-                      className="mt-4 flex flex-wrap items-end gap-3"
+                      className="flex flex-wrap items-end gap-3 border-t border-kuartz-line pt-4"
                     >
                       <input type="hidden" name="orderId" value={order.id} />
                       <input type="hidden" name="lookId" value={look.id} />
@@ -405,44 +450,70 @@ export default async function OrderDetailPage({
                       <Button type="submit" variant="outline">
                         Add Item
                       </Button>
-                    </form>
+                      </form>
+                    </FormDisclosure>
                   </div>
                 </div>
               ))}
             </div>
 
-            <form action={createLookAction} aria-label="Add a Look" className="mt-6 space-y-3">
-              <input type="hidden" name="orderId" value={order.id} />
-              <h3 className="section-title">Add a Look</h3>
-              <div className="grid gap-4 sm:grid-cols-2">
-                <label className="form-group">
-                  <span>Name</span>
-                  <Input name="name" required />
-                </label>
-                <label className="form-group">
-                  <span>
-                    Look date <span className="font-normal text-kuartz-secondary">(optional)</span>
-                  </span>
-                  <Input type="date" name="lookDate" />
-                </label>
-              </div>
-              <label className="form-group">
-                <span>
-                  Notes <span className="font-normal text-kuartz-secondary">(optional)</span>
-                </span>
-                <textarea
-                  name="notes"
-                  className="min-h-[3.5rem] w-full rounded-[0.8rem] border border-kuartz-control bg-white/70 px-3.5 py-3 text-sm text-kuartz-ink outline-none focus:border-[#88925f] focus:bg-white focus:ring-4 focus:ring-kuartz-lime/20"
-                />
-              </label>
-              <Button type="submit" variant="outline">
-                Add Look
-              </Button>
-            </form>
           </div>
 
+          <div id="style-direction" className="scroll-mt-8 space-y-8">
+            <div className="border-b border-kuartz-line pb-4">
+              <p className="eyebrow">Stage 2</p>
+              <h2 className="section-title mt-2">Style Direction</h2>
+              <p className="mt-2 text-sm leading-6 text-kuartz-secondary">
+                Add consultation notes, moodboards, sketches, fabric references, and approval-ready files for this Order.
+              </p>
+            </div>
+
           <div>
-            <h2 className="section-title">Consultation Notes</h2>
+            <FormDisclosure title="Consultation Notes" buttonLabel="Add Consultation Note">
+              <form action={createConsultationNoteAction} aria-label="Add a Consultation Note" className="space-y-3 rounded-[0.95rem] border border-kuartz-line bg-[#fbfaf7] p-4 shadow-[0_18px_48px_rgba(24,24,38,0.08)]">
+                <input type="hidden" name="orderId" value={order.id} />
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <label className="form-group">
+                    <span>Source</span>
+                    <NativeSelect name="sourceId" defaultValue={consultationNoteSources[0]?.id}>
+                      {consultationNoteSources.map((source) => (
+                        <option key={source.id} value={source.id}>
+                          {source.name}
+                        </option>
+                      ))}
+                    </NativeSelect>
+                  </label>
+                  <label className="form-group">
+                    <span>Scope</span>
+                    <NativeSelect name="lookId" defaultValue="">
+                      <option value="">Whole order</option>
+                      {order.looks.map((look) => (
+                        <option key={look.id} value={look.id}>
+                          {look.name}
+                        </option>
+                      ))}
+                    </NativeSelect>
+                  </label>
+                </div>
+                <label className="form-group">
+                  <span>
+                    Occurred at <span className="font-normal text-kuartz-secondary">(optional)</span>
+                  </span>
+                  <Input type="datetime-local" name="occurredAt" />
+                </label>
+                <label className="form-group">
+                  <span>Body</span>
+                  <textarea
+                    name="body"
+                    required
+                    className="min-h-[4.5rem] w-full rounded-[0.8rem] border border-kuartz-control bg-white/70 px-3.5 py-3 text-sm text-kuartz-ink outline-none focus:border-[#88925f] focus:bg-white focus:ring-4 focus:ring-kuartz-lime/20"
+                  />
+                </label>
+                <Button type="submit" variant="outline">
+                  Add Consultation Note
+                </Button>
+              </form>
+            </FormDisclosure>
             <div className="mt-4 space-y-5">
               {consultationNotes.length ? (
                 consultationNotes.map((note) => (
@@ -543,51 +614,6 @@ export default async function OrderDetailPage({
                 <p className="py-3 text-sm text-kuartz-muted">No Consultation Notes yet.</p>
               )}
             </div>
-
-            <form action={createConsultationNoteAction} aria-label="Add a Consultation Note" className="mt-6 space-y-3">
-              <input type="hidden" name="orderId" value={order.id} />
-              <h3 className="section-title">Add a Consultation Note</h3>
-              <div className="grid gap-4 sm:grid-cols-2">
-                <label className="form-group">
-                  <span>Source</span>
-                  <NativeSelect name="sourceId" defaultValue={consultationNoteSources[0]?.id}>
-                    {consultationNoteSources.map((source) => (
-                      <option key={source.id} value={source.id}>
-                        {source.name}
-                      </option>
-                    ))}
-                  </NativeSelect>
-                </label>
-                <label className="form-group">
-                  <span>Scope</span>
-                  <NativeSelect name="lookId" defaultValue="">
-                    <option value="">Whole order</option>
-                    {order.looks.map((look) => (
-                      <option key={look.id} value={look.id}>
-                        {look.name}
-                      </option>
-                    ))}
-                  </NativeSelect>
-                </label>
-              </div>
-              <label className="form-group">
-                <span>
-                  Occurred at <span className="font-normal text-kuartz-secondary">(optional)</span>
-                </span>
-                <Input type="datetime-local" name="occurredAt" />
-              </label>
-              <label className="form-group">
-                <span>Body</span>
-                <textarea
-                  name="body"
-                  required
-                  className="min-h-[4.5rem] w-full rounded-[0.8rem] border border-kuartz-control bg-white/70 px-3.5 py-3 text-sm text-kuartz-ink outline-none focus:border-[#88925f] focus:bg-white focus:ring-4 focus:ring-kuartz-lime/20"
-                />
-              </label>
-              <Button type="submit" variant="outline">
-                Add Consultation Note
-              </Button>
-            </form>
           </div>
 
           <div>
@@ -628,7 +654,49 @@ export default async function OrderDetailPage({
           </div>
 
           <div>
-            <h2 className="section-title">Style Direction Files</h2>
+            <FormDisclosure title="Style Direction Files" buttonLabel="Add Style Direction File">
+              <form
+                action={uploadStyleDirectionFileAction}
+                aria-label="Add a Style Direction File"
+                className="space-y-3 rounded-[0.95rem] border border-kuartz-line bg-[#fbfaf7] p-4 shadow-[0_18px_48px_rgba(24,24,38,0.08)]"
+              >
+                <input type="hidden" name="orderId" value={order.id} />
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <label className="form-group">
+                    <span>Category</span>
+                    <NativeSelect name="category" defaultValue={STYLE_DIRECTION_FILE_CATEGORIES[0]}>
+                      {STYLE_DIRECTION_FILE_CATEGORIES.map((category) => (
+                        <option key={category} value={category}>
+                          {formatStyleDirectionLabel(category)}
+                        </option>
+                      ))}
+                    </NativeSelect>
+                  </label>
+                  <label className="form-group">
+                    <span>Scope</span>
+                    <NativeSelect name="lookId" defaultValue="">
+                      <option value="">Whole order</option>
+                      {order.looks.map((look) => (
+                        <option key={look.id} value={look.id}>
+                          {look.name}
+                        </option>
+                      ))}
+                    </NativeSelect>
+                  </label>
+                </div>
+                <label className="flex items-center gap-2 text-sm font-semibold text-kuartz-secondary">
+                  <input type="checkbox" name="requiresClientApproval" />
+                  Requires client approval
+                </label>
+                <label className="form-group">
+                  <span>File</span>
+                  <input type="file" name="file" accept="image/jpeg,image/png,image/webp,image/heic,image/heif" required />
+                </label>
+                <Button type="submit" variant="outline">
+                  Add Style Direction File
+                </Button>
+              </form>
+            </FormDisclosure>
             <div className="mt-4 space-y-8">
               {[{ lookId: null, lookName: "Whole Order" }, ...order.looks.map((look) => ({ lookId: look.id, lookName: look.name }))].map(
                 (group) => {
@@ -731,49 +799,7 @@ export default async function OrderDetailPage({
               )}
               {!styleDirectionFiles.length ? <p className="py-3 text-sm text-kuartz-muted">No Style Direction Files yet.</p> : null}
             </div>
-
-            <form
-              action={uploadStyleDirectionFileAction}
-              aria-label="Add a Style Direction File"
-              className="mt-6 space-y-3"
-            >
-              <input type="hidden" name="orderId" value={order.id} />
-              <h3 className="section-title">Add a Style Direction File</h3>
-              <div className="grid gap-4 sm:grid-cols-2">
-                <label className="form-group">
-                  <span>Category</span>
-                  <NativeSelect name="category" defaultValue={STYLE_DIRECTION_FILE_CATEGORIES[0]}>
-                    {STYLE_DIRECTION_FILE_CATEGORIES.map((category) => (
-                      <option key={category} value={category}>
-                        {formatStyleDirectionLabel(category)}
-                      </option>
-                    ))}
-                  </NativeSelect>
-                </label>
-                <label className="form-group">
-                  <span>Scope</span>
-                  <NativeSelect name="lookId" defaultValue="">
-                    <option value="">Whole order</option>
-                    {order.looks.map((look) => (
-                      <option key={look.id} value={look.id}>
-                        {look.name}
-                      </option>
-                    ))}
-                  </NativeSelect>
-                </label>
-              </div>
-              <label className="flex items-center gap-2 text-sm font-semibold text-kuartz-secondary">
-                <input type="checkbox" name="requiresClientApproval" />
-                Requires client approval
-              </label>
-              <label className="form-group">
-                <span>File</span>
-                <input type="file" name="file" accept="image/jpeg,image/png,image/webp,image/heic,image/heif" required />
-              </label>
-              <Button type="submit" variant="outline">
-                Add Style Direction File
-              </Button>
-            </form>
+          </div>
           </div>
 
           {canManageFinance(session.role) ? <div>

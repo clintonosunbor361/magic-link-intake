@@ -5,10 +5,12 @@ import { getEnquiry } from "@/lib/enquiries/repository";
 import { listStaffMembers } from "@/lib/team/repository";
 import { EVENT_TYPES } from "@/lib/intake-options";
 import { Button } from "@/components/ui/button";
+import { DuplicateWarning } from "@/components/enquiries/duplicate-warning";
 import { Input } from "@/components/ui/input";
 import { NativeSelect } from "@/components/ui/native-select";
-import { ClientPicker } from "@/components/enquiries/client-picker";
+import { ClientAttachPanel } from "@/components/enquiries/client-attach-panel";
 import { getClient } from "@/lib/clients/repository";
+import { getDuplicateMatchesForEnquiry } from "@/lib/enquiries/repository";
 import { MoneyInput } from "@/components/ui/money-input";
 
 export default async function ConvertEnquiryPage({
@@ -26,7 +28,11 @@ export default async function ConvertEnquiryPage({
   if (!enquiry) notFound();
   if (enquiry.convertedAt || enquiry.archivedAt) redirect(`/enquiries/${id}`);
 
-  const [staff, linkedClient] = await Promise.all([listStaffMembers(session.organizationId), enquiry.linkedClientId ? getClient(session.organizationId, enquiry.linkedClientId) : null]);
+  const [staff, linkedClient, duplicateMatches] = await Promise.all([
+    listStaffMembers(session.organizationId),
+    enquiry.linkedClientId ? getClient(session.organizationId, enquiry.linkedClientId) : null,
+    getDuplicateMatchesForEnquiry(session.organizationId, enquiry.id),
+  ]);
 
   return (
     <div>
@@ -40,19 +46,24 @@ export default async function ConvertEnquiryPage({
           {error}
         </p>
       ) : null}
+      <DuplicateWarning matches={duplicateMatches} />
       <form action={convertEnquiryAction} className="mt-9 max-w-2xl space-y-6">
         <input type="hidden" name="enquiryId" value={enquiry.id} />
         <input type="hidden" name="version" value={enquiry.version} />
 
-        <div>
-          <h2 className="section-title">Client</h2>
-          <p className="mt-1 text-sm text-kuartz-secondary">
-            Link to an existing Client, or leave unselected to create a new Client from this Enquiry&apos;s details.
-          </p>
-          <div className="mt-4">
-            <ClientPicker initialSelected={linkedClient ? { id: linkedClient.id, fullName: linkedClient.fullName, primaryPhone: linkedClient.primaryPhone, email: linkedClient.email, latestOrderTitle: null } : null} />
-          </div>
-        </div>
+        <ClientAttachPanel
+          initialSelected={
+            linkedClient
+              ? {
+                  id: linkedClient.id,
+                  fullName: linkedClient.fullName,
+                  primaryPhone: linkedClient.primaryPhone,
+                  email: linkedClient.email,
+                  latestOrderTitle: null,
+                }
+              : null
+          }
+        />
 
         <div>
           <h2 className="section-title">Active Order</h2>

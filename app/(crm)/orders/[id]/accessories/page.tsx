@@ -8,6 +8,7 @@ import {
 } from "@/app/actions/accessories";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
+import { FormDisclosure } from "@/components/ui/form-disclosure";
 import { Input } from "@/components/ui/input";
 import { NativeSelect } from "@/components/ui/native-select";
 import { listAccessoryItemsForOrder } from "@/lib/accessories/repository";
@@ -194,9 +195,9 @@ export default async function OrderAccessoriesPage({
         </div>
 
         <aside>
-          <h2 className="section-title">Add an Accessory</h2>
           {canConfigure ? (
-            <form action={createAccessoryItemAction} className="mt-4 space-y-4 border-t border-kuartz-line pt-5">
+            <FormDisclosure title="Accessories" buttonLabel="Add Accessory">
+            <form action={createAccessoryItemAction} className="space-y-4 border-t border-kuartz-line pt-5">
               <input type="hidden" name="orderId" value={id} />
               <label className="form-group">
                 <span>Type</span>
@@ -237,6 +238,7 @@ export default async function OrderAccessoriesPage({
                 Add Accessory
               </Button>
             </form>
+            </FormDisclosure>
           ) : null}
         </aside>
       </section>

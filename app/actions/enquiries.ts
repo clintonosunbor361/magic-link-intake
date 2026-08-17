@@ -9,6 +9,7 @@ import {
   archiveEnquiry,
   createInternalEnquiry,
   restoreEnquiry,
+  updateEnquiryDetails,
   type CreateInternalEnquiryResult,
 } from "@/lib/enquiries/service";
 import { addFollowUpNote, completeTask, createTask, reopenTask } from "@/lib/enquiries/follow-up-service";
@@ -102,6 +103,59 @@ export async function addFollowUpNoteAction(formData: FormData) {
   }
 
   revalidatePath(`/enquiries/${enquiryId}`);
+  redirect(`/enquiries/${enquiryId}`);
+}
+
+export async function updateEnquiryDetailsAction(formData: FormData) {
+  const session = await requireStaffSession();
+  const enquiryId = readFormString(formData, "enquiryId");
+  const expectedVersion = Number(readFormString(formData, "version"));
+  const linkedClientId = readFormString(formData, "linkedClientId") || null;
+
+  const fullName = readFormString(formData, "fullName");
+  const primaryPhone = readFormString(formData, "primaryPhone");
+  const whatsappSameAsPrimary = formData.get("whatsappSameAsPrimary") === "on";
+  const whatsappPhone = readFormString(formData, "whatsappPhone");
+  const email = readFormString(formData, "email");
+  const preferredContactChannel = optionValue(formData, "preferredContactChannel", CONTACT_CHANNELS);
+  const eventType = optionValue(formData, "eventType", EVENT_TYPES);
+  const budgetRange = optionValue(formData, "budgetRange", BUDGET_RANGES);
+  const brief = readFormString(formData, "brief");
+  const leadSource = readFormString(formData, "leadSource");
+  const ownerStaffId = readFormString(formData, "ownerStaffId");
+  const internalNotes = readFormString(formData, "internalNotes");
+
+  try {
+    await updateEnquiryDetails(
+      {
+        actor: { organizationId: session.organizationId, role: session.role },
+        enquiryId,
+        expectedVersion,
+        fields: {
+          fullName,
+          primaryPhone,
+          whatsappSameAsPrimary,
+          whatsappPhone,
+          email,
+          preferredContactChannel,
+          eventType,
+          budgetRange,
+          brief,
+          leadSource,
+          ownerStaffId,
+          internalNotes,
+          linkedClientId,
+        },
+      },
+      createEnquiryRepository(),
+    );
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "The Enquiry could not be updated.";
+    redirect(`/enquiries/${enquiryId}/edit?error=${encodeURIComponent(message)}`);
+  }
+
+  revalidatePath(`/enquiries/${enquiryId}`);
+  revalidatePath("/enquiries");
   redirect(`/enquiries/${enquiryId}`);
 }
 

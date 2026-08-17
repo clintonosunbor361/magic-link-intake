@@ -19,7 +19,16 @@ const NAME_TOKEN_OVERLAP_THRESHOLD = 0.5;
 const NAME_EDIT_DISTANCE_THRESHOLD = 2;
 
 export function normalizePhone(phone: string): string {
-  return phone.replace(/\D/g, "").slice(-10);
+  const trimmed = phone.trim();
+  const digits = trimmed.replace(/\D/g, "");
+  if (!digits) return "";
+
+  if (trimmed.startsWith("+")) return digits;
+  if (digits.startsWith("234") && digits.length >= 13) return digits;
+  if (digits.startsWith("0") && digits.length === 11) return `234${digits.slice(1)}`;
+  if (digits.length === 10) return `234${digits}`;
+
+  return digits;
 }
 
 export function normalizeEmail(email: string): string {

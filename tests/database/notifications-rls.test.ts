@@ -3,6 +3,7 @@ import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 
 const migration = readFileSync(resolve("drizzle/0025_round_network.sql"), "utf8");
+const clientTasksMigration = readFileSync(resolve("drizzle/0029_client_tasks.sql"), "utf8");
 const grants = readFileSync(resolve("drizzle/0026_supabase_grants.sql"), "utf8");
 const vercelConfig = JSON.parse(readFileSync(resolve("vercel.json"), "utf8"));
 
@@ -31,9 +32,12 @@ describe("notification structural invariants", () => {
     );
   });
 
-  it("defines the four sources and four triggers the spec names", () => {
+  it("defines the reminder sources and four triggers the spec names", () => {
     expect(migration).toContain(
       `CREATE TYPE "public"."notification_source_type" AS ENUM('enquiry_task', 'vendor_assignment', 'accessory_item', 'fitting_session')`,
+    );
+    expect(clientTasksMigration).toContain(
+      `ALTER TYPE "public"."notification_source_type" ADD VALUE IF NOT EXISTS 'client_task'`,
     );
     expect(migration).toContain(
       `CREATE TYPE "public"."notification_trigger" AS ENUM('days_7', 'days_3', 'days_1', 'overdue')`,

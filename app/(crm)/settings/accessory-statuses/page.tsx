@@ -9,6 +9,7 @@ import {
 import { SettingsNav } from "@/components/settings-nav";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
+import { FormDisclosure } from "@/components/ui/form-disclosure";
 import { Input } from "@/components/ui/input";
 import { listAccessoryStatuses } from "@/lib/accessory-statuses/repository";
 import { requireStaffSession } from "@/lib/auth/session";
@@ -119,8 +120,8 @@ export default async function AccessoryStatusesPage({
         </div>
 
         <aside>
-          <h2 className="section-title">Add a status</h2>
-          <form action={createAccessoryStatusAction} className="mt-4 space-y-4 border-t border-kuartz-line pt-5">
+          <FormDisclosure title="Statuses" buttonLabel="Add status">
+          <form action={createAccessoryStatusAction} className="space-y-4 border-t border-kuartz-line pt-5">
             <input type="hidden" name="sortOrder" value={nextSortOrder} />
             <label className="form-group">
               <span>Name</span>
@@ -139,6 +140,7 @@ export default async function AccessoryStatusesPage({
               Add status
             </Button>
           </form>
+          </FormDisclosure>
         </aside>
       </section>
     </div>

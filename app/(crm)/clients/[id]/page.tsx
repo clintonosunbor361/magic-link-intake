@@ -6,7 +6,6 @@ import {
   archiveMeasurementProfileAttachmentAction,
   restoreMeasurementProfileAction,
   restoreMeasurementProfileAttachmentAction,
-  setMeasurementValueAction,
   uploadMeasurementProfileAttachmentAction,
 } from "@/app/actions/measurement-profiles";
 import { issueMeasurementConfirmationAction } from "@/app/actions/client-confirmations";
@@ -22,7 +21,10 @@ import { getOrCreateMeasurementProfile } from "@/lib/measurement-profiles/servic
 import { listConfirmationsForSubject } from "@/lib/client-confirmations/repository";
 import { getSignedPrivateViewUrl } from "@/lib/storage/r2";
 import { formatMinorUnits } from "@/lib/forms/money";
-import { listOpenEnquiriesForClient } from "@/lib/enquiries/repository";
+import { listClientTasks } from "@/lib/client-todos/repository";
+import { listStaffMembers } from "@/lib/team/repository";
+import { ClientTodosSection } from "@/components/clients/client-todos-section";
+import { MeasurementDrawer } from "@/components/clients/measurement-drawer";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
@@ -42,7 +44,11 @@ export default async function ClientDetailPage({
   const client = await getClient(session.organizationId, id);
   if (!client) notFound();
 
-  const [orders, openEnquiries] = await Promise.all([listOrdersForClient(session.organizationId, id), listOpenEnquiriesForClient(session.organizationId, id)]);
+  const [orders, clientTasks, staff] = await Promise.all([
+    listOrdersForClient(session.organizationId, id),
+    listClientTasks(session.organizationId, id),
+    listStaffMembers(session.organizationId),
+  ]);
 
   const measurementProfile = await getOrCreateMeasurementProfile(
     { organizationId: session.organizationId, clientId: id },
@@ -67,7 +73,7 @@ export default async function ClientDetailPage({
         <p className="eyebrow">Client</p>
         <h1 className="page-title">{client.fullName}</h1>
         <p className="page-description">Client since {dateFormatter.format(client.createdAt)}</p>
-        {!isArchived ? <div className="mt-5 flex flex-wrap gap-3"><Button asChild><Link href={`/enquiries/new?clientId=${client.id}`}>New Enquiry</Link></Button><Button asChild variant="outline"><Link href={`/clients/${client.id}/orders/new`}>New Order</Link></Button></div> : null}
+        {!isArchived ? <div className="mt-5 flex flex-wrap gap-3"><Button asChild><Link href={`/clients/${client.id}/orders/new`}>New Order</Link></Button></div> : null}
       </header>
 
       {error ? (
@@ -113,9 +119,18 @@ export default async function ClientDetailPage({
           </div>
 
           <div>
-            <h2 className="section-title">Open Enquiries</h2>
-            <div className="mt-4 divide-y divide-kuartz-line border-y border-kuartz-line">{openEnquiries.length ? openEnquiries.map((enquiry)=><div key={enquiry.id} className="py-4 text-sm"><Link href={`/enquiries/${enquiry.id}`} className="font-semibold text-kuartz-ink hover:underline">{enquiry.eventType}</Link><p className="mt-1 line-clamp-2 text-kuartz-secondary">{enquiry.brief || "No brief yet"}</p></div>) : <p className="py-6 text-sm text-kuartz-muted">No tentative work for this Client.</p>}</div>
+            <h2 className="section-title">Contact context</h2>
+            <div className="mt-4 grid gap-4 border-y border-kuartz-line py-5 text-sm sm:grid-cols-2">
+              <p><span className="font-semibold text-kuartz-ink">Event type:</span> <span className="text-kuartz-secondary">{client.eventType ?? "Not set"}</span></p>
+              <p><span className="font-semibold text-kuartz-ink">Budget range:</span> <span className="text-kuartz-secondary">{client.budgetRange ?? "Not set"}</span></p>
+              <p><span className="font-semibold text-kuartz-ink">Contact channel:</span> <span className="text-kuartz-secondary">{client.preferredContactChannel ?? "Not set"}</span></p>
+              <p><span className="font-semibold text-kuartz-ink">Lead source:</span> <span className="text-kuartz-secondary">{client.leadSource ?? "Not set"}</span></p>
+              <p className="sm:col-span-2"><span className="font-semibold text-kuartz-ink">Brief:</span> <span className="text-kuartz-secondary">{client.brief || "No brief yet"}</span></p>
+              <p className="sm:col-span-2"><span className="font-semibold text-kuartz-ink">Internal notes:</span> <span className="text-kuartz-secondary">{client.internalNotes || "No internal notes yet"}</span></p>
+            </div>
           </div>
+
+          <ClientTodosSection clientId={client.id} tasks={clientTasks} staff={staff} currentUserId={session.userId} />
 
           <div>
             <h2 className="section-title">Order history</h2>
@@ -131,11 +146,11 @@ export default async function ClientDetailPage({
                         {order.title}
                       </Link>
                       <p className="mt-1 text-kuartz-secondary">
-                        {order.eventType} · {dateFormatter.format(order.createdAt)}
-                        {order.archivedAt ? " · Archived" : ""}
+                        {order.eventType} - {dateFormatter.format(order.createdAt)}
+                        {order.archivedAt ? " - Archived" : ""}
                       </p>
                     </div>
-                    <p className="text-kuartz-ink">₦{formatMinorUnits(order.finalAgreedPriceMinor)}</p>
+                    <p className="text-kuartz-ink">NGN {formatMinorUnits(order.finalAgreedPriceMinor)}</p>
                   </div>
                 ))
               ) : (
@@ -145,62 +160,50 @@ export default async function ClientDetailPage({
           </div>
 
           <div>
-            <h2 className="section-title">Measurements</h2>
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <h2 className="section-title">Measurements</h2>
+              <MeasurementDrawer
+                clientId={client.id}
+                measurementProfileId={measurementProfile.id}
+                fields={measurementFields}
+                disabled={Boolean(measurementProfile.archivedAt)}
+              />
+            </div>
             {measurementProfile.archivedAt ? <p className="mt-2 text-sm text-kuartz-muted">This measurement profile is archived.</p> : null}
-            <div className="mt-4 space-y-4">
+            <div className="mt-4 divide-y divide-kuartz-line border-y border-kuartz-line">
               {measurementFields.map((field) => (
-                <div key={field.fieldId} className="border-y border-kuartz-line py-4">
-                  <form
-                    action={setMeasurementValueAction}
-                    aria-label={`Measurement — ${field.fieldName}`}
-                    className="flex flex-wrap items-end gap-3"
-                  >
-                    <input type="hidden" name="clientId" value={client.id} />
-                    <input type="hidden" name="measurementProfileId" value={measurementProfile.id} />
-                    <input type="hidden" name="fieldDefinitionId" value={field.fieldId} />
-                    <input type="hidden" name="version" value={field.version} />
-                    <label className="form-group">
-                      <span>
-                        {field.fieldName} <span className="font-normal text-kuartz-muted">({field.unit})</span>
-                      </span>
-                      <Input name="value" defaultValue={field.value ?? ""} />
-                    </label>
-                    <label className="form-group">
-                      <span>
-                        Note <span className="font-normal text-kuartz-secondary">(optional)</span>
-                      </span>
-                      <Input name="note" />
-                    </label>
-                    <Button type="submit" variant="outline">
-                      Save
-                    </Button>
-                  </form>
-                  <p className="mt-2 text-xs text-kuartz-muted">
-                    {field.value ? (
-                      <>
-                        {field.lastEditedByName ? `Last edited by ${field.lastEditedByName}` : `Set by ${field.createdByName}`}
-                        {field.lastEditedAt ? ` · ${dateFormatter.format(field.lastEditedAt)}` : ""}
-                      </>
-                    ) : (
-                      "Not recorded yet"
-                    )}
-                  </p>
-                  {field.revisions.length ? (
-                    <details className="mt-2">
-                      <summary className="cursor-pointer text-xs font-semibold text-kuartz-secondary">
-                        Edit history ({field.revisions.length})
-                      </summary>
-                      <ul className="mt-2 space-y-1 text-sm text-kuartz-muted">
-                        {field.revisions.map((revision) => (
-                          <li key={revision.id}>
-                            {revision.previousValue ?? "(unset)"} → {revision.newValue} · {revision.changedByName} ·{" "}
-                            {dateFormatter.format(revision.createdAt)}
-                            {revision.note ? ` — "${revision.note}"` : ""}
-                          </li>
-                        ))}
-                      </ul>
-                    </details>
-                  ) : null}
+                <div key={field.fieldId} className="py-4">
+                  <div className="grid gap-3 text-sm sm:grid-cols-[minmax(12rem,0.38fr)_minmax(0,1fr)]">
+                    <div>
+                      <p className="font-semibold text-kuartz-ink">{field.fieldName}</p>
+                      <p className="mt-1 text-xs text-kuartz-muted">{field.unit}</p>
+                    </div>
+                    <div>
+                      <p className="font-semibold text-kuartz-ink">{field.value ? `${field.value} ${field.unit}` : "Not recorded yet"}</p>
+                      {field.value ? (
+                        <p className="mt-1 text-xs text-kuartz-muted">
+                          {field.lastEditedByName ? `Last edited by ${field.lastEditedByName}` : `Set by ${field.createdByName}`}
+                          {field.lastEditedAt ? ` Ã‚Â· ${dateFormatter.format(field.lastEditedAt)}` : ""}
+                        </p>
+                      ) : null}
+                      {field.revisions.length ? (
+                        <details className="mt-2">
+                          <summary className="cursor-pointer text-xs font-semibold text-kuartz-secondary">
+                            Edit history ({field.revisions.length})
+                          </summary>
+                          <ul className="mt-2 space-y-1 text-sm text-kuartz-muted">
+                            {field.revisions.map((revision) => (
+                              <li key={revision.id}>
+                                {revision.previousValue ?? "(unset)"} {"->"} {revision.newValue} - {revision.changedByName} -{" "}
+                                {dateFormatter.format(revision.createdAt)}
+                                {revision.note ? ` - "${revision.note}"` : ""}
+                              </li>
+                            ))}
+                          </ul>
+                        </details>
+                      ) : null}
+                    </div>
+                  </div>
                 </div>
               ))}
             </div>
@@ -292,8 +295,8 @@ export default async function ClientDetailPage({
                     <div key={confirmation.id} className="grid gap-1 py-3 text-sm sm:grid-cols-[1fr_auto]">
                       <p className="text-kuartz-ink">
                         Created {dateFormatter.format(confirmation.createdAt)}
-                        {confirmation.deliveryMethod ? ` · ${confirmation.deliveryMethod === "email" ? "Emailed" : "Copied"}` : " · Not yet delivered"}
-                        {confirmation.decisionComment ? ` — "${confirmation.decisionComment}"` : ""}
+                        {confirmation.deliveryMethod ? ` Ãƒâ€šÃ‚Â· ${confirmation.deliveryMethod === "email" ? "Emailed" : "Copied"}` : " Ãƒâ€šÃ‚Â· Not yet delivered"}
+                        {confirmation.decisionComment ? ` ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â "${confirmation.decisionComment}"` : ""}
                       </p>
                       <p className="font-semibold text-kuartz-muted">{confirmation.status}</p>
                     </div>

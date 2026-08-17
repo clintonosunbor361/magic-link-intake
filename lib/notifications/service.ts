@@ -6,6 +6,7 @@ import { dueTriggers, mayEmail, type NotificationTrigger, TRIGGER_LABELS } from 
 
 export const NOTIFICATION_SOURCE_TYPES = [
   "enquiry_task",
+  "client_task",
   "vendor_assignment",
   "accessory_item",
   "fitting_session",
@@ -37,7 +38,8 @@ export type PlannedNotification = {
 };
 
 const SOURCE_LABELS: Record<NotificationSourceType, string> = {
-  enquiry_task: "Enquiry follow-up",
+  enquiry_task: "To-do",
+  client_task: "To-do",
   vendor_assignment: "Production deadline",
   accessory_item: "Accessory",
   fitting_session: "Fitting",

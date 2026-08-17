@@ -9,6 +9,45 @@ import type { ClientRepository } from "@/lib/clients/service";
 export function createClientRepository(): ClientRepository {
   const db = getDatabase();
   return {
+    async getDuplicateCandidates(organizationId) {
+      const rows = await db
+        .select({
+          id: clients.id,
+          fullName: clients.fullName,
+          nameNormalized: clients.nameNormalized,
+          primaryPhone: clients.primaryPhone,
+          primaryPhoneNormalized: clients.primaryPhoneNormalized,
+          email: clients.email,
+          emailNormalized: clients.emailNormalized,
+        })
+        .from(clients)
+        .where(and(eq(clients.organizationId, organizationId), isNull(clients.archivedAt)));
+
+      return rows.map((row) => ({ ...row, kind: "client" as const }));
+    },
+    async createClient(input) {
+      const [row] = await db
+        .insert(clients)
+        .values({
+          organizationId: input.organizationId,
+          fullName: input.fullName,
+          nameNormalized: normalizeName(input.fullName),
+          primaryPhone: input.primaryPhone,
+          primaryPhoneNormalized: normalizePhone(input.primaryPhone),
+          whatsappPhone: input.whatsappSameAsPrimary ? input.primaryPhone : input.whatsappPhone || null,
+          email: input.email || null,
+          emailNormalized: input.email ? normalizeEmail(input.email) : null,
+          preferredContactChannel: input.preferredContactChannel || null,
+          eventType: input.eventType || null,
+          budgetRange: input.budgetRange || null,
+          brief: input.brief,
+          leadSource: input.leadSource || null,
+          ownerStaffId: input.ownerStaffId || null,
+          internalNotes: input.internalNotes || null,
+        })
+        .returning({ id: clients.id });
+      return row;
+    },
     async getClientLifecycle(organizationId, clientId) {
       const [row] = await db
         .select({ id: clients.id, version: clients.version, archivedAt: clients.archivedAt })
@@ -16,6 +55,42 @@ export function createClientRepository(): ClientRepository {
         .where(and(eq(clients.organizationId, organizationId), eq(clients.id, clientId)))
         .limit(1);
       return row ?? null;
+    },
+    async findIdentityConflict(input) {
+      const matches = await db
+        .select({
+          id: clients.id,
+          fullName: clients.fullName,
+          primaryPhone: clients.primaryPhone,
+          primaryPhoneNormalized: clients.primaryPhoneNormalized,
+          email: clients.email,
+          emailNormalized: clients.emailNormalized,
+        })
+        .from(clients)
+        .where(
+          and(
+            eq(clients.organizationId, input.organizationId),
+            isNull(clients.archivedAt),
+            sql`${clients.id} <> ${input.clientId}`,
+            input.emailNormalized
+              ? or(
+                  eq(clients.primaryPhoneNormalized, input.primaryPhoneNormalized),
+                  eq(clients.emailNormalized, input.emailNormalized),
+                )
+              : eq(clients.primaryPhoneNormalized, input.primaryPhoneNormalized),
+          ),
+        )
+        .limit(1);
+
+      const match = matches[0];
+      if (!match) return null;
+      return {
+        id: match.id,
+        fullName: match.fullName,
+        primaryPhone: match.primaryPhone,
+        email: match.email,
+        reason: match.primaryPhoneNormalized === input.primaryPhoneNormalized ? "phone" : "email",
+      };
     },
     async updateClientIdentity(input) {
       const rows = await db
@@ -66,7 +141,7 @@ export const CLIENTS_PAGE_SIZE = 25;
 
 export async function listClients(
   organizationId: string,
-  options: { includeArchived?: boolean; search?: string; page?: number } = {},
+  options: { includeArchived?: boolean; search?: string; page?: number; orderState?: "all" | "without_orders" | "with_orders" } = {},
 ) {
   const db = getDatabase();
   const conditions = [eq(clients.organizationId, organizationId)];
@@ -82,6 +157,19 @@ export async function listClients(
     if (searchCondition) conditions.push(searchCondition);
   }
 
+  if (options.orderState === "without_orders") {
+    conditions.push(sql`not exists (
+      select 1 from orders o
+      where o.client_id = ${sql.raw('"clients"."id"')} and o.archived_at is null
+    )`);
+  }
+  if (options.orderState === "with_orders") {
+    conditions.push(sql`exists (
+      select 1 from orders o
+      where o.client_id = ${sql.raw('"clients"."id"')} and o.archived_at is null
+    )`);
+  }
+
   const page = Math.max(1, options.page ?? 1);
   const rows = await db
     .select({
@@ -93,9 +181,13 @@ export async function listClients(
       createdAt: clients.createdAt,
       latestOrderTitle: sql<string | null>`(
         select o.title from orders o
-        where o.client_id = ${clients.id} and o.archived_at is null
+        where o.client_id = ${sql.raw('"clients"."id"')} and o.archived_at is null
         order by o.created_at desc
         limit 1
+      )`,
+      orderCount: sql<number>`(
+        select count(*)::int from orders o
+        where o.client_id = ${sql.raw('"clients"."id"')} and o.archived_at is null
       )`,
     })
     .from(clients)

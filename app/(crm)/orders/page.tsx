@@ -111,7 +111,7 @@ export default async function OrdersPage({
           <EmptyState
             className="mt-4"
             title="No Orders yet"
-            description="Add confirmed work for an existing Client, or convert an Enquiry into a Client and Order."
+            description="Add confirmed work for an existing Client once price and scope are agreed."
           />
         )}
         {orders.length && (page > 1 || hasNextPage) ? (

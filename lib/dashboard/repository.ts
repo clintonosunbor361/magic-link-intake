@@ -5,8 +5,7 @@ import { getDatabase } from "@/db";
 import {
   clients,
   clientConfirmations,
-  enquiries,
-  enquiryTasks,
+  clientTasks,
   fittingSessions,
   items,
   itemTypes,
@@ -175,31 +174,31 @@ export async function listAwaitingClientResponses(organizationId: string, now = 
   ].sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime());
 }
 
-/** Open follow-up to-dos, due or overdue as of today. */
-export async function listDueFollowUps(organizationId: string, today: BusinessDate) {
+/** Open client to-dos, due or overdue as of today. */
+export async function listDueTodos(organizationId: string, today: BusinessDate) {
   const db = getDatabase();
   return db
     .select({
-      id: enquiryTasks.id,
-      title: enquiryTasks.title,
-      dueDate: enquiryTasks.dueDate,
-      enquiryId: enquiryTasks.enquiryId,
-      enquiryName: enquiries.fullName,
+      id: clientTasks.id,
+      title: clientTasks.title,
+      dueDate: clientTasks.dueDate,
+      clientId: clientTasks.clientId,
+      clientName: clients.fullName,
       assigneeName: staffProfiles.fullName,
     })
-    .from(enquiryTasks)
-    .innerJoin(enquiries, eq(enquiries.id, enquiryTasks.enquiryId))
-    .innerJoin(staffProfiles, eq(staffProfiles.id, enquiryTasks.assignedToStaffId))
+    .from(clientTasks)
+    .innerJoin(clients, eq(clients.id, clientTasks.clientId))
+    .innerJoin(staffProfiles, eq(staffProfiles.id, clientTasks.assignedToStaffId))
     .where(
       and(
-        eq(enquiryTasks.organizationId, organizationId),
-        eq(enquiryTasks.status, "open"),
-        isNull(enquiryTasks.archivedAt),
-        isNull(enquiries.archivedAt),
-        lte(enquiryTasks.dueDate, today),
+        eq(clientTasks.organizationId, organizationId),
+        eq(clientTasks.status, "open"),
+        isNull(clientTasks.archivedAt),
+        isNull(clients.archivedAt),
+        lte(clientTasks.dueDate, today),
       ),
     )
-    .orderBy(asc(enquiryTasks.dueDate));
+    .orderBy(asc(clientTasks.dueDate));
 }
 
 /** Convenience wrapper so the page resolves "today" once and passes it everywhere. */

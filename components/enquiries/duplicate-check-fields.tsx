@@ -4,7 +4,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
-type DuplicateMatchView = {
+export type DuplicateMatchView = {
   candidate: {
     id: string;
     kind: "enquiry" | "client";
@@ -16,7 +16,19 @@ type DuplicateMatchView = {
   reason: "phone" | "email" | "exact_name" | "similar_name";
 };
 
-export function DuplicateCheckFields({ initialValues, linkedClient = false }: { initialValues?: { fullName: string; primaryPhone: string; email: string }; linkedClient?: boolean }) {
+export function DuplicateCheckFields({
+  initialValues,
+  linkedClient = false,
+  duplicateCheckEndpoint = "/api/enquiries/duplicate-check",
+  onDuplicateMatches,
+  onIdentityChange,
+}: {
+  initialValues?: { fullName: string; primaryPhone: string; email: string };
+  linkedClient?: boolean;
+  duplicateCheckEndpoint?: string;
+  onDuplicateMatches?: (matches: DuplicateMatchView[]) => void;
+  onIdentityChange?: () => void;
+}) {
   const [fullName, setFullName] = useState(initialValues?.fullName ?? "");
   const [primaryPhone, setPrimaryPhone] = useState(initialValues?.primaryPhone ?? "");
   const [email, setEmail] = useState(initialValues?.email ?? "");
@@ -27,14 +39,16 @@ export function DuplicateCheckFields({ initialValues, linkedClient = false }: { 
   async function checkDuplicates() {
     setChecking(true);
     try {
-      const response = await fetch("/api/enquiries/duplicate-check", {
+      const response = await fetch(duplicateCheckEndpoint, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ fullName, primaryPhone, email }),
       });
       const data = (await response.json()) as { matches?: DuplicateMatchView[] };
-      setMatches(data.matches ?? []);
+      const nextMatches = data.matches ?? [];
+      setMatches(nextMatches);
       setAcknowledged(false);
+      onDuplicateMatches?.(nextMatches);
     } finally {
       setChecking(false);
     }
@@ -50,6 +64,7 @@ export function DuplicateCheckFields({ initialValues, linkedClient = false }: { 
           onChange={(event) => {
             setFullName(event.target.value);
             setMatches(null);
+            onIdentityChange?.();
           }}
           required
         />
@@ -61,10 +76,11 @@ export function DuplicateCheckFields({ initialValues, linkedClient = false }: { 
             name="primaryPhone"
             inputMode="tel"
             value={primaryPhone}
-            onChange={(event) => {
-              setPrimaryPhone(event.target.value);
-              setMatches(null);
-            }}
+          onChange={(event) => {
+            setPrimaryPhone(event.target.value);
+            setMatches(null);
+            onIdentityChange?.();
+          }}
             required
           />
         </label>
@@ -77,6 +93,7 @@ export function DuplicateCheckFields({ initialValues, linkedClient = false }: { 
             onChange={(event) => {
               setEmail(event.target.value);
               setMatches(null);
+              onIdentityChange?.();
             }}
           />
         </label>
@@ -89,7 +106,7 @@ export function DuplicateCheckFields({ initialValues, linkedClient = false }: { 
       >
         {checking ? "Checking…" : "Check for duplicates"}
       </Button>}
-      {!linkedClient && matches ? (
+      {!linkedClient && !onDuplicateMatches && matches ? (
         matches.length ? (
           <div className="space-y-2 rounded-[0.8rem] border border-[#d9aaa7] bg-[#f7e5e3] p-4">
             <p className="text-sm font-semibold text-kuartz-danger">Possible existing contacts found:</p>

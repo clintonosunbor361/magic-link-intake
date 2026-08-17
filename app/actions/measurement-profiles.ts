@@ -47,6 +47,44 @@ export async function setMeasurementValueAction(formData: FormData) {
   redirect(`/clients/${clientId}`);
 }
 
+export async function setMeasurementValuesAction(formData: FormData) {
+  const session = await requireStaffSession();
+  const clientId = readFormString(formData, "clientId");
+  const measurementProfileId = readFormString(formData, "measurementProfileId");
+  const fieldDefinitionIds = formData.getAll("fieldDefinitionId").map(String);
+  const repository = createMeasurementProfileRepository();
+
+  try {
+    for (const fieldDefinitionId of fieldDefinitionIds) {
+      const value = readFormString(formData, `value:${fieldDefinitionId}`);
+      const previousValue = readFormString(formData, `previousValue:${fieldDefinitionId}`);
+      const note = readFormString(formData, `note:${fieldDefinitionId}`);
+      const expectedVersion = Number(readFormString(formData, `version:${fieldDefinitionId}`));
+
+      if (!value.trim() || value.trim() === previousValue.trim()) continue;
+
+      await setMeasurementValue(
+        {
+          organizationId: session.organizationId,
+          measurementProfileId,
+          fieldDefinitionId,
+          value,
+          note: note || null,
+          staffId: session.userId,
+          expectedVersion,
+        },
+        repository,
+      );
+    }
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "The measurements could not be saved.";
+    redirect(`/clients/${clientId}?error=${encodeURIComponent(message)}`);
+  }
+
+  revalidatePath(`/clients/${clientId}`);
+  redirect(`/clients/${clientId}`);
+}
+
 export async function archiveMeasurementProfileAction(formData: FormData) {
   const session = await requireStaffSession();
   const clientId = readFormString(formData, "clientId");
