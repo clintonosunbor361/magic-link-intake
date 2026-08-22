@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { createActiveOrderAction } from "@/app/actions/orders";
 import { ClientPicker } from "@/components/enquiries/client-picker";
+import { OrderLooksFields } from "@/components/orders/order-looks-fields";
 import { Breadcrumbs } from "@/components/ui/breadcrumbs";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -78,14 +79,7 @@ export default async function NewOrderPage({
           </div>
         </section>
 
-        <section>
-          <h2 className="section-title">First Look</h2>
-          <div className="mt-4 space-y-4">
-            <label className="form-group"><span>Look name</span><Input name="lookName" required /></label>
-            <label className="form-group"><span>Look date <span className="font-normal text-kuartz-secondary">(optional)</span></span><Input name="lookDate" type="date" /></label>
-            <label className="form-group"><span>Notes <span className="font-normal text-kuartz-secondary">(optional)</span></span><Input name="lookNotes" /></label>
-          </div>
-        </section>
+        <OrderLooksFields />
 
         <div className="flex flex-wrap items-center justify-between gap-3">
           <Link href="/orders" className="inline-flex min-h-11 items-center text-sm font-semibold text-kuartz-secondary hover:text-kuartz-ink">Cancel</Link>

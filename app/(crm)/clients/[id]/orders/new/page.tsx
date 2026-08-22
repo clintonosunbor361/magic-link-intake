@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { createActiveOrderAction } from "@/app/actions/orders";
+import { OrderLooksFields } from "@/components/orders/order-looks-fields";
 import { Breadcrumbs } from "@/components/ui/breadcrumbs";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -29,7 +30,7 @@ export default async function NewClientOrderPage({ params, searchParams }: { par
         <label className="checkbox-field"><input type="checkbox" name="ffDiscount" className="h-5 w-5" />Friends &amp; Family discount</label>
         <label className="form-group"><span>Amount discounted (₦) <span className="font-normal text-kuartz-secondary">(optional)</span></span><MoneyInput name="ffDiscountAmount" /></label>
       </div></section>
-      <section><h2 className="section-title">First Look</h2><div className="mt-4 space-y-4"><label className="form-group"><span>Look name</span><Input name="lookName" required /></label><label className="form-group"><span>Look date <span className="font-normal text-kuartz-secondary">(optional)</span></span><Input name="lookDate" type="date" /></label><label className="form-group"><span>Notes <span className="font-normal text-kuartz-secondary">(optional)</span></span><Input name="lookNotes" /></label></div></section>
+      <OrderLooksFields />
       <div className="flex flex-wrap items-center justify-between gap-3"><Link href={`/clients/${id}`} className="text-sm font-semibold text-kuartz-secondary hover:text-kuartz-ink">Cancel</Link><Button type="submit">Create Order</Button></div>
     </form>
   </div>;

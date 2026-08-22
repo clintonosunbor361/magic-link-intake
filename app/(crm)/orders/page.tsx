@@ -57,7 +57,7 @@ export default async function OrdersPage({
       <section className="mt-9">
         {orders.length ? (
           <>
-          <ul className="divide-y divide-kuartz-line border-y border-kuartz-line md:hidden">
+          <ul className="divide-y divide-kuartz-line border-y border-kuartz-line xl:hidden">
             {orders.map((order) => (
               <li key={order.id} className="py-4">
                 <Link href={`/orders/${order.id}`} className="block min-h-11 font-semibold text-kuartz-ink">
@@ -71,7 +71,7 @@ export default async function OrdersPage({
               </li>
             ))}
           </ul>
-          <div className="hidden overflow-x-auto border-y border-kuartz-line md:block">
+          <div className="hidden overflow-x-auto border-y border-kuartz-line xl:block">
             <table className="w-full min-w-[880px] text-left text-sm">
               <thead className="text-xs text-kuartz-secondary">
                 <tr>

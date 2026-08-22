@@ -68,7 +68,7 @@ export function createActiveOrderRepository(): ActiveOrderCreationRepository {
       const [row] = await db.select({ id: clients.id }).from(clients).where(and(eq(clients.organizationId, organizationId), eq(clients.id, clientId), isNull(clients.archivedAt))).limit(1);
       return Boolean(row);
     },
-    async createOrderWithFirstLook(input) {
+    async createOrderWithLooks(input) {
       return db.transaction(async (tx) => {
         const [order] = await tx.insert(orders).values({
           organizationId: input.organizationId,
@@ -80,9 +80,15 @@ export function createActiveOrderRepository(): ActiveOrderCreationRepository {
           ffDiscount: input.ffDiscount,
           ffDiscountAmountMinor: input.ffDiscountAmountMinor,
         }).returning({ id: orders.id });
-        const [look] = await tx.insert(looks).values({ organizationId: input.organizationId, orderId: order.id, name: input.firstLook.name, lookDate: input.firstLook.lookDate, notes: input.firstLook.notes }).returning({ id: looks.id });
-        await tx.insert(auditEntries).values({ organizationId: input.organizationId, actorId: input.actorStaffId, action: "order.created", entityType: "order", entityId: order.id, summary: `Created Active Order "${input.title}" for an existing Client.`, metadata: { clientId: input.clientId, lookId: look.id, finalAgreedPriceMinor: input.finalAgreedPriceMinor } });
-        return { orderId: order.id, lookId: look.id };
+        const createdLooks = await tx.insert(looks).values(input.looks.map((look) => ({
+          organizationId: input.organizationId,
+          orderId: order.id,
+          name: look.name,
+          lookDate: look.lookDate,
+          notes: look.notes,
+        }))).returning({ id: looks.id });
+        await tx.insert(auditEntries).values({ organizationId: input.organizationId, actorId: input.actorStaffId, action: "order.created", entityType: "order", entityId: order.id, summary: `Created Active Order "${input.title}" for an existing Client.`, metadata: { clientId: input.clientId, lookIds: createdLooks.map((look) => look.id), finalAgreedPriceMinor: input.finalAgreedPriceMinor } });
+        return { orderId: order.id, lookIds: createdLooks.map((look) => look.id) };
       });
     },
   };

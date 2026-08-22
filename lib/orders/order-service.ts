@@ -15,12 +15,12 @@ export type OrderLifecycleRecord = { id: string; version: number; archivedAt: Da
 export type CreateActiveOrderInput = OrderFields & {
   clientId: string;
   primaryOwnerStaffId: string;
-  firstLook: { name: string; lookDate: string | null; notes: string };
+  looks: { name: string; lookDate: string | null; notes: string }[];
 };
 
 export type ActiveOrderCreationRepository = {
   clientBelongsToOrganization(organizationId: string, clientId: string): Promise<boolean>;
-  createOrderWithFirstLook(input: CreateActiveOrderInput & { organizationId: string; actorStaffId: string }): Promise<{ orderId: string; lookId: string }>;
+  createOrderWithLooks(input: CreateActiveOrderInput & { organizationId: string; actorStaffId: string }): Promise<{ orderId: string; lookIds: string[] }>;
 };
 
 export async function createActiveOrder(
@@ -32,8 +32,11 @@ export async function createActiveOrder(
   if (!input.fields.eventType.trim()) throw new Error("Event type is required.");
   if (!Number.isInteger(input.fields.finalAgreedPriceMinor) || input.fields.finalAgreedPriceMinor <= 0) throw new Error("Final agreed price must be greater than zero.");
   if (!input.fields.primaryOwnerStaffId) throw new Error("Primary owner is required.");
-  if (!input.fields.firstLook.name.trim()) throw new Error("Look name is required.");
-  return repository.createOrderWithFirstLook({ organizationId: input.organizationId, actorStaffId: input.actorStaffId, ...input.fields });
+  if (!input.fields.looks.length) throw new Error("At least one Look is required.");
+  input.fields.looks.forEach((look, index) => {
+    if (!look.name.trim()) throw new Error(`Look ${index + 1} name is required.`);
+  });
+  return repository.createOrderWithLooks({ organizationId: input.organizationId, actorStaffId: input.actorStaffId, ...input.fields });
 }
 
 export type OrderRepository = {

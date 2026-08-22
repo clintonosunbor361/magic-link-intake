@@ -15,6 +15,9 @@ export async function createActiveOrderAction(formData: FormData) {
   const clientId = readFormString(formData, "clientId");
   const creationSource = readFormString(formData, "creationSource");
   const discount = readFormString(formData, "ffDiscountAmount");
+  const lookNames = formData.getAll("lookName").map((value) => String(value));
+  const lookDates = formData.getAll("lookDate").map((value) => String(value));
+  const lookNotes = formData.getAll("lookNotes").map((value) => String(value));
   let orderId: string;
   try {
     ({ orderId } = await createActiveOrder({ organizationId: session.organizationId, actorStaffId: session.userId, fields: {
@@ -25,7 +28,11 @@ export async function createActiveOrderAction(formData: FormData) {
       primaryOwnerStaffId: readFormString(formData, "primaryOwnerStaffId") || session.userId,
       ffDiscount: formData.get("ffDiscount") === "on",
       ffDiscountAmountMinor: discount ? parseMoneyToMinorUnits(discount) : null,
-      firstLook: { name: readFormString(formData, "lookName"), lookDate: readFormString(formData, "lookDate") || null, notes: readFormString(formData, "lookNotes") },
+      looks: lookNames.map((name, index) => ({
+        name,
+        lookDate: lookDates[index] || null,
+        notes: lookNotes[index] ?? "",
+      })),
     } }, createActiveOrderRepository()));
   } catch (error) {
     const message = error instanceof Error ? error.message : "The Order could not be created.";

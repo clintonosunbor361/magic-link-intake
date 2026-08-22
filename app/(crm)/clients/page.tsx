@@ -26,13 +26,13 @@ export default async function ClientsPage({
 
   return (
     <div>
-      <header className="grid gap-8 border-b border-kuartz-line pb-8 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-end">
-        <div>
+      <header className="grid min-w-0 gap-8 border-b border-kuartz-line pb-8 xl:grid-cols-[minmax(0,1fr)_auto] xl:items-end">
+        <div className="min-w-0">
           <p className="eyebrow">Clients</p>
           <h1 className="page-title">Directory</h1>
           <p className="page-description">Everyone in the system, whether they already have an Order or are still a contact.</p>
         </div>
-        <div className="flex w-full max-w-full flex-col items-stretch gap-3 sm:w-72 lg:items-end">
+        <div className="flex w-full max-w-full flex-col items-stretch gap-3 sm:w-72 xl:items-end">
           <Button asChild className="w-full">
             <Link href="/clients/new">Add Client</Link>
           </Button>
@@ -40,7 +40,7 @@ export default async function ClientsPage({
         </div>
       </header>
 
-      <form method="get" className="mt-8 grid gap-4 rounded-[1rem] border border-kuartz-line bg-white/55 p-4 md:grid-cols-[minmax(18rem,1fr)_16rem_auto_auto] md:items-end">
+      <form method="get" className="mt-8 grid min-w-0 gap-4 rounded-[1rem] border border-kuartz-line bg-white/55 p-4 lg:grid-cols-2 xl:grid-cols-[minmax(18rem,1fr)_16rem_auto_auto] xl:items-end">
         <label className="form-group">
           <span>Search</span>
           <input
@@ -63,11 +63,11 @@ export default async function ClientsPage({
             <option value="with_orders">With orders</option>
           </select>
         </label>
-        <label className="flex min-h-[3.1rem] items-center gap-2 rounded-[0.8rem] border border-kuartz-line bg-white/60 px-3.5 text-sm font-semibold text-kuartz-secondary">
+        <label className="flex min-h-[3.1rem] items-center gap-2 rounded-[0.8rem] border border-kuartz-line bg-white/60 px-3.5 text-sm font-semibold text-kuartz-secondary xl:self-end">
           <input type="checkbox" name="includeArchived" value="1" defaultChecked={params.includeArchived === "1"} />
           Archived
         </label>
-        <Button type="submit" variant="outline" className="min-h-[3.1rem]">
+        <Button type="submit" variant="outline" className="min-h-[3.1rem] xl:self-end">
           Search
         </Button>
       </form>
@@ -75,7 +75,7 @@ export default async function ClientsPage({
       <section className="mt-9">
         {clients.length ? (
           <>
-          <ul className="divide-y divide-kuartz-line border-y border-kuartz-line md:hidden">
+          <ul className="divide-y divide-kuartz-line border-y border-kuartz-line xl:hidden">
             {clients.map((client) => (
               <li key={client.id} className="py-4">
                 <Link href={`/clients/${client.id}`} className="block min-h-11 font-semibold text-kuartz-ink">
@@ -87,7 +87,7 @@ export default async function ClientsPage({
               </li>
             ))}
           </ul>
-          <div className="hidden overflow-x-auto border-y border-kuartz-line md:block">
+          <div className="hidden overflow-x-auto border-y border-kuartz-line xl:block">
             <table className="w-full min-w-[760px] text-left text-sm">
               <thead className="text-xs text-kuartz-secondary">
                 <tr>

@@ -7,24 +7,24 @@ import { Button } from "@/components/ui/button";
 export function AppShell({ session, children }: { session: StaffSession; children: React.ReactNode }) {
   const initials = session.fullName.split(/\s+/).slice(0, 2).map((part) => part[0]).join("").toUpperCase();
   return (
-    <div className="min-h-[100dvh] bg-kuartz-canvas lg:pl-[17rem]">
+    <div className="min-h-[100dvh] min-w-0 overflow-x-hidden bg-kuartz-canvas lg:pl-[17rem]">
       <a className="skip-link" href="#main-content">Skip to main content</a>
       <Navigation
         canManageTeam={canManageTeam(session.role)}
         canManageFinance={canManageFinance(session.role)}
       />
-      <header className="sticky top-0 z-20 flex h-[4.5rem] items-center justify-between border-b border-white/80 bg-white/[0.82] px-4 shadow-[0_16px_45px_rgba(21,22,63,0.06)] backdrop-blur-xl sm:px-7 lg:px-10">
-        <div className="pl-12 lg:pl-0">
+      <header className="sticky top-0 z-20 flex h-[4.5rem] min-w-0 items-center justify-between gap-3 border-b border-white/80 bg-white/[0.82] px-4 shadow-[0_16px_45px_rgba(21,22,63,0.06)] backdrop-blur-xl sm:px-7 lg:px-10">
+        <div className="min-w-0 pl-12 lg:pl-0">
           <p className="text-sm font-extrabold text-kuartz-ink">{session.organizationName}</p>
           <p className="text-xs text-kuartz-secondary">Operations workspace</p>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex min-w-0 shrink-0 items-center gap-2 sm:gap-3">
           <div className="hidden text-right sm:block"><p className="text-sm font-semibold text-kuartz-ink">{session.fullName}</p><p className="text-xs text-kuartz-secondary">{session.role === "super_admin" ? "Super Admin" : "Admin Assistant"}</p></div>
           <div className="grid h-9 w-9 place-items-center rounded-full bg-kuartz-ink text-xs font-bold text-white shadow-sm" aria-hidden="true">{initials}</div>
           <form action={signOutAction}><Button variant="ghost" type="submit">Sign out</Button></form>
         </div>
       </header>
-      <main id="main-content" tabIndex={-1} className="mx-auto w-full max-w-[1400px] px-4 py-8 sm:px-7 lg:px-10 lg:py-10">{children}</main>
+      <main id="main-content" tabIndex={-1} className="mx-auto w-full min-w-0 max-w-[1400px] px-4 py-8 sm:px-7 lg:px-10 lg:py-10">{children}</main>
     </div>
   );
 }

@@ -10,16 +10,38 @@ const validFields = {
 };
 
 describe("createActiveOrder", () => {
-  it("creates an Order and its first Look as one repository operation", async () => {
-    const repository = { clientBelongsToOrganization: vi.fn().mockResolvedValue(true), createOrderWithFirstLook: vi.fn().mockResolvedValue({ orderId: "order-1", lookId: "look-1" }) };
-    const result = await createActiveOrder({ organizationId: "org-1", actorStaffId: "staff-1", fields: { ...validFields, clientId: "client-1", primaryOwnerStaffId: "staff-1", firstLook: { name: "Reception", lookDate: null, notes: "" } } }, repository);
-    expect(result).toEqual({ orderId: "order-1", lookId: "look-1" });
-    expect(repository.createOrderWithFirstLook).toHaveBeenCalledOnce();
+  it("creates an Order and its Looks as one repository operation", async () => {
+    const repository = { clientBelongsToOrganization: vi.fn().mockResolvedValue(true), createOrderWithLooks: vi.fn().mockResolvedValue({ orderId: "order-1", lookIds: ["look-1", "look-2"] }) };
+    const result = await createActiveOrder({
+      organizationId: "org-1",
+      actorStaffId: "staff-1",
+      fields: {
+        ...validFields,
+        clientId: "client-1",
+        primaryOwnerStaffId: "staff-1",
+        looks: [
+          { name: "Traditional Wedding", lookDate: null, notes: "" },
+          { name: "Reception Look", lookDate: "2026-09-20", notes: "Suit" },
+        ],
+      },
+    }, repository);
+    expect(result).toEqual({ orderId: "order-1", lookIds: ["look-1", "look-2"] });
+    expect(repository.createOrderWithLooks).toHaveBeenCalledOnce();
   });
 
   it("rejects a Client outside the organization", async () => {
-    const repository = { clientBelongsToOrganization: vi.fn().mockResolvedValue(false), createOrderWithFirstLook: vi.fn() };
-    await expect(createActiveOrder({ organizationId: "org-1", actorStaffId: "staff-1", fields: { ...validFields, clientId: "client-x", primaryOwnerStaffId: "staff-1", firstLook: { name: "Reception", lookDate: null, notes: "" } } }, repository)).rejects.toThrow("Client was not found.");
+    const repository = { clientBelongsToOrganization: vi.fn().mockResolvedValue(false), createOrderWithLooks: vi.fn() };
+    await expect(createActiveOrder({ organizationId: "org-1", actorStaffId: "staff-1", fields: { ...validFields, clientId: "client-x", primaryOwnerStaffId: "staff-1", looks: [{ name: "Reception", lookDate: null, notes: "" }] } }, repository)).rejects.toThrow("Client was not found.");
+  });
+
+  it("requires at least one Look", async () => {
+    const repository = { clientBelongsToOrganization: vi.fn().mockResolvedValue(true), createOrderWithLooks: vi.fn() };
+    await expect(createActiveOrder({ organizationId: "org-1", actorStaffId: "staff-1", fields: { ...validFields, clientId: "client-1", primaryOwnerStaffId: "staff-1", looks: [] } }, repository)).rejects.toThrow("At least one Look is required.");
+  });
+
+  it("requires every Look to have a name", async () => {
+    const repository = { clientBelongsToOrganization: vi.fn().mockResolvedValue(true), createOrderWithLooks: vi.fn() };
+    await expect(createActiveOrder({ organizationId: "org-1", actorStaffId: "staff-1", fields: { ...validFields, clientId: "client-1", primaryOwnerStaffId: "staff-1", looks: [{ name: "Reception", lookDate: null, notes: "" }, { name: " ", lookDate: null, notes: "" }] } }, repository)).rejects.toThrow("Look 2 name is required.");
   });
 });
 
