@@ -29,35 +29,23 @@ export function OrderLooksFields() {
           Add look
         </Button>
       </div>
-      <div className="mt-4 space-y-5">
+      <p className="mt-1 text-sm leading-6 text-kuartz-secondary">
+        Add the Look names now. Items, dates, and notes can be filled in after the Order is created.
+      </p>
+      <div className="mt-4 space-y-3">
         {looks.map((look, index) => (
-          <fieldset key={look.id} className="rounded-[1.15rem] border border-kuartz-control bg-white/72 p-4 shadow-sm">
-            <div className="flex flex-wrap items-center justify-between gap-3">
-              <legend className="text-base font-extrabold text-kuartz-ink">Look {index + 1}</legend>
+          <fieldset key={look.id} className="rounded-[1rem] border border-kuartz-control bg-white/72 p-4 shadow-sm">
+            <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-end">
+              <label className="form-group">
+                <span>Look {index + 1} name</span>
+                <Input name="lookName" required placeholder={index === 0 ? "Traditional Wedding" : "Reception Look"} />
+              </label>
               {looks.length > 1 ? (
-                <Button type="button" variant="ghost" onClick={() => removeLook(look.id)} className="text-kuartz-secondary hover:text-red-700">
+                <Button type="button" variant="ghost" onClick={() => removeLook(look.id)} className="sm:mb-0 text-kuartz-secondary hover:text-red-700">
                   <Trash2 size={16} aria-hidden="true" />
                   Remove
                 </Button>
               ) : null}
-            </div>
-            <div className="mt-4 space-y-4">
-              <label className="form-group">
-                <span>Look name</span>
-                <Input name="lookName" required />
-              </label>
-              <label className="form-group">
-                <span>
-                  Look date <span className="font-normal text-kuartz-secondary">(optional)</span>
-                </span>
-                <Input name="lookDate" type="date" />
-              </label>
-              <label className="form-group">
-                <span>
-                  Notes <span className="font-normal text-kuartz-secondary">(optional)</span>
-                </span>
-                <Input name="lookNotes" />
-              </label>
             </div>
           </fieldset>
         ))}

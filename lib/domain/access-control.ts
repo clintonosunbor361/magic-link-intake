@@ -36,6 +36,16 @@ export function assertCanManageConsultationNoteSources(role: StaffRole): void {
   }
 }
 
+export function canManageLeadSources(role: StaffRole): boolean {
+  return role === "super_admin";
+}
+
+export function assertCanManageLeadSources(role: StaffRole): void {
+  if (!canManageLeadSources(role)) {
+    throw new Error("Super Admin access is required.");
+  }
+}
+
 export function canManageMeasurementFieldDefinitions(role: StaffRole): boolean {
   return role === "super_admin";
 }

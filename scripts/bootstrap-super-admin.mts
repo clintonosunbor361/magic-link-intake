@@ -9,6 +9,7 @@ import {
   consultationNoteSources,
   itemTypeMeasurementRequirements,
   itemTypes,
+  leadSources,
   measurementFieldDefinitions,
   organizationMemberships,
   organizations,
@@ -25,6 +26,17 @@ const DEFAULT_CONSULTATION_NOTE_SOURCES = [
   "Email",
   "Sketch reference",
   "Colour reference",
+  "Other",
+];
+
+const DEFAULT_LEAD_SOURCES = [
+  "Instagram",
+  "Referral",
+  "WhatsApp",
+  "Website",
+  "Walk-in",
+  "Repeat client",
+  "Event/vendor referral",
   "Other",
 ];
 
@@ -143,6 +155,13 @@ try {
       .returning({ id: itemTypes.id, name: itemTypes.name });
     await db.insert(consultationNoteSources).values(
       DEFAULT_CONSULTATION_NOTE_SOURCES.map((name, index) => ({
+        organizationId: organization.id,
+        name,
+        sortOrder: index,
+      })),
+    );
+    await db.insert(leadSources).values(
+      DEFAULT_LEAD_SOURCES.map((name, index) => ({
         organizationId: organization.id,
         name,
         sortOrder: index,

@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { getStaffSession } from "@/lib/auth/session";
 import { createClientRepository } from "@/lib/clients/repository";
-import { findDuplicateMatches, normalizeEmail, normalizeName, normalizePhone } from "@/lib/enquiries/duplicate-match";
+import { findDuplicateMatches, normalizeEmail, normalizeName, normalizePhone } from "@/lib/clients/duplicate-match";
 
 export const dynamic = "force-dynamic";
 

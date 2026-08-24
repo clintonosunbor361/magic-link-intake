@@ -58,6 +58,7 @@ import { getOrganizationTimezone } from "@/lib/organizations/repository";
 import { getLiveAssignmentDetailForItem } from "@/lib/production/assignment-repository";
 import { listVendorsWithStats } from "@/lib/vendors/repository";
 import { ItemAssignmentDrawer, LookBulkAssignForm } from "@/components/production/assignment-drawer";
+import { OrderWorkspaceNav } from "@/components/orders/order-workspace-nav";
 import { Button } from "@/components/ui/button";
 import { Breadcrumbs } from "@/components/ui/breadcrumbs";
 import { FormDisclosure } from "@/components/ui/form-disclosure";
@@ -66,6 +67,19 @@ import { Input } from "@/components/ui/input";
 import { NativeSelect } from "@/components/ui/native-select";
 
 const dateFormatter = new Intl.DateTimeFormat("en-NG", { dateStyle: "medium", timeStyle: "short" });
+const ORDER_WORKSPACE_TABS = [
+  { id: "overview", label: "Overview" },
+  { id: "looks", label: "Looks & Items" },
+  { id: "style", label: "Style Direction" },
+  { id: "measurements", label: "Measurements" },
+  { id: "vendors", label: "Vendors" },
+  { id: "production", label: "Production" },
+  { id: "accessories", label: "Accessories" },
+  { id: "fittings", label: "Fittings" },
+  { id: "payments", label: "Payments" },
+] as const;
+
+type OrderWorkspaceTab = (typeof ORDER_WORKSPACE_TABS)[number]["id"];
 
 // See app/actions/consultation-notes.ts's readOccurredAt for why this round-trips as UTC digits.
 function toDateTimeLocalValue(date: Date | null): string {
@@ -77,11 +91,11 @@ export default async function OrderDetailPage({
   searchParams,
 }: {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ error?: string; notice?: string }>;
+  searchParams: Promise<{ error?: string; notice?: string; tab?: string }>;
 }) {
   const session = await requireStaffSession();
   const { id } = await params;
-  const { error, notice } = await searchParams;
+  const { error, notice, tab } = await searchParams;
 
   const order = await getOrderWithLooksAndItems(session.organizationId, id);
   if (!order) notFound();
@@ -149,6 +163,11 @@ export default async function OrderDetailPage({
   const invoiceStatus = invoice ? deriveInvoiceStatus({ lifecycle: invoice.lifecycle, balance }) : null;
   const isCompleted = Boolean(order.completedAt);
   const completionBlocked = blocksOrderCompletion(balance);
+  const activeTab: OrderWorkspaceTab = ORDER_WORKSPACE_TABS.some((item) => item.id === tab)
+    ? (tab as OrderWorkspaceTab)
+    : "overview";
+  const orderTabHref = (tabId: OrderWorkspaceTab) => `/orders/${order.id}?tab=${tabId}`;
+  const workspaceTabs = ORDER_WORKSPACE_TABS.map((item) => ({ ...item, href: orderTabHref(item.id) }));
 
   return (
     <div>
@@ -181,23 +200,11 @@ export default async function OrderDetailPage({
       ) : null}
       {isArchived ? <p className="form-alert mt-6">This Order is archived.</p> : null}
 
-      <nav aria-label="Order workflow" className="mt-6 flex flex-wrap gap-3">
-        <Button asChild variant="outline">
-          <a href="#looks">Looks</a>
-        </Button>
-        <Button asChild variant="outline">
-          <a href="#style-direction">Style Direction</a>
-        </Button>
-        <Button asChild variant="outline">
-          <Link href={`/clients/${order.clientId}`}>Measurements</Link>
-        </Button>
-        <Button asChild variant="outline">
-          <Link href="/production">Production</Link>
-        </Button>
-      </nav>
+      <OrderWorkspaceNav tabs={workspaceTabs} activeTab={activeTab} />
 
-      <section className="mt-9 grid gap-10 xl:grid-cols-[minmax(0,1fr)_22rem]">
+      <section className={activeTab === "overview" ? "mt-9 grid gap-10 xl:grid-cols-[minmax(0,1fr)_22rem]" : "mt-9"}>
         <div className="space-y-8">
+          {activeTab === "overview" ? (
           <div>
             <h2 className="section-title">Order details</h2>
             <form action={updateOrderAction} className="mt-4 space-y-4 border-y border-kuartz-line py-5">
@@ -235,8 +242,10 @@ export default async function OrderDetailPage({
               </Button>
             </form>
           </div>
+          ) : null}
 
-          <div id="looks" className="scroll-mt-8">
+          {activeTab === "looks" ? (
+          <div className="scroll-mt-8">
             <FormDisclosure title="Looks" buttonLabel="Add Look">
               <form action={createLookAction} aria-label="Add a Look" className="space-y-3 rounded-[0.95rem] border border-kuartz-line bg-[#fbfaf7] p-4 shadow-[0_18px_48px_rgba(24,24,38,0.08)]">
                 <input type="hidden" name="orderId" value={order.id} />
@@ -266,15 +275,33 @@ export default async function OrderDetailPage({
                 </Button>
               </form>
             </FormDisclosure>
-            <div className="mt-4 space-y-6">
+            <div className="mt-5 space-y-5">
               {order.looks.map((look) => (
-                <div key={look.id} role="group" aria-label={look.name} className="border-y border-kuartz-line py-5">
-                  <div className="flex items-start justify-between gap-4">
-                    <p className="font-semibold text-kuartz-ink">
-                      {look.name}
-                      {look.archivedAt ? <span className="ml-2 text-xs font-normal text-kuartz-muted">Archived</span> : null}
-                    </p>
-                    {!look.archivedAt && mayArchive("look", session.role) ? (
+                <div
+                  key={look.id}
+                  role="group"
+                  aria-label={look.name}
+                  className="rounded-[1rem] border border-kuartz-line bg-white/60 p-4 shadow-[0_14px_38px_rgba(24,24,38,0.06)] sm:p-5"
+                >
+                  <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+                    <div>
+                      <div className="flex flex-wrap items-center gap-2">
+                        <h3 className="text-lg font-extrabold text-kuartz-ink">{look.name}</h3>
+                        {look.archivedAt ? (
+                          <span className="rounded-full border border-kuartz-line px-2.5 py-1 text-xs font-bold text-kuartz-muted">
+                            Archived
+                          </span>
+                        ) : null}
+                      </div>
+                      <div className="mt-2 flex flex-wrap gap-2 text-xs font-semibold text-kuartz-secondary">
+                        <span className="rounded-full bg-[#f1f4e8] px-2.5 py-1">
+                          {look.items.length} item{look.items.length === 1 ? "" : "s"}
+                        </span>
+                        {look.lookDate ? <span className="rounded-full bg-[#f7f4ee] px-2.5 py-1">{look.lookDate}</span> : null}
+                      </div>
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      {!look.archivedAt && mayArchive("look", session.role) ? (
                       <form action={archiveLookAction}>
                         <input type="hidden" name="orderId" value={order.id} />
                         <input type="hidden" name="lookId" value={look.id} />
@@ -294,9 +321,14 @@ export default async function OrderDetailPage({
                         </Button>
                       </form>
                     ) : null}
+                    </div>
                   </div>
 
-                  <form action={updateLookAction} className="mt-4 space-y-3">
+                  <details className="mt-4">
+                    <summary className="inline-flex min-h-11 cursor-pointer list-none items-center justify-center rounded-[0.85rem] border border-kuartz-control bg-white px-4 py-2 text-sm font-extrabold text-kuartz-ink shadow-[0_10px_24px_rgba(24,24,38,0.05)] transition hover:border-kuartz-ink/40">
+                      Edit Look
+                    </summary>
+                  <form action={updateLookAction} className="mt-4 space-y-3 rounded-[0.95rem] border border-kuartz-line bg-[#fbfaf7] p-4">
                     <input type="hidden" name="orderId" value={order.id} />
                     <input type="hidden" name="lookId" value={look.id} />
                     <input type="hidden" name="version" value={look.version} />
@@ -326,6 +358,7 @@ export default async function OrderDetailPage({
                       Save Look
                     </Button>
                   </form>
+                  </details>
 
                   <div className="mt-5">
                     <h3 className="text-xs font-semibold uppercase tracking-wide text-kuartz-secondary">Items</h3>
@@ -458,8 +491,10 @@ export default async function OrderDetailPage({
             </div>
 
           </div>
+          ) : null}
 
-          <div id="style-direction" className="scroll-mt-8 space-y-8">
+          {activeTab === "style" ? (
+          <div className="scroll-mt-8 space-y-8">
             <div className="border-b border-kuartz-line pb-4">
               <p className="eyebrow">Stage 2</p>
               <h2 className="section-title mt-2">Style Direction</h2>
@@ -801,8 +836,9 @@ export default async function OrderDetailPage({
             </div>
           </div>
           </div>
+          ) : null}
 
-          {canManageFinance(session.role) ? <div>
+          {activeTab === "style" && canManageFinance(session.role) ? <div>
             <div className="flex items-end justify-between gap-4">
               <h2 className="section-title">Approval batches</h2>
               <Link href={`/orders/${order.id}/approval-batches/new`} className="text-sm font-semibold text-kuartz-ink underline">
@@ -826,6 +862,7 @@ export default async function OrderDetailPage({
             </div>
           </div> : null}
 
+          {activeTab === "overview" ? (
           <div>
             <h2 className="section-title">Order confirmations</h2>
             <div className="mt-4 divide-y divide-kuartz-lineSoft">
@@ -851,8 +888,119 @@ export default async function OrderDetailPage({
               </Button>
             </form>
           </div>
+          ) : null}
+
+          {activeTab === "measurements" ? (
+            <div>
+              <h2 className="section-title">Measurements</h2>
+              <p className="mt-2 text-sm leading-6 text-kuartz-secondary">
+                Measurements belong to the Client profile. Use this tab to jump to the Client measurement area while we add the in-workspace editor.
+              </p>
+              <div className="mt-4 rounded-[1rem] border border-kuartz-line bg-white/65 p-5">
+                <p className="font-semibold text-kuartz-ink">{order.clientFullName}</p>
+                <p className="mt-2 text-sm leading-6 text-kuartz-secondary">
+                  Missing measurements are already shown beside Items in Looks & Items and enforced before Vendor Brief export.
+                </p>
+                <Button asChild className="mt-4" variant="outline">
+                  <Link href={`/clients/${order.clientId}`}>Open Client measurements</Link>
+                </Button>
+              </div>
+            </div>
+          ) : null}
+
+          {activeTab === "vendors" ? (
+            <div>
+              <h2 className="section-title">Vendors</h2>
+              <p className="mt-2 text-sm leading-6 text-kuartz-secondary">
+                Vendor assignment is currently handled on each Item in Looks & Items. This tab gives Kuartz a direct path to assign or review Vendors.
+              </p>
+              <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                <Button asChild variant="outline">
+                  <Link href={orderTabHref("looks")}>Assign Vendors to Items</Link>
+                </Button>
+                <Button asChild variant="outline">
+                  <Link href="/vendors">Open Vendor directory</Link>
+                </Button>
+              </div>
+            </div>
+          ) : null}
+
+          {activeTab === "production" ? (
+            <div>
+              <h2 className="section-title">Production</h2>
+              <p className="mt-2 text-sm leading-6 text-kuartz-secondary">
+                Production status and deadlines are tracked per vendor assignment.
+              </p>
+              <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                <Button asChild variant="outline">
+                  <Link href="/production">Open Production workspace</Link>
+                </Button>
+                <Button asChild variant="outline">
+                  <Link href={orderTabHref("looks")}>Review Item assignments</Link>
+                </Button>
+              </div>
+            </div>
+          ) : null}
+
+          {activeTab === "accessories" ? (
+            <div>
+              <h2 className="section-title">Accessories</h2>
+              <p className="mt-2 text-sm leading-6 text-kuartz-secondary">
+                Source accessories separately from garment production, linked to this Order or a specific Look.
+              </p>
+              <div className="mt-4 rounded-[1rem] border border-kuartz-line bg-white/65 p-5">
+                <p className="text-sm text-kuartz-secondary">
+                  {outstandingAccessories.length
+                    ? `${outstandingAccessories.length} accessory item${outstandingAccessories.length === 1 ? "" : "s"} still outstanding.`
+                    : "No outstanding accessory items."}
+                </p>
+                <Button asChild className="mt-4" variant="outline">
+                  <Link href={`/orders/${order.id}/accessories`}>Open Accessories</Link>
+                </Button>
+              </div>
+            </div>
+          ) : null}
+
+          {activeTab === "fittings" ? (
+            <div>
+              <h2 className="section-title">Fittings</h2>
+              <p className="mt-2 text-sm leading-6 text-kuartz-secondary">
+                Schedule fittings, record fitting notes, and send client fitting confirmations.
+              </p>
+              <div className="mt-4 rounded-[1rem] border border-kuartz-line bg-white/65 p-5">
+                <p className="text-sm text-kuartz-secondary">
+                  {openFittings.length
+                    ? `${openFittings.length} fitting session${openFittings.length === 1 ? "" : "s"} still open.`
+                    : "No open fitting sessions."}
+                </p>
+                <Button asChild className="mt-4" variant="outline">
+                  <Link href={`/orders/${order.id}/fittings`}>Open Fittings</Link>
+                </Button>
+              </div>
+            </div>
+          ) : null}
+
+          {activeTab === "payments" ? (
+            <div>
+              <h2 className="section-title">Payments</h2>
+              <p className="mt-2 text-sm leading-6 text-kuartz-secondary">
+                Manage the Order invoice, client payments, and balance position.
+              </p>
+              <div className="mt-4 rounded-[1rem] border border-kuartz-line bg-white/65 p-5">
+                <p className="text-sm text-kuartz-secondary">
+                  {balance.state === "not_invoiced"
+                    ? "This Order has not been invoiced yet."
+                    : `Outstanding balance: ₦${formatMinorUnits(balance.balanceMinor)}.`}
+                </p>
+                <Button asChild className="mt-4" variant="outline">
+                  <Link href={`/orders/${order.id}/invoice`}>{invoice ? "Open Invoice" : "Create Invoice"}</Link>
+                </Button>
+              </div>
+            </div>
+          ) : null}
         </div>
 
+        {activeTab === "overview" ? (
         <aside className="space-y-9">
           <div>
             <h2 className="section-title">Workflow</h2>
@@ -1015,6 +1163,7 @@ export default async function OrderDetailPage({
             </form>
           ) : null}
         </aside>
+        ) : null}
       </section>
     </div>
   );

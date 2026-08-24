@@ -9,12 +9,11 @@
 
 ## Current repository
 
-This repository currently implements a small external-intake vertical slice:
+This repository implements the Kuartz CRM around a Client-first intake model:
 
-- `/` is an internal demo page for generating intake links and viewing submissions.
 - `/i/[token]` and `/intake/[token]` expose the client intake form.
 - `lib/magic-links.ts` stores one-use, seven-day tokens in Upstash Redis when configured and falls back to an in-memory development store.
-- Submitted intake records are Enquiries in product language, even where legacy code calls them submissions.
+- Submitted intake records create Client contacts. A Client may have zero Orders until Kuartz agrees price and adds an Order.
 
 Preserve working intake behavior while migrating toward the full CRM. Prefer small vertical slices over a broad rewrite.
 
@@ -48,7 +47,7 @@ Add test and database scripts when those tools are introduced. Never hand-edit g
 - Core records must carry `organization_id`, even though Phase 1 presents a single-tenant UI.
 - Store money in integer minor units. Never use floating-point arithmetic for balances.
 - Store timestamps in UTC and format them for the user’s locale at the boundary.
-- Use transactions for multi-record invariants such as Enquiry conversion and payment updates.
+- Use transactions for multi-record invariants such as Order creation and payment updates.
 - Uploaded objects are private and accessed through short-lived signed URLs. Compress or resize images before upload.
 - Generated invoice and vendor-brief PDFs are ephemeral in Phase 1; store export metadata, not the PDFs or snapshots.
 
@@ -57,13 +56,12 @@ Add test and database scripts when those tools are introduced. Never hand-edit g
 Use these canonical names in schema, code, and UI:
 
 ```text
-Enquiry -> conversion -> Client + Active Order
 Client -> Orders -> Looks -> Items -> Vendor Assignment
 Order -> Accessory Sourcing -> Accessory Items
 ```
 
-- An Enquiry is lightweight. It must not own style files, measurements, vendor assignments, payments, production, accessories, or fittings.
-- Conversion requires a final agreed price, primary owner, and at least one Look. Create the Client and Active Order atomically.
+- A Client is anyone captured in the system, whether they already have an Order or are still only a contact.
+- Creating an Order requires a final agreed price, primary owner, and at least one Look.
 - Never auto-merge people. Phone/email matches are strong duplicate warnings; similar-name matches are weak warnings.
 - A Look belongs to one Order. An Item belongs to one Look. Vendor assignment is item-level, with one vendor per item in Phase 1.
 - Style Direction Files apply to the whole Order or one Look. Revisions belong to a stable file record.
@@ -123,7 +121,7 @@ Keep business rules in pure functions or focused services so they can be tested 
 - measurement requirement checks and vendor-brief blockers
 - approval comment validation
 - notification due-date windows
-- atomic Enquiry conversion
+- Order creation and Client/Order linking
 
 Every bug fix should include a regression test when the behavior can be isolated reasonably.
 
@@ -136,6 +134,6 @@ Do not add these in Phase 1 unless the spec is updated:
 - multiple invoices per Order
 - formal lead grading, style-complete status, challenge log, vendor capacity, or manual production priority
 - item-assignment uploads, vendor availability notes, Kanban, SMS, or offline sync
-- collaborators or internal priority on internal Enquiries
+- formal lead grading or a separate lead pipeline
 
 Before building Fitting, Vendor Rating, or unresolved Accessory behavior, ask for the missing product decisions or work only within the explicitly known requirements.

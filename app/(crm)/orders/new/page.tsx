@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { createActiveOrderAction } from "@/app/actions/orders";
-import { ClientPicker } from "@/components/enquiries/client-picker";
+import { ClientPicker } from "@/components/clients/client-picker";
+import { OrderDiscountFields } from "@/components/orders/order-discount-fields";
 import { OrderLooksFields } from "@/components/orders/order-looks-fields";
 import { Breadcrumbs } from "@/components/ui/breadcrumbs";
 import { Button } from "@/components/ui/button";
@@ -29,7 +30,7 @@ export default async function NewOrderPage({
         <p className="eyebrow">Confirmed work</p>
         <h1 className="page-title">Add Order</h1>
         <p className="page-description">
-          Create an Active Order for an existing Client once price and scope are agreed.
+          Create the Order now, then continue setup from the Order workspace.
         </p>
       </header>
 
@@ -41,7 +42,7 @@ export default async function NewOrderPage({
         <section>
           <h2 className="section-title">Client</h2>
           <p className="mt-1 text-sm leading-6 text-kuartz-secondary">
-            Search by Client name or phone, then select the correct Client before continuing.
+            Search by Client name or phone, then select the correct Client.
           </p>
           <div className="mt-4">
             <ClientPicker
@@ -52,9 +53,12 @@ export default async function NewOrderPage({
         </section>
 
         <section>
-          <h2 className="section-title">Active Order</h2>
+          <h2 className="section-title">Order basics</h2>
           <div className="mt-4 space-y-4">
-            <label className="form-group"><span>Order title</span><Input name="title" required /></label>
+            <label className="form-group">
+              <span>Order title</span>
+              <Input name="title" required placeholder="Clinton Wedding" />
+            </label>
             <div className="grid gap-4 sm:grid-cols-2">
               <label className="form-group">
                 <span>Event type</span>
@@ -63,7 +67,10 @@ export default async function NewOrderPage({
                   {EVENT_TYPES.map((value) => <option key={value}>{value}</option>)}
                 </NativeSelect>
               </label>
-              <label className="form-group"><span>Final agreed price (₦)</span><MoneyInput name="finalAgreedPrice" required /></label>
+              <label className="form-group">
+                <span>Final agreed price (NGN)</span>
+                <MoneyInput name="finalAgreedPrice" required />
+              </label>
             </div>
             <label className="form-group">
               <span>Primary owner</span>
@@ -71,11 +78,7 @@ export default async function NewOrderPage({
                 {staff.map((member) => <option key={member.userId} value={member.userId}>{member.fullName}</option>)}
               </NativeSelect>
             </label>
-            <label className="checkbox-field"><input type="checkbox" name="ffDiscount" className="h-5 w-5" />Friends &amp; Family discount</label>
-            <label className="form-group">
-              <span>Amount discounted (₦) <span className="font-normal text-kuartz-secondary">(optional)</span></span>
-              <MoneyInput name="ffDiscountAmount" />
-            </label>
+            <OrderDiscountFields />
           </div>
         </section>
 
@@ -83,7 +86,7 @@ export default async function NewOrderPage({
 
         <div className="flex flex-wrap items-center justify-between gap-3">
           <Link href="/orders" className="inline-flex min-h-11 items-center text-sm font-semibold text-kuartz-secondary hover:text-kuartz-ink">Cancel</Link>
-          <Button type="submit" pendingLabel="Creating Order…">Create Order</Button>
+          <Button type="submit" pendingLabel="Creating Order...">Create Order</Button>
         </div>
       </form>
     </div>

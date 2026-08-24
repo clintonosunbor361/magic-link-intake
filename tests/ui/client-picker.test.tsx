@@ -2,7 +2,7 @@
 
 import { render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
-import { ClientPicker } from "@/components/enquiries/client-picker";
+import { ClientPicker } from "@/components/clients/client-picker";
 
 describe("ClientPicker", () => {
   it("supports the Client field required by direct Order creation", () => {

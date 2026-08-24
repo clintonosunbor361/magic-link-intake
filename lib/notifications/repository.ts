@@ -96,9 +96,7 @@ export async function listOrganizationsForCron() {
 /**
  * Every open deadline in one organization, flattened into the shape the planner needs.
  *
- * Each source resolves a recipient — the person who can act on it. Enquiry tasks carry their own
- * assignee; production, accessories and fittings all roll up to the Order's primary owner, because
- * that is who owns the job the deadline belongs to.
+ * Each source resolves a recipient. Client tasks carry their own assignee; production, accessories and fittings all roll up to the Order's primary owner.
  */
 export async function collectDeadlineSources(
   organizationId: string,
@@ -342,3 +340,4 @@ export async function markAllNotificationsRead(organizationId: string): Promise<
     .set({ readAt: new Date() })
     .where(and(eq(notifications.organizationId, organizationId), isNull(notifications.readAt)));
 }
+

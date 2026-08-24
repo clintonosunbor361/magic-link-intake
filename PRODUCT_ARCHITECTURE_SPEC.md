@@ -1,20 +1,20 @@
 # Kuartz Fashion CRM - Product and Architecture Spec
 
-Last updated: July 5, 2026
+Last updated: August 22, 2026
 
 ## 1. Product Summary
 
 Kuartz Fashion CRM is an internal operations app for managing fashion styling work after a potential client enters the system. Kuartz sits between clients and vendors; vendors produce the items, while Kuartz manages styling, coordination, approvals, payments, deadlines, and delivery.
 
-Phase 1 focuses on a lightweight enquiry process and a structured active-order workflow.
+Phase 1 focuses on a lightweight client/contact directory and a structured active-order workflow.
 
 ## 2. Core Journey
 
-1. A person enters the system through external or internal intake.
-2. They become an `Enquiry`.
+1. A person enters the system through external intake link or internal staff entry.
+2. They become a `Client` contact immediately, even if they do not yet have an order.
 3. Kuartz follows up outside the app through WhatsApp, calls, or in-person conversation.
-4. Enquiry follow-up notes and to-dos can be tracked lightly in the app.
-5. Once price is agreed, Kuartz converts the Enquiry into a `Client` plus an `Active Order`.
+4. Client to-dos/reminders can be tracked lightly in the app.
+5. Once price is agreed, Kuartz creates an `Active Order` under that Client.
 6. The full workflow starts from the Active Order: style direction, measurements, looks/items, vendor assignment, production, accessories, fitting, payments, and vendor rating.
 
 ## 3. Roles and Users
@@ -26,13 +26,20 @@ There are two roles:
 
 The app may have more than two users. Users are assigned one of the two roles.
 
-## 4. Enquiries and Intake
+## 4. Clients and Intake
 
-### Enquiry Concept
+### Client Contact Concept
 
-An `Enquiry` is a lightweight record for someone who entered the system but has not yet become a paying/confirmed client. It is mainly for capturing customer information, not for grading or qualifying leads.
+A `Client` is anyone captured in the system, whether they already have confirmed work or are still only a contact. This keeps the workflow lightweight: Kuartz does not need to manage a separate enquiry pipeline before adding work.
 
-Enquiries do not have:
+Clients can be filtered by order state:
+
+- All clients
+- Clients with orders
+- Clients without orders
+- Archived clients
+
+Clients without orders should stay lightweight. They do not need:
 
 - Style direction files
 - Moodboards/sketches
@@ -43,9 +50,11 @@ Enquiries do not have:
 - Accessories
 - Fittings
 
-### External Intake
+### External Intake Links
 
-External form creates an Enquiry.
+Kuartz can generate a copyable intake link and share it with a potential client, including through WhatsApp. The submitted external form creates a Client contact.
+
+Generated intake links expire and should not require a client account.
 
 Fields:
 
@@ -59,9 +68,9 @@ Fields:
 - Budget range
 - Brief / what they need help with
 
-### Internal Intake
+### Internal Client Entry
 
-Internal intake also creates an Enquiry.
+Internal staff entry also creates a Client contact.
 
 Fields:
 
@@ -80,16 +89,13 @@ Fields:
 
 Internal intake should not include collaborators or internal priority in Phase 1.
 
-### Enquiry Follow-Up
+Lead source is selected from a configurable dropdown. Super Admin manages the available lead source options in Settings; Admin Assistant selects from the active list.
 
-Enquiries can have lightweight follow-up notes:
+### Client To-Dos
 
-- Date
-- Note
-- Created by
-- Optional next follow-up date
+Use to-dos for lightweight follow-up. Separate follow-up notes are removed in Phase 1 to reduce friction.
 
-Enquiries can also have simple to-dos/reminders:
+To-do fields:
 
 - Task title
 - Due date
@@ -99,14 +105,19 @@ Enquiries can also have simple to-dos/reminders:
 
 ## 5. Client and Order Model
 
-### Conversion
+### Order Creation
 
-An Enquiry converts into:
+An Active Order is created under an existing Client once price and scope are agreed.
 
-- `Client`
-- `Active Order`
+Final agreed price is required before creating an Active Order. A Client can exist without an Order.
 
-Final agreed price is required before creating an Active Order.
+The preferred entry path is:
+
+```text
+Client profile -> New Order -> core order details + look names -> Order workspace
+```
+
+The standalone `Orders -> Add Order` flow is still available, but it should be secondary. It requires choosing the Client first.
 
 ### Active Order Required Fields
 
@@ -116,6 +127,35 @@ Final agreed price is required before creating an Active Order.
 - Final agreed price
 - Primary owner
 - At least one Look
+
+The order creation form supports adding multiple Looks before creating the Order.
+
+Items are not required during order creation. They should be added later inside the Order workspace to keep first entry lightweight.
+
+### Order Workspace UX
+
+After creating an Order, Kuartz lands in a tabbed Order workspace.
+
+Recommended tabs:
+
+- Overview
+- Looks & Items
+- Style Direction
+- Measurements
+- Vendors
+- Production
+- Accessories
+- Fittings
+- Payments
+
+The `Overview` tab should be the landing tab. It should summarize the order and show practical next actions, such as:
+
+- Add items
+- Add measurements
+- Upload style direction files
+- Assign vendors
+
+The Order workspace should avoid forcing Kuartz to complete the entire setup at once. The goal is to create the order quickly, then fill operational details as the work becomes clearer.
 
 ### Structure
 
@@ -143,7 +183,7 @@ Order: Tayo Wedding
 
 - Look name
 - Optional look date
-- Notes
+- Notes (optional)
 - Items
 
 ### Item Fields
@@ -152,6 +192,8 @@ Order: Tayo Wedding
 - Quantity
 - Assigned vendor later
 - Production status later
+
+Items are created after the Order exists, usually from the `Looks & Items` tab. Each Look can have one or more Items.
 
 ## 6. Duplicate Handling and Search
 
@@ -170,9 +212,30 @@ Search and client picker rows should show:
 
 Phone number should be visible in client pickers to distinguish same-name clients.
 
+Client search/filter screens should make it easy to distinguish same-name clients by showing phone number, email, and latest/active order context.
+
 ## 7. Stage 2 - Style Direction
 
-Style Direction happens inside an Active Order, not inside Enquiry.
+Style Direction happens inside an Active Order, not on a Client contact without an Order.
+
+In the Order workspace, Style Direction should have its own tab.
+
+The Style Direction tab includes:
+
+- Consultation notes
+- Style direction files
+- File revisions
+- Approval status
+- Magic approval links
+
+The Style Direction tab should not include:
+
+- Measurements
+- Items
+- Vendor assignment
+- Production status
+- Payments
+- Accessories
 
 ### Consultation Notes
 
@@ -277,6 +340,15 @@ Kuartz can fill what they have. Fields are not all required globally.
 
 Kuartz can add more measurement fields if needed.
 
+Measurements belong to the Client profile, not to an individual Order.
+
+Kuartz can add or update measurements from:
+
+- Client profile
+- Order workspace `Measurements` tab
+
+When measurements are edited from an Order workspace, the values still save back to the Client measurement profile. The Order workspace is only another access point, so Kuartz does not need to leave an active Order to update measurements.
+
 Measurement profile supports history:
 
 - Changed field
@@ -322,6 +394,8 @@ Measurement confirmation applies to the full measurement profile, not per look/i
 ### Order Detail Confirmation
 
 Kuartz can send full order details for client confirmation via magic link.
+
+Order detail confirmation should be accessible from the Order workspace, likely from the `Overview` tab or a client confirmation action area.
 
 Client sees:
 
@@ -681,7 +755,7 @@ Reminder triggers:
 
 Applies to:
 
-- Enquiry follow-up to-dos
+- Client to-dos
 - Vendor production deadlines
 - Accessory reminders based on linked look due dates
 - Fitting dates
@@ -697,7 +771,7 @@ Dashboard should include:
 - Outstanding client balances
 - Vendor payment summaries
 - Event/look countdowns
-- Enquiry follow-ups due/overdue
+- Open client to-dos, sorted by closest due date first
 
 ## 14. Tech Stack
 
@@ -732,6 +806,13 @@ Generated invoice PDFs are not stored.
 ### PWA
 
 The app will be desktop/mobile responsive and installable as a PWA.
+
+Responsive UX rules:
+
+- Primary list pages should use card/list layouts on small and medium screens.
+- Wide tables should only appear when there is enough viewport width.
+- The app sidebar must not cover main content on tablet or desktop widths.
+- Forms should stack cleanly on mobile and avoid horizontal page overflow.
 
 Internet connection is required in Phase 1. No offline sync/editing.
 
@@ -825,37 +906,41 @@ Recommended implementation order:
 
 1. Domain model and database schema
 2. Auth and roles
-3. Enquiries and conversion to Client/Order
-4. Order / Look / Item structure
-5. Style Direction files and approvals
-6. Measurements and requirement checks
-7. Vendor assignment and production tracking
-8. Payments and invoices
-9. Notifications and dashboard
-10. Polish, PWA, PDFs
+3. Clients, intake links, and client to-dos
+4. Lightweight order creation with multiple Looks
+5. Tabbed Order workspace shell
+6. Looks & Items tab
+7. Client measurement profile plus Order workspace measurement access
+8. Style Direction tab with files, revisions, and approvals
+9. Vendor assignment and production tracking
+10. Payments and invoices
+11. Accessories and fittings
+12. Notifications and dashboard
+13. Polish, PWA, PDFs
 
 ## 17. Open Decisions
 
 These decisions are intentionally paused or still need grilling:
 
-1. Hosting
+1. Delete strategy
+   - Soft delete vs hard delete
+   - Auto-purge after 30 days or not
+   - Which records are recoverable
+
+2. Real-time / multi-user freshness
+   - No full real-time locked yet
+   - Need to decide between manual refresh, auto-refresh, conflict warnings, or real-time subscriptions
+
+3. Multiple active orders per client
+   - Whether a client can have multiple active orders simultaneously
+   - Whether app should warn or block when creating another active order
+
+4. Hosting
    - Vercel Free is recommended, but Cloudflare Pages remains a possible alternative.
 
-2. Stage 5 Accessory Sourcing details
+5. Stage 5 Accessory Sourcing details
    - Whole-order accessory behavior onward still needs grilling.
 
-3. Stage 6 Fitting Session details
+6. Stage 6 Fitting Session details
 
-4. Stage 7 Vendor Rating details
-
-## 18. Approved Phase 1 Foundation Decisions
-
-Approved August 4, 2026:
-
-1. A person may have multiple open Enquiries and a Client may have multiple simultaneous Active Orders. Phone/email and similar-name matches warn and require acknowledgement, but never auto-merge or block legitimate creation. Conversion may associate an Enquiry with an existing Client.
-2. Core operational records are archived indefinitely and can be restored. Financial records, audit entries, converted Enquiries, Clients, Orders, and their private-file history are never hard-deleted in Phase 1. A Super Admin may permanently delete only an unconverted Enquiry after a 30-day recovery period.
-   - Admin Assistants and Super Admins may archive and restore Enquiries and their lightweight follow-up records. Client, Order, production, and other major operational archives/restores are reserved for Super Admin.
-   - Invoices, payments, and audit entries are immutable evidence: they are corrected through domain actions such as voiding or reversal, not archive/delete.
-   - Archiving a parent hides its dependent records without rewriting each child’s archive history; restoring the parent restores their visibility.
-   - Private attachments remain recoverable with their parent. Attachments belonging only to an eligible unconverted Enquiry are purged when that Enquiry is permanently deleted after the recovery period; the audit tombstone remains.
-3. Operational lists use real-time subscriptions or polling for freshness. Writes use optimistic version checks; a conflict preserves submitted input and offers reload/reapply. Offline editing remains out of scope.
+7. Stage 7 Vendor Rating details

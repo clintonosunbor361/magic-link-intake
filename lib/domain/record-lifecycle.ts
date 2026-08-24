@@ -1,9 +1,6 @@
 import type { StaffRole } from "@/lib/domain/access-control";
 
 export const LIFECYCLE_ENTITIES = [
-  "enquiry",
-  "enquiry_note",
-  "enquiry_task",
   "client",
   "client_task",
   "order",
@@ -49,16 +46,14 @@ export function getRecordLifecyclePolicy(entity: LifecycleEntity): RecordLifecyc
   return {
     archive: true,
     restore: true,
-    permanentDelete: entity === "enquiry" || entity === "private_file",
+    permanentDelete: entity === "private_file",
     purgeAfterDays: null,
   };
 }
 
 export function mayArchive(entity: LifecycleEntity, role: StaffRole): boolean {
   if (!getRecordLifecyclePolicy(entity).archive) return false;
-  return entity === "enquiry" || entity === "enquiry_note" || entity === "enquiry_task" || entity === "client_task"
-    ? true
-    : role === "super_admin";
+  return entity === "client_task" ? true : role === "super_admin";
 }
 
 export function mayRestore(entity: LifecycleEntity, role: StaffRole): boolean {
@@ -70,11 +65,10 @@ export function mayPermanentlyDelete(input: {
   role: StaffRole;
   archivedDays: number;
   converted?: boolean;
-  belongsToPurgeableEnquiry?: boolean;
+  belongsToPurgeablePrivateFileOwner?: boolean;
 }): boolean {
   if (input.role !== "super_admin" || input.archivedDays < 30) return false;
-  if (input.entity === "enquiry") return input.converted === false;
-  return input.entity === "private_file" && input.belongsToPurgeableEnquiry === true;
+  return input.entity === "private_file" && input.belongsToPurgeablePrivateFileOwner === true;
 }
 
 export const ARCHIVE_CASCADE = {

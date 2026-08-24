@@ -1,7 +1,7 @@
 import { resolveVersionedTransition } from "@/lib/domain/concurrency";
 import { mayArchive, mayRestore } from "@/lib/domain/record-lifecycle";
 import type { StaffRole } from "@/lib/domain/access-control";
-import { findDuplicateMatches, normalizeEmail, normalizeName, normalizePhone, type DuplicateCandidate, type DuplicateMatch } from "@/lib/enquiries/duplicate-match";
+import { findDuplicateMatches, normalizeEmail, normalizeName, normalizePhone, type DuplicateCandidate, type DuplicateMatch } from "@/lib/clients/duplicate-match";
 
 export type ClientIdentityFields = {
   fullName: string;

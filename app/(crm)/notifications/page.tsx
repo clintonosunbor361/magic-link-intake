@@ -12,7 +12,6 @@ import { computeUrgencyBand, urgencyToneClasses } from "@/lib/production/urgency
 const dateTimeFormatter = new Intl.DateTimeFormat("en-NG", { dateStyle: "medium", timeStyle: "short" });
 
 const SOURCE_LABELS: Record<string, string> = {
-  enquiry_task: "To-do",
   client_task: "To-do",
   vendor_assignment: "Production",
   accessory_item: "Accessory",

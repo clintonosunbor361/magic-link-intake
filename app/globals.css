@@ -235,6 +235,13 @@ summary {
     padding-right: 3rem;
   }
 
+  select.field option,
+  .native-select option {
+    background: #ffffff;
+    color: #15163f;
+    font-weight: 600;
+  }
+
   .label {
     color: #15163f;
     display: inline-block;

@@ -50,7 +50,7 @@ export function ClientPicker({
             <p className="font-semibold text-[#4f6528]">{selected.fullName}</p>
             <p className="text-[#5a7030]">
               {selected.primaryPhone}
-              {selected.email ? ` · ${selected.email}` : ""}
+              {selected.email ? ` - ${selected.email}` : ""}
             </p>
             <p className="text-[#5a7030]">
               {selected.latestOrderTitle ? `Latest order: ${selected.latestOrderTitle}` : "No prior Orders"}
@@ -70,7 +70,7 @@ export function ClientPicker({
               placeholder="Search existing Clients by name or phone"
             />
             <Button type="button" variant="outline" onClick={search} disabled={searching} className="shrink-0">
-              {searching ? "…" : "Search"}
+              {searching ? "..." : "Search"}
             </Button>
           </div>
           {results && results.length ? (
@@ -85,15 +85,17 @@ export function ClientPicker({
                     <span className="font-medium text-kuartz-ink">{client.fullName}</span>
                     <span className="text-kuartz-secondary">
                       {client.primaryPhone}
-                      {client.email ? ` · ${client.email}` : ""}
-                      {client.latestOrderTitle ? ` · Latest: ${client.latestOrderTitle}` : " · No prior Orders"}
+                      {client.email ? ` - ${client.email}` : ""}
+                      {client.latestOrderTitle ? ` - Latest: ${client.latestOrderTitle}` : " - No prior Orders"}
                     </span>
                   </button>
                 </li>
               ))}
             </ul>
           ) : results ? (
-            <p className="text-sm text-kuartz-secondary" role="status">{noResultsMessage}</p>
+            <p className="text-sm text-kuartz-secondary" role="status">
+              {noResultsMessage}
+            </p>
           ) : null}
         </>
       )}

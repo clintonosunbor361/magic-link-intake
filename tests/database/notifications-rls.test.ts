@@ -39,6 +39,9 @@ describe("notification structural invariants", () => {
     expect(clientTasksMigration).toContain(
       `ALTER TYPE "public"."notification_source_type" ADD VALUE IF NOT EXISTS 'client_task'`,
     );
+    expect(readFileSync(resolve("drizzle/0031_remove_enquiries.sql"), "utf8")).toContain(
+      `ALTER TYPE "public"."notification_source_type" RENAME TO "notification_source_type_old"`,
+    );
     expect(migration).toContain(
       `CREATE TYPE "public"."notification_trigger" AS ENUM('days_7', 'days_3', 'days_1', 'overdue')`,
     );

@@ -21,7 +21,7 @@ describe("Phase 1 record lifecycle", () => {
   });
 
   it("defines a lifecycle for every Phase 1 record family", () => {
-    expect(LIFECYCLE_ENTITIES).toHaveLength(23);
+    expect(LIFECYCLE_ENTITIES).toHaveLength(21);
     LIFECYCLE_ENTITIES.forEach((entity) => {
       expect(getRecordLifecyclePolicy(entity)).toEqual(
         expect.objectContaining({ archive: expect.any(Boolean), restore: expect.any(Boolean) }),
@@ -29,9 +29,9 @@ describe("Phase 1 record lifecycle", () => {
     });
   });
 
-  it("lets assistants archive Enquiry work while reserving major archives for Super Admin", () => {
-    expect(mayArchive("enquiry", "admin_assistant")).toBe(true);
-    expect(mayRestore("enquiry", "admin_assistant")).toBe(true);
+  it("lets assistants archive client to-dos while reserving major archives for Super Admin", () => {
+    expect(mayArchive("client_task", "admin_assistant")).toBe(true);
+    expect(mayRestore("client_task", "admin_assistant")).toBe(true);
     expect(mayArchive("client", "admin_assistant")).toBe(false);
     expect(mayArchive("client", "super_admin")).toBe(true);
     expect(mayArchive("client_payment", "super_admin")).toBe(false);
@@ -41,42 +41,13 @@ describe("Phase 1 record lifecycle", () => {
     expect(ARCHIVE_CASCADE.behavior).toBe("visibility_only");
   });
 
-  it("allows only a Super Admin to permanently delete an unconverted Enquiry after 30 days", () => {
-    expect(
-      mayPermanentlyDelete({
-        entity: "enquiry",
-        role: "super_admin",
-        archivedDays: 30,
-        converted: false,
-      }),
-    ).toBe(true);
-
-    expect(
-      mayPermanentlyDelete({
-        entity: "enquiry",
-        role: "admin_assistant",
-        archivedDays: 90,
-        converted: false,
-      }),
-    ).toBe(false);
-
-    expect(
-      mayPermanentlyDelete({
-        entity: "enquiry",
-        role: "super_admin",
-        archivedDays: 90,
-        converted: true,
-      }),
-    ).toBe(false);
-  });
-
-  it("purges private attachments only with their eligible unconverted Enquiry", () => {
+  it("purges private attachments only when explicitly eligible", () => {
     expect(
       mayPermanentlyDelete({
         entity: "private_file",
         role: "super_admin",
         archivedDays: 30,
-        belongsToPurgeableEnquiry: true,
+        belongsToPurgeablePrivateFileOwner: true,
       }),
     ).toBe(true);
     expect(
@@ -84,7 +55,7 @@ describe("Phase 1 record lifecycle", () => {
         entity: "private_file",
         role: "super_admin",
         archivedDays: 30,
-        belongsToPurgeableEnquiry: false,
+        belongsToPurgeablePrivateFileOwner: false,
       }),
     ).toBe(false);
   });

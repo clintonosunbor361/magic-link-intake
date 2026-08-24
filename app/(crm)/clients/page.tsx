@@ -4,6 +4,7 @@ import { listClients } from "@/lib/clients/repository";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
 import { LinkGenerator } from "@/components/link-generator";
+import { NativeSelect } from "@/components/ui/native-select";
 
 export const dynamic = "force-dynamic";
 
@@ -53,15 +54,15 @@ export default async function ClientsPage({
         </label>
         <label className="form-group">
           <span>Filter</span>
-          <select
+          <NativeSelect
             name="orderState"
             defaultValue={params.orderState ?? "all"}
-            className="min-h-[3.1rem] w-full rounded-[0.8rem] border border-kuartz-control bg-white/70 px-3.5 py-3 text-sm text-kuartz-ink outline-none focus:border-[#88925f] focus:bg-white focus:ring-4 focus:ring-kuartz-lime/20"
+            className="min-h-[3.1rem] rounded-[0.8rem]"
           >
             <option value="all">All clients</option>
             <option value="without_orders">Without orders</option>
             <option value="with_orders">With orders</option>
-          </select>
+          </NativeSelect>
         </label>
         <label className="flex min-h-[3.1rem] items-center gap-2 rounded-[0.8rem] border border-kuartz-line bg-white/60 px-3.5 text-sm font-semibold text-kuartz-secondary xl:self-end">
           <input type="checkbox" name="includeArchived" value="1" defaultChecked={params.includeArchived === "1"} />

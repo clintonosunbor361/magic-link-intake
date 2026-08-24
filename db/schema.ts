@@ -16,8 +16,7 @@ import {
 } from "drizzle-orm/pg-core";
 
 export const staffRole = pgEnum("staff_role", ["super_admin", "admin_assistant"]);
-export const enquiryChannel = pgEnum("enquiry_channel", ["external_form", "internal_staff"]);
-export const enquiryTaskStatus = pgEnum("enquiry_task_status", ["open", "done"]);
+export const clientTaskStatus = pgEnum("enquiry_task_status", ["open", "done"]);
 // Fixed on purpose (unlike consultation_note_sources/item_types): nothing in the spec suggests
 // Kuartz ever adds categories beyond this list, so it isn't given a configurable-list admin screen.
 export const styleDirectionFileCategory = pgEnum("style_direction_file_category", [
@@ -63,7 +62,6 @@ export const fittingSessionStatus = pgEnum("fitting_session_status", [
 // audit_entries.entityId and client_confirmations.subjectId) and so is deliberately not a foreign
 // key — the four parents live in four different tables.
 export const notificationSourceType = pgEnum("notification_source_type", [
-  "enquiry_task",
   "client_task",
   "vendor_assignment",
   "accessory_item",
@@ -242,44 +240,23 @@ export const clients = pgTable(
   ],
 ).enableRLS();
 
-export const enquiries = pgTable(
-  "enquiries",
+export const leadSources = pgTable(
+  "lead_sources",
   {
     id: uuid("id").defaultRandom().primaryKey(),
     organizationId: uuid("organization_id")
       .references(() => organizations.id)
       .notNull(),
-    channel: enquiryChannel("channel").notNull(),
-    fullName: text("full_name").notNull(),
-    nameNormalized: text("name_normalized").notNull(),
-    primaryPhone: text("primary_phone").notNull(),
-    primaryPhoneNormalized: text("primary_phone_normalized").notNull(),
-    whatsappSameAsPrimary: boolean("whatsapp_same_as_primary").default(true).notNull(),
-    whatsappPhone: text("whatsapp_phone"),
-    email: text("email"),
-    emailNormalized: text("email_normalized"),
-    preferredContactChannel: text("preferred_contact_channel").notNull(),
-    eventType: text("event_type").notNull(),
-    budgetRange: text("budget_range"),
-    brief: text("brief").default("").notNull(),
-    leadSource: text("lead_source"),
-    ownerStaffId: uuid("owner_staff_id").references(() => staffProfiles.id),
-    internalNotes: text("internal_notes"),
-    linkedClientId: uuid("linked_client_id").references(() => clients.id),
-    convertedAt: timestamp("converted_at", { withTimezone: true }),
-    convertedClientId: uuid("converted_client_id").references(() => clients.id),
-    convertedOrderId: uuid("converted_order_id").references(() => orders.id),
+    name: text("name").notNull(),
+    sortOrder: integer("sort_order").default(0).notNull(),
     version: integer("version").default(1).notNull(),
     archivedAt: timestamp("archived_at", { withTimezone: true }),
     ...timestamps,
   },
   (table) => [
-    index("enquiries_org_created_idx").on(table.organizationId, table.createdAt),
-    index("enquiries_org_phone_idx").on(table.organizationId, table.primaryPhoneNormalized),
-    index("enquiries_org_email_idx").on(table.organizationId, table.emailNormalized),
-    index("enquiries_org_name_idx").on(table.organizationId, table.nameNormalized),
-    index("enquiries_linked_client_idx").on(table.linkedClientId),
-    pgPolicy("staff can view organization enquiries", {
+    index("lead_sources_org_sort_idx").on(table.organizationId, table.sortOrder),
+    uniqueIndex("lead_sources_org_name_uidx").on(table.organizationId, table.name),
+    pgPolicy("staff can view organization lead sources", {
       for: "select",
       to: "authenticated",
       using: sql`exists (
@@ -933,80 +910,6 @@ export const clientConfirmations = pgTable(
   ],
 ).enableRLS();
 
-export const enquiryNotes = pgTable(
-  "enquiry_notes",
-  {
-    id: uuid("id").defaultRandom().primaryKey(),
-    organizationId: uuid("organization_id")
-      .references(() => organizations.id)
-      .notNull(),
-    enquiryId: uuid("enquiry_id")
-      .references(() => enquiries.id)
-      .notNull(),
-    note: text("note").notNull(),
-    occurredOn: date("occurred_on").notNull(),
-    nextFollowUpDate: date("next_follow_up_date"),
-    createdByStaffId: uuid("created_by_staff_id")
-      .references(() => staffProfiles.id)
-      .notNull(),
-    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
-  },
-  (table) => [
-    index("enquiry_notes_enquiry_created_idx").on(table.enquiryId, table.createdAt),
-    pgPolicy("staff can view organization enquiry notes", {
-      for: "select",
-      to: "authenticated",
-      using: sql`exists (
-        select 1 from organization_memberships membership
-        where membership.organization_id = ${table.organizationId}
-          and membership.user_id = auth.uid()
-          and membership.archived_at is null
-      )`,
-    }),
-  ],
-).enableRLS();
-
-export const enquiryTasks = pgTable(
-  "enquiry_tasks",
-  {
-    id: uuid("id").defaultRandom().primaryKey(),
-    organizationId: uuid("organization_id")
-      .references(() => organizations.id)
-      .notNull(),
-    enquiryId: uuid("enquiry_id")
-      .references(() => enquiries.id)
-      .notNull(),
-    title: text("title").notNull(),
-    dueDate: date("due_date").notNull(),
-    assignedToStaffId: uuid("assigned_to_staff_id")
-      .references(() => staffProfiles.id)
-      .notNull(),
-    status: enquiryTaskStatus("status").default("open").notNull(),
-    note: text("note").default(""),
-    createdByStaffId: uuid("created_by_staff_id")
-      .references(() => staffProfiles.id)
-      .notNull(),
-    version: integer("version").default(1).notNull(),
-    archivedAt: timestamp("archived_at", { withTimezone: true }),
-    ...timestamps,
-  },
-  (table) => [
-    index("enquiry_tasks_enquiry_idx").on(table.enquiryId),
-    index("enquiry_tasks_org_due_idx").on(table.organizationId, table.dueDate),
-    index("enquiry_tasks_assigned_idx").on(table.assignedToStaffId, table.status),
-    pgPolicy("staff can view organization enquiry tasks", {
-      for: "select",
-      to: "authenticated",
-      using: sql`exists (
-        select 1 from organization_memberships membership
-        where membership.organization_id = ${table.organizationId}
-          and membership.user_id = auth.uid()
-          and membership.archived_at is null
-      )`,
-    }),
-  ],
-).enableRLS();
-
 export const clientTasks = pgTable(
   "client_tasks",
   {
@@ -1026,7 +929,7 @@ export const clientTasks = pgTable(
     createdByStaffId: uuid("created_by_staff_id")
       .references(() => staffProfiles.id)
       .notNull(),
-    status: enquiryTaskStatus("status").default("open").notNull(),
+    status: clientTaskStatus("status").default("open").notNull(),
     version: integer("version").default(1).notNull(),
     archivedAt: timestamp("archived_at", { withTimezone: true }),
     ...timestamps,
@@ -1061,7 +964,6 @@ export const magicLinkTokens = pgTable(
     tokenHash: text("token_hash").notNull(),
     expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
     consumedAt: timestamp("consumed_at", { withTimezone: true }),
-    enquiryId: uuid("enquiry_id").references(() => enquiries.id),
     clientId: uuid("client_id").references(() => clients.id),
     createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
   },
@@ -1853,7 +1755,7 @@ export const notifications = pgTable(
 export type OrganizationMembership = typeof organizationMemberships.$inferSelect;
 export type AuditEntry = typeof auditEntries.$inferSelect;
 export type Client = typeof clients.$inferSelect;
-export type Enquiry = typeof enquiries.$inferSelect;
+export type LeadSource = typeof leadSources.$inferSelect;
 export type Order = typeof orders.$inferSelect;
 export type Look = typeof looks.$inferSelect;
 export type ItemType = typeof itemTypes.$inferSelect;
@@ -1872,8 +1774,6 @@ export type MeasurementValueRevision = typeof measurementValueRevisions.$inferSe
 export type MeasurementProfileAttachment = typeof measurementProfileAttachments.$inferSelect;
 export type ItemTypeMeasurementRequirement = typeof itemTypeMeasurementRequirements.$inferSelect;
 export type ClientConfirmation = typeof clientConfirmations.$inferSelect;
-export type EnquiryNote = typeof enquiryNotes.$inferSelect;
-export type EnquiryTask = typeof enquiryTasks.$inferSelect;
 export type ClientTask = typeof clientTasks.$inferSelect;
 export type MagicLinkToken = typeof magicLinkTokens.$inferSelect;
 export type Vendor = typeof vendors.$inferSelect;

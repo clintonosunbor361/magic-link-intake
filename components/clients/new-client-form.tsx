@@ -6,12 +6,17 @@ import { AlertTriangle, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { NativeSelect } from "@/components/ui/native-select";
-import { DuplicateCheckFields, type DuplicateMatchView } from "@/components/enquiries/duplicate-check-fields";
+import { DuplicateCheckFields, type DuplicateMatchView } from "@/components/clients/duplicate-check-fields";
 import type { BUDGET_RANGES, CONTACT_CHANNELS, EVENT_TYPES } from "@/lib/intake-options";
 
 type StaffOption = {
   userId: string;
   fullName: string;
+};
+
+type LeadSourceOption = {
+  id: string;
+  name: string;
 };
 
 type DuplicateCheckResponse = {
@@ -21,12 +26,14 @@ type DuplicateCheckResponse = {
 export function NewClientForm({
   action,
   staff,
+  leadSources,
   contactChannels,
   eventTypes,
   budgetRanges,
 }: {
   action: (formData: FormData) => void | Promise<void>;
   staff: StaffOption[];
+  leadSources: LeadSourceOption[];
   contactChannels: typeof CONTACT_CHANNELS;
   eventTypes: typeof EVENT_TYPES;
   budgetRanges: typeof BUDGET_RANGES;
@@ -101,7 +108,10 @@ export function NewClientForm({
         <input type="hidden" name="acknowledgedDuplicates" value="" />
         <DuplicateCheckFields
           duplicateCheckEndpoint="/api/clients/duplicate-check"
-          onIdentityChange={() => setDuplicateStatus(null)}
+          onIdentityChange={() => {
+            setModalMatches([]);
+            setDuplicateStatus(null);
+          }}
           onDuplicateMatches={(matches) => {
             if (matches.length) {
               setModalMatches(matches);
@@ -114,7 +124,7 @@ export function NewClientForm({
         {duplicateStatus ? <p className="text-sm font-medium text-[#4f6528]">{duplicateStatus}</p> : null}
 
         <label className="checkbox-field">
-          <input type="checkbox" name="whatsappSameAsPrimary" defaultChecked className="h-5 w-5" />
+          <input type="checkbox" name="whatsappSameAsPrimary" className="h-5 w-5" />
           WhatsApp same as primary number
         </label>
         <label className="form-group">
@@ -157,7 +167,10 @@ export function NewClientForm({
         <div className="grid gap-5 sm:grid-cols-2">
           <label className="form-group">
             <span>Lead source <span className="font-normal text-kuartz-secondary">(optional)</span></span>
-            <Input name="leadSource" />
+            <NativeSelect name="leadSource" defaultValue="">
+              <option value="">Select lead source</option>
+              {leadSources.map((source) => <option key={source.id} value={source.name}>{source.name}</option>)}
+            </NativeSelect>
           </label>
           <label className="form-group">
             <span>Primary owner <span className="font-normal text-kuartz-secondary">(optional)</span></span>
@@ -207,7 +220,7 @@ export function NewClientForm({
 
             <div className="mt-5 space-y-2">
               {modalMatches.map((match) => (
-                <div key={`${match.candidate.kind}-${match.candidate.id}`} className="rounded-[0.8rem] border border-kuartz-line bg-white/80 p-3">
+                <div key={match.candidate.id} className="rounded-[0.8rem] border border-kuartz-line bg-white/80 p-3">
                   <p className="font-semibold text-kuartz-ink">{match.candidate.fullName}</p>
                   <p className="mt-1 text-sm text-kuartz-secondary">
                     {match.candidate.primaryPhone}

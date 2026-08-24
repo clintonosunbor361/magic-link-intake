@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 export type DuplicateMatchView = {
   candidate: {
     id: string;
-    kind: "enquiry" | "client";
+    kind: "client";
     fullName: string;
     primaryPhone: string;
     email: string | null;
@@ -18,13 +18,11 @@ export type DuplicateMatchView = {
 
 export function DuplicateCheckFields({
   initialValues,
-  linkedClient = false,
-  duplicateCheckEndpoint = "/api/enquiries/duplicate-check",
+  duplicateCheckEndpoint = "/api/clients/duplicate-check",
   onDuplicateMatches,
   onIdentityChange,
 }: {
   initialValues?: { fullName: string; primaryPhone: string; email: string };
-  linkedClient?: boolean;
   duplicateCheckEndpoint?: string;
   onDuplicateMatches?: (matches: DuplicateMatchView[]) => void;
   onIdentityChange?: () => void;
@@ -64,6 +62,7 @@ export function DuplicateCheckFields({
           onChange={(event) => {
             setFullName(event.target.value);
             setMatches(null);
+            setAcknowledged(false);
             onIdentityChange?.();
           }}
           required
@@ -76,16 +75,19 @@ export function DuplicateCheckFields({
             name="primaryPhone"
             inputMode="tel"
             value={primaryPhone}
-          onChange={(event) => {
-            setPrimaryPhone(event.target.value);
-            setMatches(null);
-            onIdentityChange?.();
-          }}
+            onChange={(event) => {
+              setPrimaryPhone(event.target.value);
+              setMatches(null);
+              setAcknowledged(false);
+              onIdentityChange?.();
+            }}
             required
           />
         </label>
         <label className="form-group">
-          <span>Email <span className="font-normal text-kuartz-secondary">(optional)</span></span>
+          <span>
+            Email <span className="font-normal text-kuartz-secondary">(optional)</span>
+          </span>
           <Input
             name="email"
             type="email"
@@ -93,34 +95,34 @@ export function DuplicateCheckFields({
             onChange={(event) => {
               setEmail(event.target.value);
               setMatches(null);
+              setAcknowledged(false);
               onIdentityChange?.();
             }}
           />
         </label>
       </div>
-      {linkedClient ? <input type="hidden" name="acknowledgedDuplicates" value="on" /> : <Button
+      <Button
         type="button"
         variant="outline"
         onClick={checkDuplicates}
         disabled={checking || !fullName.trim() || !primaryPhone.trim()}
       >
-        {checking ? "Checking…" : "Check for duplicates"}
-      </Button>}
-      {!linkedClient && !onDuplicateMatches && matches ? (
+        {checking ? "Checking..." : "Check for duplicates"}
+      </Button>
+      {!onDuplicateMatches && matches ? (
         matches.length ? (
           <div className="space-y-2 rounded-[0.8rem] border border-[#d9aaa7] bg-[#f7e5e3] p-4">
             <p className="text-sm font-semibold text-kuartz-danger">Possible existing contacts found:</p>
             <ul className="space-y-1 text-sm text-kuartz-danger">
               {matches.map((match) => (
-                <li key={`${match.candidate.kind}-${match.candidate.id}`}>
-                  {match.candidate.fullName} · {match.candidate.primaryPhone}
-                  {match.candidate.email ? ` · ${match.candidate.email}` : ""} —{" "}
+                <li key={match.candidate.id}>
+                  {match.candidate.fullName} - {match.candidate.primaryPhone}
+                  {match.candidate.email ? ` - ${match.candidate.email}` : ""} -{" "}
                   {match.strength === "strong"
                     ? match.reason === "phone"
                       ? "same phone number"
                       : "same email address"
-                    : "similar name"}{" "}
-                  ({match.candidate.kind === "client" ? "existing Client" : "existing Enquiry"})
+                    : "similar name"}
                 </li>
               ))}
             </ul>
@@ -131,7 +133,7 @@ export function DuplicateCheckFields({
                 checked={acknowledged}
                 onChange={(event) => setAcknowledged(event.target.checked)}
               />
-              I&apos;ve reviewed these and want to create this Enquiry anyway.
+              I&apos;ve reviewed these and want to create this Client anyway.
             </label>
           </div>
         ) : (

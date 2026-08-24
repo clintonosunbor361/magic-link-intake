@@ -3,7 +3,7 @@ import "server-only";
 import { and, desc, eq, gt, isNull } from "drizzle-orm";
 import { getDatabase } from "@/db";
 import { clients, magicLinkTokens } from "@/db/schema";
-import { normalizeEmail, normalizeName, normalizePhone } from "@/lib/enquiries/duplicate-match";
+import { normalizeEmail, normalizeName, normalizePhone } from "@/lib/clients/duplicate-match";
 import type { IntakeSubmissionInput } from "@/lib/intake-options";
 import { generateToken, hashToken } from "@/lib/tokens";
 

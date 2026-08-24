@@ -3,7 +3,7 @@ import "server-only";
 import { and, desc, eq, isNull, or, sql } from "drizzle-orm";
 import { getDatabase } from "@/db";
 import { clients, orders } from "@/db/schema";
-import { normalizeEmail, normalizeName, normalizePhone } from "@/lib/enquiries/duplicate-match";
+import { normalizeEmail, normalizeName, normalizePhone } from "@/lib/clients/duplicate-match";
 import type { ClientRepository } from "@/lib/clients/service";
 
 export function createClientRepository(): ClientRepository {
@@ -211,6 +211,33 @@ export async function listClientOptions(organizationId: string) {
     .from(clients)
     .where(and(eq(clients.organizationId, organizationId), isNull(clients.archivedAt)))
     .orderBy(clients.fullName);
+}
+
+export async function searchClients(organizationId: string, search: string) {
+  const db = getDatabase();
+  const term = `%${search.toLowerCase()}%`;
+  const searchCondition = or(
+    sql`lower(${clients.fullName}) like ${term}`,
+    sql`${clients.primaryPhoneNormalized} like ${term}`,
+  );
+
+  return db
+    .select({
+      id: clients.id,
+      fullName: clients.fullName,
+      primaryPhone: clients.primaryPhone,
+      email: clients.email,
+      latestOrderTitle: sql<string | null>`(
+        select o.title from orders o
+        where o.client_id = ${clients.id}
+        order by o.created_at desc
+        limit 1
+      )`,
+    })
+    .from(clients)
+    .where(and(eq(clients.organizationId, organizationId), isNull(clients.archivedAt), searchCondition))
+    .orderBy(clients.fullName)
+    .limit(20);
 }
 
 export async function getClient(organizationId: string, clientId: string) {

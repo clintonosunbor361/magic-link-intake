@@ -5,7 +5,7 @@ export default function manifest(): MetadataRoute.Manifest {
     id: "/",
     name: "Kuartz Fashion CRM",
     short_name: "Kuartz",
-    description: "Fashion operations from enquiry to delivery.",
+    description: "Fashion operations from client contact to delivery.",
     start_url: "/",
     scope: "/",
     display: "standalone",

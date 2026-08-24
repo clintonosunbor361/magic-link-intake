@@ -2,6 +2,7 @@ import { createClientAction } from "@/app/actions/clients";
 import { NewClientForm } from "@/components/clients/new-client-form";
 import { requireStaffSession } from "@/lib/auth/session";
 import { BUDGET_RANGES, CONTACT_CHANNELS, EVENT_TYPES } from "@/lib/intake-options";
+import { listLeadSources } from "@/lib/lead-sources/repository";
 import { listStaffMembers } from "@/lib/team/repository";
 
 export default async function NewClientPage({
@@ -10,7 +11,11 @@ export default async function NewClientPage({
   searchParams: Promise<{ error?: string }>;
 }) {
   const session = await requireStaffSession();
-  const [{ error }, staff] = await Promise.all([searchParams, listStaffMembers(session.organizationId)]);
+  const [{ error }, staff, leadSources] = await Promise.all([
+    searchParams,
+    listStaffMembers(session.organizationId),
+    listLeadSources(session.organizationId),
+  ]);
 
   return (
     <div>
@@ -25,6 +30,7 @@ export default async function NewClientPage({
       <NewClientForm
         action={createClientAction}
         staff={staff}
+        leadSources={leadSources}
         contactChannels={CONTACT_CHANNELS}
         eventTypes={EVENT_TYPES}
         budgetRanges={BUDGET_RANGES}

@@ -5,7 +5,6 @@ import { dueTriggers, mayEmail, type NotificationTrigger, TRIGGER_LABELS } from 
 // decision — which reminders exist, which may be emailed, and to whom — is unit-testable.
 
 export const NOTIFICATION_SOURCE_TYPES = [
-  "enquiry_task",
   "client_task",
   "vendor_assignment",
   "accessory_item",
@@ -38,7 +37,6 @@ export type PlannedNotification = {
 };
 
 const SOURCE_LABELS: Record<NotificationSourceType, string> = {
-  enquiry_task: "To-do",
   client_task: "To-do",
   vendor_assignment: "Production deadline",
   accessory_item: "Accessory",

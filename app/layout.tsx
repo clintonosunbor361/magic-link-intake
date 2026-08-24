@@ -4,7 +4,7 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   title: { default: "Kuartz Fashion CRM", template: "%s · Kuartz" },
-  description: "Fashion operations from enquiry to delivery.",
+  description: "Fashion operations from client contact to delivery.",
   applicationName: "Kuartz Fashion CRM",
   appleWebApp: { capable: true, title: "Kuartz" },
   icons: {

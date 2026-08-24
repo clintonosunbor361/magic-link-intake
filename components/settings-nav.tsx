@@ -6,6 +6,7 @@ import Link from "next/link";
 const SETTINGS_LINKS = [
   { href: "/settings/team", label: "Team" },
   { href: "/settings/item-types", label: "Item types" },
+  { href: "/settings/lead-sources", label: "Lead sources" },
   { href: "/settings/consultation-note-sources", label: "Consultation note sources" },
   { href: "/settings/measurement-fields", label: "Measurement fields" },
   { href: "/settings/measurement-requirements", label: "Measurement requirements" },

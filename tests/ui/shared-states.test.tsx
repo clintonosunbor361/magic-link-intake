@@ -11,11 +11,11 @@ describe("shared CRM states", () => {
   it("explains an empty collection without presenting fake data", () => {
     render(
       <EmptyState
-        title="The queue starts with Enquiries"
-        description="External and internal intake will populate this workspace."
+        title="Start with Clients"
+        description="External intake and internal entries create Client contacts."
       />,
     );
-    expect(screen.getByRole("status", { name: "The queue starts with Enquiries" })).toBeVisible();
+    expect(screen.getByRole("status", { name: "Start with Clients" })).toBeVisible();
   });
 
   it("announces the matching skeleton while a workspace loads", () => {

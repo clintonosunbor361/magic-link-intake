@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { getStaffSession } from "@/lib/auth/session";
-import { searchClients } from "@/lib/enquiries/repository";
+import { searchClients } from "@/lib/clients/repository";
 
 export const dynamic = "force-dynamic";
 
