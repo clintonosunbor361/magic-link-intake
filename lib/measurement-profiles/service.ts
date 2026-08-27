@@ -8,6 +8,7 @@ export type MeasurementProfileLifecycleRecord = { id: string; version: number };
 
 export type MeasurementProfileRepository = {
   clientBelongsToOrganization(organizationId: string, clientId: string): Promise<boolean>;
+  measurementProfileIsEditable(organizationId: string, measurementProfileId: string): Promise<boolean>;
   fieldDefinitionBelongsToOrganization(organizationId: string, fieldDefinitionId: string): Promise<boolean>;
   getOrCreateMeasurementProfile(
     organizationId: string,
@@ -74,6 +75,10 @@ export async function setMeasurementValue(
   const value = input.value.trim();
   if (!value) throw new Error("Value is required.");
   const note = input.note?.trim() || null;
+
+  if (!(await repository.measurementProfileIsEditable(input.organizationId, input.measurementProfileId))) {
+    throw new Error("Measurement profile is unavailable.");
+  }
 
   const fieldOk = await repository.fieldDefinitionBelongsToOrganization(input.organizationId, input.fieldDefinitionId);
   if (!fieldOk) throw new Error("Measurement field was not found.");

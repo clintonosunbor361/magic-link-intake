@@ -18,12 +18,25 @@ async function readUploadedFile(formData: FormData): Promise<{ buffer: Buffer; d
   return { buffer: Buffer.from(await file.arrayBuffer()), declaredMimeType: file.type };
 }
 
+function measurementDestination(formData: FormData, clientId: string) {
+  const orderId = readFormString(formData, "returnToOrderId");
+  return {
+    redirectPath: orderId ? `/orders/${orderId}?tab=measurements` : `/clients/${clientId}`,
+    revalidatePaths: orderId ? [`/clients/${clientId}`, `/orders/${orderId}`] : [`/clients/${clientId}`],
+  };
+}
+
+function withError(path: string, message: string): string {
+  return `${path}${path.includes("?") ? "&" : "?"}error=${encodeURIComponent(message)}`;
+}
+
 export async function setMeasurementValueAction(formData: FormData) {
   const session = await requireStaffSession();
   const clientId = readFormString(formData, "clientId");
   const measurementProfileId = readFormString(formData, "measurementProfileId");
   const fieldDefinitionId = readFormString(formData, "fieldDefinitionId");
   const expectedVersion = Number(readFormString(formData, "version"));
+  const destination = measurementDestination(formData, clientId);
 
   try {
     await setMeasurementValue(
@@ -40,11 +53,11 @@ export async function setMeasurementValueAction(formData: FormData) {
     );
   } catch (error) {
     const message = error instanceof Error ? error.message : "The measurement could not be saved.";
-    redirect(`/clients/${clientId}?error=${encodeURIComponent(message)}`);
+    redirect(withError(destination.redirectPath, message));
   }
 
-  revalidatePath(`/clients/${clientId}`);
-  redirect(`/clients/${clientId}`);
+  destination.revalidatePaths.forEach((path) => revalidatePath(path));
+  redirect(destination.redirectPath);
 }
 
 export async function setMeasurementValuesAction(formData: FormData) {
@@ -53,6 +66,7 @@ export async function setMeasurementValuesAction(formData: FormData) {
   const measurementProfileId = readFormString(formData, "measurementProfileId");
   const fieldDefinitionIds = formData.getAll("fieldDefinitionId").map(String);
   const repository = createMeasurementProfileRepository();
+  const destination = measurementDestination(formData, clientId);
 
   try {
     for (const fieldDefinitionId of fieldDefinitionIds) {
@@ -78,11 +92,11 @@ export async function setMeasurementValuesAction(formData: FormData) {
     }
   } catch (error) {
     const message = error instanceof Error ? error.message : "The measurements could not be saved.";
-    redirect(`/clients/${clientId}?error=${encodeURIComponent(message)}`);
+    redirect(withError(destination.redirectPath, message));
   }
 
-  revalidatePath(`/clients/${clientId}`);
-  redirect(`/clients/${clientId}`);
+  destination.revalidatePaths.forEach((path) => revalidatePath(path));
+  redirect(destination.redirectPath);
 }
 
 export async function archiveMeasurementProfileAction(formData: FormData) {

@@ -36,6 +36,20 @@ export function createMeasurementProfileRepository(): MeasurementProfileReposito
         .limit(1);
       return !!row;
     },
+    async measurementProfileIsEditable(organizationId, measurementProfileId) {
+      const [row] = await db
+        .select({ id: measurementProfiles.id })
+        .from(measurementProfiles)
+        .where(
+          and(
+            eq(measurementProfiles.organizationId, organizationId),
+            eq(measurementProfiles.id, measurementProfileId),
+            isNull(measurementProfiles.archivedAt),
+          ),
+        )
+        .limit(1);
+      return !!row;
+    },
     async fieldDefinitionBelongsToOrganization(organizationId, fieldDefinitionId) {
       const [row] = await db
         .select({ id: measurementFieldDefinitions.id })

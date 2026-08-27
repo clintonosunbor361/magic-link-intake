@@ -8,6 +8,7 @@ import {
 
 const baseRepository = () => ({
   clientBelongsToOrganization: vi.fn().mockResolvedValue(true),
+  measurementProfileIsEditable: vi.fn().mockResolvedValue(true),
   fieldDefinitionBelongsToOrganization: vi.fn().mockResolvedValue(true),
   getOrCreateMeasurementProfile: vi.fn().mockResolvedValue({ id: "profile-1", version: 1, archivedAt: null }),
   getMeasurementValueForEdit: vi.fn(),
@@ -36,6 +37,28 @@ describe("getOrCreateMeasurementProfile", () => {
 });
 
 describe("setMeasurementValue", () => {
+  it("rejects a profile outside the organization or one that is archived", async () => {
+    const repository = baseRepository();
+    repository.measurementProfileIsEditable.mockResolvedValue(false);
+
+    await expect(
+      setMeasurementValue(
+        {
+          organizationId: "org-1",
+          measurementProfileId: "unavailable-profile",
+          fieldDefinitionId: "field-1",
+          value: "38",
+          note: null,
+          staffId: "staff-1",
+          expectedVersion: 0,
+        },
+        repository,
+      ),
+    ).rejects.toThrow("Measurement profile is unavailable");
+    expect(repository.fieldDefinitionBelongsToOrganization).not.toHaveBeenCalled();
+    expect(repository.createMeasurementValueWithHistory).not.toHaveBeenCalled();
+  });
+
   it("creates the first value for a never-before-set field when expectedVersion is 0", async () => {
     const repository = baseRepository();
     repository.getMeasurementValueForEdit.mockResolvedValue(null);

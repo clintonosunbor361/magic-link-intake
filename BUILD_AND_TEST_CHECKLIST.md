@@ -64,7 +64,7 @@ Legend:
 - [x] Overview tab with next actions
 - [x] Looks & Items tab
 - [x] Looks are displayed as compact workspace cards instead of always-open edit forms
-- [~] Measurements tab inside Order workspace; currently links to Client profile measurement area
+- [x] Measurements tab edits the reusable Client measurement profile directly inside the Order workspace
 - [x] Style Direction tab
 - [~] Vendors tab; currently routes assignment work through Looks & Items and Vendor directory
 - [~] Production tab; currently links to Production workspace and Item assignments
@@ -97,7 +97,7 @@ Legend:
 - [x] Measurement confirmation magic link
 - [x] Measurement requirement rules by item type
 - [x] Vendor brief blocker for missing required measurements
-- [ ] Add/edit measurements directly from Order workspace
+- [x] Add/edit measurements directly from Order workspace
 - [ ] UX for missing measurements inside Order workspace
 
 ### Vendors / Production
@@ -296,8 +296,8 @@ Legend:
 - [ ] Add measurements from Client profile
 - [ ] Edit measurements from Client profile
 - [ ] Measurement history records previous/new value
-- [ ] Add/edit measurements from Order workspace
-- [ ] Order workspace edits save to Client profile
+- [x] Add/edit measurements from Order workspace
+- [x] Order workspace edits save to Client profile
 - [ ] Add custom measurement field
 - [ ] Configure measurement requirements by item type
 - [ ] Missing required measurements are detected per item
