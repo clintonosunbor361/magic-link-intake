@@ -147,7 +147,7 @@ Legend:
 - [x] Configurable accessory statuses
 - [x] Accessories can link to order/look
 - [x] Accessory delivery date follows linked Look date logic
-- [~] Accessory item fields exist, but confirm UX covers assigned staff, supplier, budget, purchase date, delivery date/look due date, and status clearly
+- [x] Accessory item UX covers assigned staff, supplier, budget in minor units, purchase date, derived delivery date/look due date, status, and notes
 - [~] Accessory workflow still needs final business grilling
 - [~] Exists as separate page, not Order workspace tab yet
 
@@ -349,10 +349,10 @@ Legend:
 - [ ] Link accessory to whole order
 - [ ] Link accessory to specific Look
 - [ ] Accessory delivery date follows Look date
-- [ ] Assigned staff can be selected for accessory item
-- [ ] Supplier can be entered for accessory item
-- [ ] Budget can be entered for accessory item
-- [ ] Purchase date can be entered for accessory item
+- [x] Assigned staff can be selected for accessory item
+- [x] Supplier can be entered for accessory item
+- [x] Budget can be entered for accessory item
+- [x] Purchase date can be entered for accessory item
 - [ ] Accessory status changes
 - [ ] Custom accessory type works
 - [ ] Archived accessory types/statuses no longer appear for new records

@@ -3,8 +3,15 @@ import { resolveVersionedTransition } from "@/lib/domain/concurrency";
 import { mayArchive, mayRestore } from "@/lib/domain/record-lifecycle";
 
 // Accessory Sourcing is a module beside production, not inside it. An Accessory Item has no vendor
-// assignment, no production status, no brief and no money — those boundaries are the whole point of
-// the spec keeping it separate, and nothing in this file reaches into them.
+// assignment, no production status, no brief and no vendor payment ledger. A sourcing budget is
+// metadata only; those boundaries are the whole point of the spec keeping this module separate.
+
+type AccessorySourcingFields = {
+  assignedToStaffId: string | null;
+  supplier: string | null;
+  budgetMinor: number | null;
+  purchaseDate: string | null;
+};
 
 export type AccessoryItemRecord = { id: string; orderId: string; version: number; archivedAt: Date | null };
 
@@ -13,8 +20,9 @@ export type AccessoryItemRepository = {
   lookBelongsToOrder(organizationId: string, orderId: string, lookId: string): Promise<boolean>;
   typeIsSelectable(organizationId: string, accessoryTypeId: string): Promise<boolean>;
   statusIsSelectable(organizationId: string, accessoryStatusId: string): Promise<boolean>;
+  staffIsActiveMember(organizationId: string, staffId: string): Promise<boolean>;
   getDefaultStatusId(organizationId: string): Promise<string | null>;
-  createAccessoryItem(input: {
+  createAccessoryItem(input: AccessorySourcingFields & {
     organizationId: string;
     orderId: string;
     lookId: string | null;
@@ -24,7 +32,7 @@ export type AccessoryItemRepository = {
     notes: string;
   }): Promise<{ id: string }>;
   getAccessoryItem(organizationId: string, accessoryItemId: string): Promise<AccessoryItemRecord | null>;
-  updateAccessoryItem(input: {
+  updateAccessoryItem(input: AccessorySourcingFields & {
     organizationId: string;
     accessoryItemId: string;
     lookId: string | null;
@@ -45,7 +53,14 @@ export type AccessoryItemRepository = {
 };
 
 async function assertSelectable(
-  input: { organizationId: string; orderId: string; lookId: string | null; accessoryTypeId: string; accessoryStatusId: string },
+  input: {
+    organizationId: string;
+    orderId: string;
+    lookId: string | null;
+    accessoryTypeId: string;
+    accessoryStatusId: string;
+    assignedToStaffId: string | null;
+  },
   repository: AccessoryItemRepository,
 ) {
   if (!(await repository.orderBelongsToOrganization(input.organizationId, input.orderId))) {
@@ -62,10 +77,44 @@ async function assertSelectable(
   if (!(await repository.statusIsSelectable(input.organizationId, input.accessoryStatusId))) {
     throw new Error("That accessory status is unavailable.");
   }
+  if (
+    input.assignedToStaffId &&
+    !(await repository.staffIsActiveMember(input.organizationId, input.assignedToStaffId))
+  ) {
+    throw new Error("Assigned staff member is unavailable.");
+  }
+}
+
+function normalizeSourcingFields(input: AccessorySourcingFields): AccessorySourcingFields {
+  if (input.budgetMinor !== null && (!Number.isSafeInteger(input.budgetMinor) || input.budgetMinor < 0)) {
+    throw new Error("Accessory budget cannot be negative and must use whole minor units.");
+  }
+  if (input.purchaseDate !== null && !isValidPurchaseDate(input.purchaseDate)) {
+    throw new Error("Purchase date must use YYYY-MM-DD format.");
+  }
+
+  return {
+    assignedToStaffId: input.assignedToStaffId,
+    supplier: input.supplier?.trim() || null,
+    budgetMinor: input.budgetMinor,
+    purchaseDate: input.purchaseDate,
+  };
+}
+
+function isValidPurchaseDate(value: string): boolean {
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value);
+  if (!match) return false;
+
+  const [, rawYear, rawMonth, rawDay] = match;
+  const year = Number(rawYear);
+  const month = Number(rawMonth);
+  const day = Number(rawDay);
+  const parsed = new Date(Date.UTC(year, month - 1, day));
+  return parsed.getUTCFullYear() === year && parsed.getUTCMonth() === month - 1 && parsed.getUTCDate() === day;
 }
 
 export async function createAccessoryItem(
-  input: {
+  input: AccessorySourcingFields & {
     actor: { role: StaffRole };
     organizationId: string;
     orderId: string;
@@ -78,6 +127,7 @@ export async function createAccessoryItem(
   repository: AccessoryItemRepository,
 ) {
   assertCanManageAccessoryItems(input.actor.role);
+  const sourcing = normalizeSourcingFields(input);
 
   // New accessories start at the first live status by sort order — "Not Started" in the seeded list,
   // though nothing here hardcodes that name.
@@ -93,12 +143,13 @@ export async function createAccessoryItem(
     accessoryTypeId: input.accessoryTypeId,
     customLabel: input.customLabel?.trim() || null,
     accessoryStatusId: statusId,
+    ...sourcing,
     notes: input.notes.trim(),
   });
 }
 
 export async function updateAccessoryItem(
-  input: {
+  input: AccessorySourcingFields & {
     actor: { role: StaffRole };
     organizationId: string;
     accessoryItemId: string;
@@ -113,6 +164,7 @@ export async function updateAccessoryItem(
   repository: AccessoryItemRepository,
 ) {
   assertCanManageAccessoryItems(input.actor.role);
+  const sourcing = normalizeSourcingFields(input);
   await assertSelectable(input, repository);
 
   let existing: AccessoryItemRecord | null = null;
@@ -135,6 +187,7 @@ export async function updateAccessoryItem(
         accessoryTypeId: input.accessoryTypeId,
         customLabel: input.customLabel?.trim() || null,
         accessoryStatusId: input.accessoryStatusId,
+        ...sourcing,
         notes: input.notes.trim(),
         expectedVersion: input.expectedVersion,
         nextVersion,

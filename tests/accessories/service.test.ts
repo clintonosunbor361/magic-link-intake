@@ -12,6 +12,7 @@ function itemRepository(overrides: Record<string, unknown> = {}) {
     lookBelongsToOrder: vi.fn().mockResolvedValue(true),
     typeIsSelectable: vi.fn().mockResolvedValue(true),
     statusIsSelectable: vi.fn().mockResolvedValue(true),
+    staffIsActiveMember: vi.fn().mockResolvedValue(true),
     getDefaultStatusId: vi.fn().mockResolvedValue("status-1"),
     createAccessoryItem: vi.fn().mockResolvedValue({ id: "acc-1" }),
     getAccessoryItem: vi
@@ -30,6 +31,10 @@ const createInput = {
   accessoryTypeId: "type-1",
   customLabel: "  Black oxfords  ",
   accessoryStatusId: null,
+  assignedToStaffId: "staff-1",
+  supplier: "  Lekki Leather Goods  ",
+  budgetMinor: 125_000,
+  purchaseDate: "2026-08-25",
   notes: "  size 44  ",
 };
 
@@ -40,8 +45,43 @@ describe("createAccessoryItem", () => {
     await createAccessoryItem({ actor: assistant, ...createInput }, repo);
 
     expect(repo.createAccessoryItem).toHaveBeenCalledWith(
-      expect.objectContaining({ customLabel: "Black oxfords", notes: "size 44", accessoryStatusId: "status-1" }),
+      expect.objectContaining({
+        customLabel: "Black oxfords",
+        assignedToStaffId: "staff-1",
+        supplier: "Lekki Leather Goods",
+        budgetMinor: 125_000,
+        purchaseDate: "2026-08-25",
+        notes: "size 44",
+        accessoryStatusId: "status-1",
+      }),
     );
+  });
+
+  it("rejects an assignee who is not an active member of the organization", async () => {
+    const repo = itemRepository({ staffIsActiveMember: vi.fn().mockResolvedValue(false) });
+
+    await expect(createAccessoryItem({ actor: assistant, ...createInput }, repo)).rejects.toThrow(
+      "Assigned staff member is unavailable",
+    );
+    expect(repo.createAccessoryItem).not.toHaveBeenCalled();
+  });
+
+  it("rejects negative budgets", async () => {
+    const repo = itemRepository();
+
+    await expect(
+      createAccessoryItem({ actor: assistant, ...createInput, budgetMinor: -1 }, repo),
+    ).rejects.toThrow("Accessory budget cannot be negative");
+    expect(repo.createAccessoryItem).not.toHaveBeenCalled();
+  });
+
+  it.each(["25/08/2026", "2026-02-30"])("rejects invalid purchase date %s", async (purchaseDate) => {
+    const repo = itemRepository();
+
+    await expect(
+      createAccessoryItem({ actor: assistant, ...createInput, purchaseDate }, repo),
+    ).rejects.toThrow("Purchase date must use YYYY-MM-DD");
+    expect(repo.createAccessoryItem).not.toHaveBeenCalled();
   });
 
   it("defaults to the first live status rather than requiring the caller to pick one", async () => {
@@ -101,6 +141,10 @@ describe("updateAccessoryItem", () => {
     accessoryTypeId: "type-1",
     customLabel: null,
     accessoryStatusId: "status-2",
+    assignedToStaffId: "staff-2",
+    supplier: "Mainland Accessories",
+    budgetMinor: 98_500,
+    purchaseDate: "2026-08-26",
     notes: "",
     expectedVersion: 1,
   };
@@ -111,7 +155,14 @@ describe("updateAccessoryItem", () => {
     await updateAccessoryItem({ actor: assistant, ...updateInput }, repo);
 
     expect(repo.updateAccessoryItem).toHaveBeenCalledWith(
-      expect.objectContaining({ accessoryStatusId: "status-2", nextVersion: 2 }),
+      expect.objectContaining({
+        accessoryStatusId: "status-2",
+        assignedToStaffId: "staff-2",
+        supplier: "Mainland Accessories",
+        budgetMinor: 98_500,
+        purchaseDate: "2026-08-26",
+        nextVersion: 2,
+      }),
     );
   });
 

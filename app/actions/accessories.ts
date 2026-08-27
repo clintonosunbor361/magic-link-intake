@@ -10,10 +10,16 @@ import {
   updateAccessoryItem,
 } from "@/lib/accessories/service";
 import { requireStaffSession } from "@/lib/auth/session";
+import { parseMoneyToMinorUnits } from "@/lib/forms/money";
 import { readFormString } from "@/lib/forms/read-string";
 
 function accessoriesPath(orderId: string): string {
   return `/orders/${orderId}/accessories`;
+}
+
+function readOptionalBudget(formData: FormData): number | null {
+  const raw = readFormString(formData, "budget");
+  return raw ? parseMoneyToMinorUnits(raw) : null;
 }
 
 export async function createAccessoryItemAction(formData: FormData) {
@@ -30,6 +36,10 @@ export async function createAccessoryItemAction(formData: FormData) {
         accessoryTypeId: readFormString(formData, "accessoryTypeId"),
         customLabel: readFormString(formData, "customLabel") || null,
         accessoryStatusId: readFormString(formData, "accessoryStatusId") || null,
+        assignedToStaffId: readFormString(formData, "assignedToStaffId") || null,
+        supplier: readFormString(formData, "supplier") || null,
+        budgetMinor: readOptionalBudget(formData),
+        purchaseDate: readFormString(formData, "purchaseDate") || null,
         notes: readFormString(formData, "notes"),
       },
       createAccessoryItemRepository(),
@@ -59,6 +69,10 @@ export async function updateAccessoryItemAction(formData: FormData) {
         accessoryTypeId: readFormString(formData, "accessoryTypeId"),
         customLabel: readFormString(formData, "customLabel") || null,
         accessoryStatusId: readFormString(formData, "accessoryStatusId"),
+        assignedToStaffId: readFormString(formData, "assignedToStaffId") || null,
+        supplier: readFormString(formData, "supplier") || null,
+        budgetMinor: readOptionalBudget(formData),
+        purchaseDate: readFormString(formData, "purchaseDate") || null,
         notes: readFormString(formData, "notes"),
         expectedVersion: Number(readFormString(formData, "version")),
       },

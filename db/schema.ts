@@ -2,6 +2,7 @@ import { sql } from "drizzle-orm";
 import {
   type AnyPgColumn,
   boolean,
+  check,
   date,
   index,
   integer,
@@ -1558,6 +1559,12 @@ export const accessoryItems = pgTable(
     accessoryStatusId: uuid("accessory_status_id")
       .references(() => accessoryStatuses.id)
       .notNull(),
+    // Sourcing metadata only. Accessories remain outside Vendor Assignment, production, and
+    // Vendor payment workflows even when a supplier and budget are recorded here.
+    assignedToStaffId: uuid("assigned_to_staff_id").references(() => staffProfiles.id),
+    supplier: text("supplier"),
+    budgetMinor: integer("budget_minor"),
+    purchaseDate: date("purchase_date"),
     notes: text("notes").default("").notNull(),
     version: integer("version").default(1).notNull(),
     archivedAt: timestamp("archived_at", { withTimezone: true }),
@@ -1567,6 +1574,8 @@ export const accessoryItems = pgTable(
     index("accessory_items_order_idx").on(table.orderId),
     index("accessory_items_look_idx").on(table.lookId),
     index("accessory_items_status_idx").on(table.accessoryStatusId),
+    index("accessory_items_org_assignee_idx").on(table.organizationId, table.assignedToStaffId),
+    check("accessory_items_budget_nonnegative_check", sql`${table.budgetMinor} is null or ${table.budgetMinor} >= 0`),
     pgPolicy("staff can view organization accessory items", {
       for: "select",
       to: "authenticated",

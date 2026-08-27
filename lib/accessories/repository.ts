@@ -2,7 +2,15 @@ import "server-only";
 
 import { and, asc, eq, isNull } from "drizzle-orm";
 import { getDatabase } from "@/db";
-import { accessoryItems, accessoryStatuses, accessoryTypes, looks, orders } from "@/db/schema";
+import {
+  accessoryItems,
+  accessoryStatuses,
+  accessoryTypes,
+  looks,
+  organizationMemberships,
+  orders,
+  staffProfiles,
+} from "@/db/schema";
 import type { AccessoryItemRepository } from "@/lib/accessories/service";
 import {
   type AccessoryDeliveryDate,
@@ -57,6 +65,20 @@ export function createAccessoryItemRepository(): AccessoryItemRepository {
         .limit(1);
       return !!row;
     },
+    async staffIsActiveMember(organizationId, staffId) {
+      const [row] = await db
+        .select({ id: organizationMemberships.id })
+        .from(organizationMemberships)
+        .where(
+          and(
+            eq(organizationMemberships.organizationId, organizationId),
+            eq(organizationMemberships.userId, staffId),
+            isNull(organizationMemberships.archivedAt),
+          ),
+        )
+        .limit(1);
+      return !!row;
+    },
     async getDefaultStatusId(organizationId) {
       const [row] = await db
         .select({ id: accessoryStatuses.id })
@@ -76,6 +98,10 @@ export function createAccessoryItemRepository(): AccessoryItemRepository {
           accessoryTypeId: input.accessoryTypeId,
           customLabel: input.customLabel,
           accessoryStatusId: input.accessoryStatusId,
+          assignedToStaffId: input.assignedToStaffId,
+          supplier: input.supplier,
+          budgetMinor: input.budgetMinor,
+          purchaseDate: input.purchaseDate,
           notes: input.notes,
         })
         .returning({ id: accessoryItems.id });
@@ -102,6 +128,10 @@ export function createAccessoryItemRepository(): AccessoryItemRepository {
           accessoryTypeId: input.accessoryTypeId,
           customLabel: input.customLabel,
           accessoryStatusId: input.accessoryStatusId,
+          assignedToStaffId: input.assignedToStaffId,
+          supplier: input.supplier,
+          budgetMinor: input.budgetMinor,
+          purchaseDate: input.purchaseDate,
           notes: input.notes,
           version: input.nextVersion,
           updatedAt: new Date(),
@@ -149,6 +179,11 @@ export type AccessoryItemRow = {
   accessoryStatusId: string;
   statusName: string;
   statusIsCompleted: boolean;
+  assignedToStaffId: string | null;
+  assignedToName: string | null;
+  supplier: string | null;
+  budgetMinor: number | null;
+  purchaseDate: string | null;
   notes: string;
   version: number;
   archivedAt: Date | null;
@@ -178,6 +213,11 @@ export async function listAccessoryItemsForOrder(
         accessoryStatusId: accessoryItems.accessoryStatusId,
         statusName: accessoryStatuses.name,
         statusIsCompleted: accessoryStatuses.isCompleted,
+        assignedToStaffId: accessoryItems.assignedToStaffId,
+        assignedToName: staffProfiles.fullName,
+        supplier: accessoryItems.supplier,
+        budgetMinor: accessoryItems.budgetMinor,
+        purchaseDate: accessoryItems.purchaseDate,
         notes: accessoryItems.notes,
         version: accessoryItems.version,
         archivedAt: accessoryItems.archivedAt,
@@ -186,6 +226,7 @@ export async function listAccessoryItemsForOrder(
       .from(accessoryItems)
       .innerJoin(accessoryTypes, eq(accessoryTypes.id, accessoryItems.accessoryTypeId))
       .innerJoin(accessoryStatuses, eq(accessoryStatuses.id, accessoryItems.accessoryStatusId))
+      .leftJoin(staffProfiles, eq(staffProfiles.id, accessoryItems.assignedToStaffId))
       .where(and(eq(accessoryItems.organizationId, organizationId), eq(accessoryItems.orderId, orderId)))
       .orderBy(asc(accessoryItems.createdAt)),
     db
@@ -213,6 +254,11 @@ export async function listAccessoryItemsForOrder(
     accessoryStatusId: row.accessoryStatusId,
     statusName: row.statusName,
     statusIsCompleted: row.statusIsCompleted,
+    assignedToStaffId: row.assignedToStaffId,
+    assignedToName: row.assignedToName,
+    supplier: row.supplier,
+    budgetMinor: row.budgetMinor,
+    purchaseDate: row.purchaseDate,
     notes: row.notes,
     version: row.version,
     archivedAt: row.archivedAt,

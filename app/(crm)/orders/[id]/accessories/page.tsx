@@ -10,13 +10,17 @@ import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
 import { FormDisclosure } from "@/components/ui/form-disclosure";
 import { Input } from "@/components/ui/input";
+import { MoneyInput } from "@/components/ui/money-input";
 import { NativeSelect } from "@/components/ui/native-select";
 import { listAccessoryItemsForOrder } from "@/lib/accessories/repository";
 import { listAccessoryStatuses } from "@/lib/accessory-statuses/repository";
 import { listAccessoryTypes } from "@/lib/accessory-types/repository";
 import { requireStaffSession } from "@/lib/auth/session";
+import { formatBusinessDate } from "@/lib/domain/business-date";
 import { mayArchive, mayRestore } from "@/lib/domain/record-lifecycle";
+import { formatMinorUnits } from "@/lib/forms/money";
 import { getOrderWithLooksAndItems } from "@/lib/orders/repository";
+import { listStaffMembers } from "@/lib/team/repository";
 
 const textareaClass =
   "min-h-[3.5rem] w-full rounded-[0.8rem] border border-kuartz-control bg-white/70 px-3.5 py-3 text-sm text-kuartz-ink outline-none focus:border-[#88925f] focus:bg-white focus:ring-4 focus:ring-kuartz-lime/20";
@@ -34,10 +38,11 @@ export default async function OrderAccessoriesPage({
   const order = await getOrderWithLooksAndItems(session.organizationId, id);
   if (!order) notFound();
 
-  const [accessories, types, statuses] = await Promise.all([
+  const [accessories, types, statuses, staffMembers] = await Promise.all([
     listAccessoryItemsForOrder(session.organizationId, id),
     listAccessoryTypes(session.organizationId),
     listAccessoryStatuses(session.organizationId),
+    listStaffMembers(session.organizationId),
   ]);
   const liveLooks = order.looks.filter((look) => !look.archivedAt);
   const canConfigure = types.length > 0 && statuses.length > 0;
@@ -94,7 +99,7 @@ export default async function OrderAccessoriesPage({
                     <h3 className="section-title">{accessory.label}</h3>
                     <p className="text-sm text-kuartz-muted">
                       {accessory.deliveryDate.state === "inherited"
-                        ? `Due ${accessory.deliveryDate.date}${accessory.lookName ? ` · ${accessory.lookName}` : " · earliest Look"}`
+                        ? `Due ${formatBusinessDate(accessory.deliveryDate.date)}${accessory.lookName ? ` · ${accessory.lookName}` : " · earliest Look"}`
                         : "No date — no dated Look to inherit from"}
                     </p>
                   </div>
@@ -143,6 +148,50 @@ export default async function OrderAccessoriesPage({
                           </option>
                         ))}
                       </NativeSelect>
+                    </label>
+                    <label className="form-group">
+                      <span>
+                        Assigned staff <span className="font-normal text-kuartz-secondary">(optional)</span>
+                      </span>
+                      <NativeSelect name="assignedToStaffId" defaultValue={accessory.assignedToStaffId ?? ""}>
+                        <option value="">Unassigned</option>
+                        {accessory.assignedToStaffId &&
+                        !staffMembers.some((staff) => staff.userId === accessory.assignedToStaffId) ? (
+                          <option value={accessory.assignedToStaffId}>
+                            {accessory.assignedToName ?? "Former staff member"} (inactive)
+                          </option>
+                        ) : null}
+                        {staffMembers.map((staff) => (
+                          <option key={staff.userId} value={staff.userId}>
+                            {staff.fullName}
+                          </option>
+                        ))}
+                      </NativeSelect>
+                    </label>
+                    <label className="form-group">
+                      <span>
+                        Supplier <span className="font-normal text-kuartz-secondary">(optional)</span>
+                      </span>
+                      <Input name="supplier" defaultValue={accessory.supplier ?? ""} maxLength={160} />
+                    </label>
+                    <label className="form-group">
+                      <span>
+                        Budget <span className="font-normal text-kuartz-secondary">(optional)</span>
+                      </span>
+                      <MoneyInput
+                        name="budget"
+                        defaultValue={accessory.budgetMinor === null ? "" : formatMinorUnits(accessory.budgetMinor)}
+                        aria-describedby={`accessory-budget-${accessory.id}`}
+                      />
+                      <span id={`accessory-budget-${accessory.id}`} className="text-xs font-normal text-kuartz-muted">
+                        Nigerian naira
+                      </span>
+                    </label>
+                    <label className="form-group">
+                      <span>
+                        Purchase date <span className="font-normal text-kuartz-secondary">(optional)</span>
+                      </span>
+                      <Input name="purchaseDate" type="date" defaultValue={accessory.purchaseDate ?? ""} />
                     </label>
                   </div>
 
@@ -208,6 +257,40 @@ export default async function OrderAccessoriesPage({
                     </option>
                   ))}
                 </NativeSelect>
+              </label>
+              <label className="form-group">
+                <span>
+                  Assigned staff <span className="font-normal text-kuartz-secondary">(optional)</span>
+                </span>
+                <NativeSelect name="assignedToStaffId" defaultValue="">
+                  <option value="">Unassigned</option>
+                  {staffMembers.map((staff) => (
+                    <option key={staff.userId} value={staff.userId}>
+                      {staff.fullName}
+                    </option>
+                  ))}
+                </NativeSelect>
+              </label>
+              <label className="form-group">
+                <span>
+                  Supplier <span className="font-normal text-kuartz-secondary">(optional)</span>
+                </span>
+                <Input name="supplier" maxLength={160} placeholder="e.g. Lekki Leather Goods" />
+              </label>
+              <label className="form-group">
+                <span>
+                  Budget <span className="font-normal text-kuartz-secondary">(optional)</span>
+                </span>
+                <MoneyInput name="budget" aria-describedby="new-accessory-budget-help" />
+                <span id="new-accessory-budget-help" className="text-xs font-normal text-kuartz-muted">
+                  Nigerian naira
+                </span>
+              </label>
+              <label className="form-group">
+                <span>
+                  Purchase date <span className="font-normal text-kuartz-secondary">(optional)</span>
+                </span>
+                <Input name="purchaseDate" type="date" />
               </label>
               <label className="form-group">
                 <span>
