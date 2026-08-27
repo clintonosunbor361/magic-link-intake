@@ -182,7 +182,7 @@ Legend:
 - [x] Cron route for notifications
 - [x] Email/dashboard notification architecture
 - [~] SMS reminders are in the original workflow document but deferred from the current product architecture
-- [~] Client to-dos should show all open to-dos sorted by closest due date, confirm current behavior
+- [x] Client to-dos show all open to-dos sorted by closest due date
 - [ ] Final notification delivery test with Resend/live env
 
 ### Settings
@@ -388,9 +388,9 @@ Legend:
 - [ ] Pending measurement confirmations appear correctly
 - [ ] Pending moodboard approvals appear correctly
 - [ ] Pending sketch approvals appear correctly
-- [ ] Outstanding balances are correct
-- [ ] Vendor payment summaries are correct
-- [ ] Open client to-dos show, closest due first
+- [x] Outstanding balances are correct
+- [x] Vendor payment summaries are correct
+- [x] Open client to-dos show, closest due first
 - [ ] Dashboard notification created for due reminders
 - [ ] Email notification sends through Resend
 - [ ] Overdue alerts fire after deadline passes

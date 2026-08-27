@@ -21,6 +21,7 @@ import {
   vendors,
 } from "@/db/schema";
 import { type BusinessDate, toBusinessDate } from "@/lib/domain/business-date";
+import { sortOpenTodosByDueDate } from "@/lib/dashboard/overview";
 import { shiftDays } from "@/lib/notifications/triggers";
 
 // The dashboard's queries. Each one backs a metric the spec names, and each returns enough to render
@@ -174,10 +175,10 @@ export async function listAwaitingClientResponses(organizationId: string, now = 
   ].sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime());
 }
 
-/** Open client to-dos, due or overdue as of today. */
-export async function listDueTodos(organizationId: string, today: BusinessDate) {
+/** Every open Client to-do, including future work, with the closest due date first. */
+export async function listOpenTodos(organizationId: string) {
   const db = getDatabase();
-  return db
+  const rows = await db
     .select({
       id: clientTasks.id,
       title: clientTasks.title,
@@ -195,10 +196,11 @@ export async function listDueTodos(organizationId: string, today: BusinessDate) 
         eq(clientTasks.status, "open"),
         isNull(clientTasks.archivedAt),
         isNull(clients.archivedAt),
-        lte(clientTasks.dueDate, today),
       ),
     )
     .orderBy(asc(clientTasks.dueDate));
+
+  return sortOpenTodosByDueDate(rows);
 }
 
 /** Convenience wrapper so the page resolves "today" once and passes it everywhere. */
