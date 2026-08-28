@@ -47,6 +47,7 @@ export default async function NewOrderPage({
           <div className="mt-4">
             <ClientPicker
               fieldName="clientId"
+              required
               noResultsMessage="No matching active Clients. Add the Client before creating an Order."
             />
           </div>

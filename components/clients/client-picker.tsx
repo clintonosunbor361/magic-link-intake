@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
@@ -16,15 +16,36 @@ export function ClientPicker({
   initialSelected = null,
   fieldName = "existingClientId",
   noResultsMessage = "No matching Clients. A new Client will be created.",
+  required = false,
 }: {
   initialSelected?: ClientResult | null;
   fieldName?: string;
   noResultsMessage?: string;
+  required?: boolean;
 }) {
+  const pickerRef = useRef<HTMLDivElement>(null);
+  const searchInputRef = useRef<HTMLInputElement>(null);
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<ClientResult[] | null>(null);
   const [selected, setSelected] = useState<ClientResult | null>(initialSelected);
   const [searching, setSearching] = useState(false);
+  const [selectionError, setSelectionError] = useState("");
+
+  useEffect(() => {
+    if (!required) return;
+    const form = pickerRef.current?.closest("form");
+    if (!form) return;
+
+    function validateSelection(event: SubmitEvent) {
+      if (selected) return;
+      event.preventDefault();
+      setSelectionError("Select a Client before creating an Order.");
+      searchInputRef.current?.focus();
+    }
+
+    form.addEventListener("submit", validateSelection);
+    return () => form.removeEventListener("submit", validateSelection);
+  }, [required, selected]);
 
   async function search() {
     if (!query.trim()) {
@@ -42,7 +63,7 @@ export function ClientPicker({
   }
 
   return (
-    <div className="space-y-3">
+    <div ref={pickerRef} className="space-y-3">
       <input type="hidden" name={fieldName} value={selected?.id ?? ""} />
       {selected ? (
         <div className="flex items-center justify-between rounded-[0.8rem] border border-[#afc67d] bg-[#eaf5cf] px-4 py-3 text-sm">
@@ -64,9 +85,13 @@ export function ClientPicker({
         <>
           <div className="flex gap-2">
             <Input
+              ref={searchInputRef}
               aria-label="Search Clients"
               value={query}
-              onChange={(event) => setQuery(event.target.value)}
+              onChange={(event) => {
+                setQuery(event.target.value);
+                setSelectionError("");
+              }}
               placeholder="Search existing Clients by name or phone"
             />
             <Button type="button" variant="outline" onClick={search} disabled={searching} className="shrink-0">
@@ -79,7 +104,10 @@ export function ClientPicker({
                 <li key={client.id}>
                   <button
                     type="button"
-                    onClick={() => setSelected(client)}
+                    onClick={() => {
+                      setSelected(client);
+                      setSelectionError("");
+                    }}
                     className="flex w-full flex-col gap-1 px-4 py-3 text-left text-sm hover:bg-[#f8f8f4] sm:flex-row sm:items-center sm:justify-between"
                   >
                     <span className="font-medium text-kuartz-ink">{client.fullName}</span>
@@ -97,6 +125,7 @@ export function ClientPicker({
               {noResultsMessage}
             </p>
           ) : null}
+          {selectionError ? <p className="text-sm font-semibold text-red-700" role="alert">{selectionError}</p> : null}
         </>
       )}
     </div>
