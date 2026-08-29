@@ -28,7 +28,7 @@ import {
 import { issueOrderConfirmationAction } from "@/app/actions/client-confirmations";
 import { completeOrderAction } from "@/app/actions/order-completion";
 import { requireStaffSession } from "@/lib/auth/session";
-import { canManageFinance, canOverrideCompletionGate } from "@/lib/domain/access-control";
+import { canManageFinance, canManageMeasurementFieldDefinitions, canOverrideCompletionGate } from "@/lib/domain/access-control";
 import { mayArchive, mayRestore } from "@/lib/domain/record-lifecycle";
 import { listOutstandingAccessories } from "@/lib/accessories/repository";
 import { listOpenFittingSessions } from "@/lib/fittings/repository";
@@ -55,8 +55,11 @@ import { listConfirmationsForSubject } from "@/lib/client-confirmations/reposito
 import { formatMinorUnits } from "@/lib/forms/money";
 import { businessToday } from "@/lib/domain/business-date";
 import { getOrganizationTimezone } from "@/lib/organizations/repository";
+import { createMeasurementProfileRepository, listMeasurementProfileSnapshot } from "@/lib/measurement-profiles/repository";
+import { getOrCreateMeasurementProfile } from "@/lib/measurement-profiles/service";
 import { getLiveAssignmentDetailForItem } from "@/lib/production/assignment-repository";
 import { listVendorsWithStats } from "@/lib/vendors/repository";
+import { MeasurementDrawer } from "@/components/clients/measurement-drawer";
 import { ItemAssignmentDrawer, LookBulkAssignForm } from "@/components/production/assignment-drawer";
 import { OrderWorkspaceNav } from "@/components/orders/order-workspace-nav";
 import { Button } from "@/components/ui/button";
@@ -118,6 +121,11 @@ export default async function OrderDetailPage({
     listRevisionQueueFiles(session.organizationId, order.id),
     getMissingMeasurementsForOrder(session.organizationId, order.id),
   ]);
+  const measurementProfile = await getOrCreateMeasurementProfile(
+    { organizationId: session.organizationId, clientId: order.clientId },
+    createMeasurementProfileRepository(),
+  );
+  const measurementFields = await listMeasurementProfileSnapshot(session.organizationId, measurementProfile.id);
   const orderConfirmations = await listConfirmationsForSubject(session.organizationId, "order_detail", order.id);
   const styleDirectionRevisions = await listStyleDirectionFileRevisionsForFiles(
     session.organizationId,
@@ -892,18 +900,51 @@ export default async function OrderDetailPage({
 
           {activeTab === "measurements" ? (
             <div>
-              <h2 className="section-title">Measurements</h2>
-              <p className="mt-2 text-sm leading-6 text-kuartz-secondary">
-                Measurements belong to the Client profile. Use this tab to jump to the Client measurement area while we add the in-workspace editor.
-              </p>
-              <div className="mt-4 rounded-[1rem] border border-kuartz-line bg-white/65 p-5">
-                <p className="font-semibold text-kuartz-ink">{order.clientFullName}</p>
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <div>
+                  <h2 className="section-title">Measurements</h2>
+                  <p className="mt-2 text-sm leading-6 text-kuartz-secondary">
+                    These are {order.clientFullName}'s Client measurements. Updates here also update the Client profile.
+                  </p>
+                </div>
+                <MeasurementDrawer
+                  clientId={order.clientId}
+                  measurementProfileId={measurementProfile.id}
+                  fields={measurementFields}
+                  returnTo={orderTabHref("measurements")}
+                  canAddCustomFields={canManageMeasurementFieldDefinitions(session.role)}
+                  disabled={Boolean(measurementProfile.archivedAt)}
+                />
+              </div>
+              {measurementProfile.archivedAt ? <p className="mt-3 text-sm text-kuartz-muted">This measurement profile is archived.</p> : null}
+              <div className="mt-5 divide-y divide-kuartz-line border-y border-kuartz-line">
+                {measurementFields.length ? (
+                  measurementFields.map((field) => (
+                    <div key={field.fieldId} className="grid gap-3 py-4 text-sm sm:grid-cols-[minmax(11rem,0.32fr)_minmax(0,1fr)]">
+                      <div>
+                        <p className="font-semibold text-kuartz-ink">{field.fieldName}</p>
+                        <p className="mt-1 text-xs text-kuartz-muted">{field.unit}</p>
+                      </div>
+                      <div>
+                        <p className="font-semibold text-kuartz-ink">{field.value ? `${field.value} ${field.unit}` : "Not recorded yet"}</p>
+                        {field.value ? (
+                          <p className="mt-1 text-xs text-kuartz-muted">
+                            {field.lastEditedByName ? `Last edited by ${field.lastEditedByName}` : `Set by ${field.createdByName}`}
+                            {field.lastEditedAt ? ` - ${dateFormatter.format(field.lastEditedAt)}` : ""}
+                          </p>
+                        ) : null}
+                      </div>
+                    </div>
+                  ))
+                ) : (
+                  <p className="py-8 text-sm text-kuartz-muted">No measurement fields have been set up yet.</p>
+                )}
+              </div>
+              <div className="mt-5 rounded-[1rem] border border-kuartz-line bg-white/65 p-5">
+                <p className="font-semibold text-kuartz-ink">Measurement requirements</p>
                 <p className="mt-2 text-sm leading-6 text-kuartz-secondary">
-                  Missing measurements are already shown beside Items in Looks & Items and enforced before Vendor Brief export.
+                  Missing measurements are shown beside Items in Looks & Items and blocked before Vendor Brief export unless a Super Admin overrides.
                 </p>
-                <Button asChild className="mt-4" variant="outline">
-                  <Link href={`/clients/${order.clientId}`}>Open Client measurements</Link>
-                </Button>
               </div>
             </div>
           ) : null}

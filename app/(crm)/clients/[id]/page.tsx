@@ -10,6 +10,7 @@ import {
 } from "@/app/actions/measurement-profiles";
 import { issueMeasurementConfirmationAction } from "@/app/actions/client-confirmations";
 import { requireStaffSession } from "@/lib/auth/session";
+import { canManageMeasurementFieldDefinitions } from "@/lib/domain/access-control";
 import { mayArchive, mayRestore } from "@/lib/domain/record-lifecycle";
 import { getClient, listOrdersForClient } from "@/lib/clients/repository";
 import {
@@ -166,6 +167,7 @@ export default async function ClientDetailPage({
                 clientId={client.id}
                 measurementProfileId={measurementProfile.id}
                 fields={measurementFields}
+                canAddCustomFields={canManageMeasurementFieldDefinitions(session.role)}
                 disabled={Boolean(measurementProfile.archivedAt)}
               />
             </div>

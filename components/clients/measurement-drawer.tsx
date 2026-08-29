@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { Ruler, X } from "lucide-react";
+import { createMeasurementFieldDefinitionAction } from "@/app/actions/measurement-field-definitions";
 import { setMeasurementValuesAction } from "@/app/actions/measurement-profiles";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -19,13 +20,20 @@ export function MeasurementDrawer({
   measurementProfileId,
   fields,
   disabled,
+  returnTo,
+  canAddCustomFields = false,
 }: {
   clientId: string;
   measurementProfileId: string;
   fields: MeasurementFieldView[];
   disabled?: boolean;
+  returnTo?: string;
+  canAddCustomFields?: boolean;
 }) {
   const [open, setOpen] = useState(false);
+  const targetPath = returnTo ?? `/clients/${clientId}`;
+  const nextSortOrder = fields.length ? fields.length + 1 : 1;
+  const hasRecordedMeasurements = fields.some((field) => field.value);
 
   return (
     <>
@@ -47,7 +55,7 @@ export function MeasurementDrawer({
               <div>
                 <p className="eyebrow">Measurements</p>
                 <h2 id="measurement-drawer-title" className="mt-2 text-2xl font-extrabold text-kuartz-ink">
-                  Add measurements
+                  {hasRecordedMeasurements ? "Edit measurements" : "Add measurements"}
                 </h2>
               </div>
               <button
@@ -60,11 +68,32 @@ export function MeasurementDrawer({
               </button>
             </div>
 
-            <form action={setMeasurementValuesAction} className="flex min-h-0 flex-1 flex-col">
-              <input type="hidden" name="clientId" value={clientId} />
-              <input type="hidden" name="measurementProfileId" value={measurementProfileId} />
+            <div className="min-h-0 flex-1 overflow-y-auto px-5 py-5 sm:px-6">
+              {canAddCustomFields ? (
+                <form action={createMeasurementFieldDefinitionAction} className="mb-5 rounded-[0.95rem] border border-kuartz-line bg-white/78 p-4">
+                  <input type="hidden" name="returnTo" value={targetPath} />
+                  <input type="hidden" name="sortOrder" value={nextSortOrder} />
+                  <p className="text-sm font-extrabold text-kuartz-ink">Add custom field</p>
+                  <div className="mt-3 grid gap-3 sm:grid-cols-[minmax(0,1fr)_8rem_auto] sm:items-end">
+                    <label className="form-group">
+                      <span>Field name</span>
+                      <Input name="name" placeholder="e.g. Cap size" required />
+                    </label>
+                    <label className="form-group">
+                      <span>Unit</span>
+                      <Input name="unit" placeholder="in" required />
+                    </label>
+                    <Button type="submit" variant="outline">
+                      Add field
+                    </Button>
+                  </div>
+                </form>
+              ) : null}
 
-              <div className="min-h-0 flex-1 overflow-y-auto px-5 py-5 sm:px-6">
+              <form action={setMeasurementValuesAction} id="measurement-values-form">
+                <input type="hidden" name="clientId" value={clientId} />
+                <input type="hidden" name="measurementProfileId" value={measurementProfileId} />
+                <input type="hidden" name="returnTo" value={targetPath} />
                 <div className="grid gap-4 sm:grid-cols-2">
                   {fields.map((field) => (
                     <div key={field.fieldId} className="rounded-[0.95rem] border border-kuartz-line bg-white/78 p-4">
@@ -86,15 +115,17 @@ export function MeasurementDrawer({
                     </div>
                   ))}
                 </div>
-              </div>
+              </form>
+            </div>
 
               <div className="flex flex-wrap items-center justify-end gap-3 border-t border-kuartz-line bg-white/76 px-5 py-4 sm:px-6">
                 <Button type="button" variant="ghost" onClick={() => setOpen(false)}>
                   Cancel
                 </Button>
-                <Button type="submit">Save measurements</Button>
+                <Button type="submit" form="measurement-values-form">
+                  Save measurements
+                </Button>
               </div>
-            </form>
           </aside>
         </div>
       ) : null}

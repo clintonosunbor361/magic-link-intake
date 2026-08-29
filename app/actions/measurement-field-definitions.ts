@@ -11,11 +11,16 @@ import {
 } from "@/lib/measurement-field-definitions/service";
 import { readFormString } from "@/lib/forms/read-string";
 
+function safeReturnPath(value: string, fallback: string): string {
+  return value.startsWith("/") && !value.startsWith("//") ? value : fallback;
+}
+
 export async function createMeasurementFieldDefinitionAction(formData: FormData) {
   const session = await requireStaffSession();
   const name = readFormString(formData, "name");
   const unit = readFormString(formData, "unit");
   const sortOrder = Number(readFormString(formData, "sortOrder"));
+  const returnTo = safeReturnPath(readFormString(formData, "returnTo"), "/settings/measurement-fields");
 
   try {
     await createMeasurementFieldDefinition(
@@ -24,11 +29,13 @@ export async function createMeasurementFieldDefinitionAction(formData: FormData)
     );
   } catch (error) {
     const message = error instanceof Error ? error.message : "The measurement field could not be created.";
-    redirect(`/settings/measurement-fields?error=${encodeURIComponent(message)}`);
+    const separator = returnTo.includes("?") ? "&" : "?";
+    redirect(`${returnTo}${separator}error=${encodeURIComponent(message)}`);
   }
 
   revalidatePath("/settings/measurement-fields");
-  redirect("/settings/measurement-fields");
+  revalidatePath(returnTo);
+  redirect(returnTo);
 }
 
 export async function archiveMeasurementFieldDefinitionAction(formData: FormData) {

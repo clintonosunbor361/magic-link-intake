@@ -12,6 +12,10 @@ import {
   restoreMeasurementProfileAttachment,
 } from "@/lib/measurement-profiles/attachments-service";
 
+function safeReturnPath(value: string, fallback: string): string {
+  return value.startsWith("/") && !value.startsWith("//") ? value : fallback;
+}
+
 async function readUploadedFile(formData: FormData): Promise<{ buffer: Buffer; declaredMimeType: string }> {
   const file = formData.get("file");
   if (!(file instanceof File) || file.size === 0) throw new Error("Choose a file to upload.");
@@ -51,6 +55,7 @@ export async function setMeasurementValuesAction(formData: FormData) {
   const session = await requireStaffSession();
   const clientId = readFormString(formData, "clientId");
   const measurementProfileId = readFormString(formData, "measurementProfileId");
+  const returnTo = safeReturnPath(readFormString(formData, "returnTo"), `/clients/${clientId}`);
   const fieldDefinitionIds = formData.getAll("fieldDefinitionId").map(String);
   const repository = createMeasurementProfileRepository();
 
@@ -78,11 +83,13 @@ export async function setMeasurementValuesAction(formData: FormData) {
     }
   } catch (error) {
     const message = error instanceof Error ? error.message : "The measurements could not be saved.";
-    redirect(`/clients/${clientId}?error=${encodeURIComponent(message)}`);
+    const separator = returnTo.includes("?") ? "&" : "?";
+    redirect(`${returnTo}${separator}error=${encodeURIComponent(message)}`);
   }
 
   revalidatePath(`/clients/${clientId}`);
-  redirect(`/clients/${clientId}`);
+  revalidatePath(returnTo);
+  redirect(returnTo);
 }
 
 export async function archiveMeasurementProfileAction(formData: FormData) {

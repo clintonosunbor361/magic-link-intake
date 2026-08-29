@@ -64,7 +64,7 @@ Legend:
 - [x] Overview tab with next actions
 - [x] Looks & Items tab
 - [x] Looks are displayed as compact workspace cards instead of always-open edit forms
-- [~] Measurements tab inside Order workspace; currently links to Client profile measurement area
+- [x] Measurements tab inside Order workspace can view and edit Client profile measurements
 - [x] Style Direction tab
 - [~] Vendors tab; currently routes assignment work through Looks & Items and Vendor directory
 - [~] Production tab; currently links to Production workspace and Item assignments
@@ -264,7 +264,7 @@ Legend:
 - [ ] Tabs render correctly
 - [ ] Overview tab is default landing tab
 - [ ] Looks & Items tab contains only Looks/Items work
-- [ ] Measurements tab can edit Client measurements
+- [x] Measurements tab can edit Client measurements
 - [ ] Style Direction tab contains creative/reference work only
 - [ ] Vendors tab handles assignment work
 - [ ] Production tab handles status/deadline tracking
