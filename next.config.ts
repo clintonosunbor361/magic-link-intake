@@ -2,6 +2,9 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   distDir: process.env.KUARTZ_E2E ? ".next/e2e-build" : ".next",
+  turbopack: {
+    root: process.cwd(),
+  },
   // sharp ships native binaries; keep it out of the server bundle so Next loads it from node_modules directly.
   serverExternalPackages: ["@sparticuz/chromium", "pdf-lib", "puppeteer-core", "sharp"],
   outputFileTracingIncludes: {
