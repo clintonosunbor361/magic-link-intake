@@ -60,9 +60,7 @@ export default async function OrderAccessoriesPage({
         <p className="eyebrow">Accessory sourcing</p>
         <h1 className="page-title">Accessories</h1>
         <p className="page-description">
-          Sourced separately from the garments — Accessories never go to a Vendor Brief and never
-          enter Production. Delivery dates are inherited: an Accessory for one Look follows that
-          Look&rsquo;s date, and a whole-Order Accessory follows the earliest dated Look.
+          Track accessories separately from garment production. Accessories use the linked look date when one is available.
         </p>
       </header>
 
@@ -99,8 +97,8 @@ export default async function OrderAccessoriesPage({
                     <h3 className="section-title">{accessory.label}</h3>
                     <p className="text-sm text-kuartz-muted">
                       {accessory.deliveryDate.state === "inherited"
-                        ? `Due ${formatBusinessDate(accessory.deliveryDate.date)}${accessory.lookName ? ` · ${accessory.lookName}` : " · earliest Look"}`
-                        : "No date — no dated Look to inherit from"}
+                        ? `Due ${formatBusinessDate(accessory.deliveryDate.date)}${accessory.lookName ? ` | ${accessory.lookName}` : " | earliest Look"}`
+                        : "No date. No dated Look to inherit from."}
                     </p>
                   </div>
 
@@ -328,3 +326,4 @@ export default async function OrderAccessoriesPage({
     </div>
   );
 }
+

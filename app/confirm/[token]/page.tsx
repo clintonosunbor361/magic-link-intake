@@ -118,7 +118,7 @@ export default async function ConfirmPage({ params, searchParams }: ConfirmPageP
           {isCompleted ? (
             <p className="text-sm text-kuartz-muted">
               Decision: {formatDecisionLabel(confirmation.decisionStatus)}
-              {confirmation.decisionComment ? ` — "${confirmation.decisionComment}"` : ""}
+              {confirmation.decisionComment ? `. Comment: "${confirmation.decisionComment}"` : ""}
             </p>
           ) : (
             <form action={`/confirm/${encodeURIComponent(token)}/decide`} method="post" className="flex flex-wrap items-end gap-4">

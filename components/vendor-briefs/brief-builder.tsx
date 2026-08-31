@@ -111,7 +111,7 @@ export function BriefBuilder({
               {sources.measurements.map((measurement) => (
                 <Checkbox
                   key={measurement.fieldDefinitionId}
-                  label={`${measurement.label}${measurement.value ? "" : " — not recorded"}`}
+                  label={`${measurement.label}${measurement.value ? "" : " not recorded"}`}
                   checked={selection.measurementFieldIds.includes(measurement.fieldDefinitionId)}
                   onChange={() =>
                     setSelection({
@@ -129,7 +129,7 @@ export function BriefBuilder({
           <fieldset>
             <legend className="section-title">Consultation notes</legend>
             <p className="mt-2 text-sm leading-6 text-kuartz-secondary">
-              Nothing is included by default — tick only what this Vendor needs.
+              Nothing is included by default. Tick only what this Vendor needs.
             </p>
             <div className="mt-4 space-y-2.5 border-t border-kuartz-line pt-5">
               {sources.notes.map((note) => (
@@ -339,7 +339,7 @@ export function BriefBuilder({
           </Button>
           <p className="mt-2 text-xs text-kuartz-muted" role="status" aria-live="polite">
             {exporting
-              ? "Fetching references and rendering — this can take a few seconds."
+              ? "Fetching references and rendering. This can take a few seconds."
               : "The PDF is generated on demand and never stored."}
           </p>
         </div>

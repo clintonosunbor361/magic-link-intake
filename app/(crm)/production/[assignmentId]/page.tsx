@@ -175,7 +175,7 @@ export default async function AssignmentDetailPage({
                       </a>
                     ) : null}
                     {payment.voidedAt ? (
-                      <p className="mt-1 text-xs text-[#8c1d1d]">Voided — {payment.voidReason}</p>
+                      <p className="mt-1 text-xs text-[#8c1d1d]">Voided. Reason: {payment.voidReason}</p>
                     ) : canManage ? (
                       <form action={voidVendorPaymentAction} className="mt-3 flex flex-wrap items-end gap-2">
                         <input type="hidden" name="assignmentId" value={assignment.id} />

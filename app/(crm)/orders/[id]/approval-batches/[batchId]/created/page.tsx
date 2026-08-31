@@ -52,7 +52,7 @@ export default async function ApprovalBatchCreatedPage({
           <div className="border border-kuartz-line bg-white/55 p-5">
             <p className="eyebrow">Style Direction approval · {order.clientFullName}</p><h2 className="section-title mt-2">Share another way</h2>
             <p className="mt-2 text-sm text-kuartz-muted">
-              This link is shown only once — send it now or copy it. Creating another batch for this Order invalidates
+              This link is shown only once. Send it now or copy it. Creating another batch for this order invalidates
               this link.
             </p>
             <div className="mt-3 flex flex-wrap items-center gap-3">

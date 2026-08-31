@@ -37,8 +37,7 @@ export default async function AccessoryStatusesPage({
         <h1 className="page-title">Accessory statuses</h1>
         <p className="page-description">
           One shared list applies to every Accessory. The first status in this order is where new
-          Accessories start, and at least one status must be marked as delivered — that marker is what
-          tells an Order whether anything is still outstanding.
+          Accessories start with the first status. At least one status must be marked as delivered so the order can show what is still open.
         </p>
       </header>
 

@@ -62,8 +62,7 @@ export default async function ProductionPage({
         <p className="eyebrow">Operations</p>
         <h1 className="page-title">Production</h1>
         <p className="page-description">
-          Every assigned Item, grouped by Client, Order and Look. Urgency comes from the deadline —
-          there is no manual priority to keep in sync.
+          Track assigned items by client, order, look, vendor, status, and deadline.
         </p>
       </header>
 

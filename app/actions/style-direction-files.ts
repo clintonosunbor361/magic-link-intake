@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { requireStaffSession } from "@/lib/auth/session";
 import { readFormString } from "@/lib/forms/read-string";
+import { safeReturnPath, withReturnError } from "@/lib/forms/return-path";
 import { createStyleDirectionFileRepository, createStyleDirectionStorage } from "@/lib/style-direction-files/repository";
 import {
   addStyleDirectionFileRevision,
@@ -31,6 +32,7 @@ async function readUploadedFile(formData: FormData): Promise<{ buffer: Buffer; d
 export async function uploadStyleDirectionFileAction(formData: FormData) {
   const session = await requireStaffSession();
   const orderId = readFormString(formData, "orderId");
+  const returnTo = safeReturnPath(readFormString(formData, "returnTo"), `/orders/${orderId}?tab=style`);
 
   try {
     const upload = await readUploadedFile(formData);
@@ -49,11 +51,11 @@ export async function uploadStyleDirectionFileAction(formData: FormData) {
     );
   } catch (error) {
     const message = error instanceof Error ? error.message : "The Style Direction File could not be uploaded.";
-    redirect(`/orders/${orderId}?error=${encodeURIComponent(message)}`);
+    redirect(withReturnError(returnTo, message));
   }
 
   revalidatePath(`/orders/${orderId}`);
-  redirect(`/orders/${orderId}`);
+  redirect(returnTo);
 }
 
 export async function reviseStyleDirectionFileAction(formData: FormData) {
@@ -61,6 +63,7 @@ export async function reviseStyleDirectionFileAction(formData: FormData) {
   const orderId = readFormString(formData, "orderId");
   const fileId = readFormString(formData, "fileId");
   const expectedVersion = Number(readFormString(formData, "version"));
+  const returnTo = safeReturnPath(readFormString(formData, "returnTo"), `/orders/${orderId}?tab=style`);
 
   try {
     const upload = await readUploadedFile(formData);
@@ -72,11 +75,11 @@ export async function reviseStyleDirectionFileAction(formData: FormData) {
     );
   } catch (error) {
     const message = error instanceof Error ? error.message : "The Style Direction File could not be revised.";
-    redirect(`/orders/${orderId}?error=${encodeURIComponent(message)}`);
+    redirect(withReturnError(returnTo, message));
   }
 
   revalidatePath(`/orders/${orderId}`);
-  redirect(`/orders/${orderId}`);
+  redirect(returnTo);
 }
 
 export async function archiveStyleDirectionFileAction(formData: FormData) {
@@ -84,6 +87,7 @@ export async function archiveStyleDirectionFileAction(formData: FormData) {
   const orderId = readFormString(formData, "orderId");
   const fileId = readFormString(formData, "fileId");
   const expectedVersion = Number(readFormString(formData, "version"));
+  const returnTo = safeReturnPath(readFormString(formData, "returnTo"), `/orders/${orderId}?tab=style`);
 
   try {
     await archiveStyleDirectionFile(
@@ -92,11 +96,11 @@ export async function archiveStyleDirectionFileAction(formData: FormData) {
     );
   } catch (error) {
     const message = error instanceof Error ? error.message : "The Style Direction File could not be updated.";
-    redirect(`/orders/${orderId}?error=${encodeURIComponent(message)}`);
+    redirect(withReturnError(returnTo, message));
   }
 
   revalidatePath(`/orders/${orderId}`);
-  redirect(`/orders/${orderId}`);
+  redirect(returnTo);
 }
 
 export async function restoreStyleDirectionFileAction(formData: FormData) {
@@ -104,6 +108,7 @@ export async function restoreStyleDirectionFileAction(formData: FormData) {
   const orderId = readFormString(formData, "orderId");
   const fileId = readFormString(formData, "fileId");
   const expectedVersion = Number(readFormString(formData, "version"));
+  const returnTo = safeReturnPath(readFormString(formData, "returnTo"), `/orders/${orderId}?tab=style`);
 
   try {
     await restoreStyleDirectionFile(
@@ -112,9 +117,9 @@ export async function restoreStyleDirectionFileAction(formData: FormData) {
     );
   } catch (error) {
     const message = error instanceof Error ? error.message : "The Style Direction File could not be updated.";
-    redirect(`/orders/${orderId}?error=${encodeURIComponent(message)}`);
+    redirect(withReturnError(returnTo, message));
   }
 
   revalidatePath(`/orders/${orderId}`);
-  redirect(`/orders/${orderId}`);
+  redirect(returnTo);
 }

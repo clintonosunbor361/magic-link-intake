@@ -1,8 +1,9 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Button } from "@/components/ui/button";
+import { Search } from "lucide-react";
 import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
 
 type ClientResult = {
   id: string;
@@ -30,6 +31,7 @@ export function ClientPicker({
   const [selected, setSelected] = useState<ClientResult | null>(initialSelected);
   const [searching, setSearching] = useState(false);
   const [selectionError, setSelectionError] = useState("");
+  const [hasMore, setHasMore] = useState(false);
 
   useEffect(() => {
     if (!required) return;
@@ -47,16 +49,51 @@ export function ClientPicker({
     return () => form.removeEventListener("submit", validateSelection);
   }, [required, selected]);
 
-  async function search() {
-    if (!query.trim()) {
+  useEffect(() => {
+    const trimmedQuery = query.trim();
+    if (selected) return;
+    if (trimmedQuery.length < 2) {
       setResults([]);
+      setHasMore(false);
+      setSearching(false);
       return;
     }
+
+    const controller = new AbortController();
+    const timer = window.setTimeout(async () => {
+      setSearching(true);
+      try {
+        const response = await fetch(`/api/clients/search?q=${encodeURIComponent(trimmedQuery)}&limit=5`, {
+          signal: controller.signal,
+        });
+        const data = (await response.json()) as { clients?: ClientResult[]; hasMore?: boolean };
+        setResults(data.clients ?? []);
+        setHasMore(Boolean(data.hasMore));
+      } catch (error) {
+        if ((error as Error).name !== "AbortError") {
+          setResults([]);
+          setHasMore(false);
+        }
+      } finally {
+        if (!controller.signal.aborted) setSearching(false);
+      }
+    }, 300);
+
+    return () => {
+      window.clearTimeout(timer);
+      controller.abort();
+    };
+  }, [query, selected]);
+
+  async function showMoreResults() {
+    const trimmedQuery = query.trim();
+    if (trimmedQuery.length < 2) return;
     setSearching(true);
     try {
-      const response = await fetch(`/api/clients/search?q=${encodeURIComponent(query)}`);
-      const data = (await response.json()) as { clients?: ClientResult[] };
+      const response = await fetch(`/api/clients/search?q=${encodeURIComponent(trimmedQuery)}&limit=20`);
+      const data = (await response.json()) as { clients?: ClientResult[]; hasMore?: boolean };
       setResults(data.clients ?? []);
+      setHasMore(Boolean(data.hasMore));
     } finally {
       setSearching(false);
     }
@@ -83,7 +120,8 @@ export function ClientPicker({
         </div>
       ) : (
         <>
-          <div className="flex gap-2">
+          <div className="relative">
+            <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-kuartz-muted" aria-hidden="true" />
             <Input
               ref={searchInputRef}
               aria-label="Search Clients"
@@ -92,12 +130,14 @@ export function ClientPicker({
                 setQuery(event.target.value);
                 setSelectionError("");
               }}
-              placeholder="Search existing Clients by name or phone"
+              placeholder="Search existing Clients by name, phone, or email"
+              className="pl-11"
             />
-            <Button type="button" variant="outline" onClick={search} disabled={searching} className="shrink-0">
-              {searching ? "..." : "Search"}
-            </Button>
           </div>
+          {query.trim().length === 1 ? (
+            <p className="text-sm text-kuartz-secondary">Type at least 2 characters to search.</p>
+          ) : null}
+          {searching ? <p className="text-sm text-kuartz-secondary" role="status">Searching Clients...</p> : null}
           {results && results.length ? (
             <ul className="divide-y divide-kuartz-line rounded-[0.8rem] border border-kuartz-line">
               {results.map((client) => (
@@ -119,8 +159,20 @@ export function ClientPicker({
                   </button>
                 </li>
               ))}
+              {hasMore ? (
+                <li>
+                  <button
+                    type="button"
+                    onClick={showMoreResults}
+                    className="w-full px-4 py-3 text-left text-sm font-semibold text-kuartz-ink hover:bg-[#f8f8f4]"
+                    disabled={searching}
+                  >
+                    View more results
+                  </button>
+                </li>
+              ) : null}
             </ul>
-          ) : results ? (
+          ) : results && query.trim().length >= 2 && !searching ? (
             <p className="text-sm text-kuartz-secondary" role="status">
               {noResultsMessage}
             </p>

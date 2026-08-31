@@ -5,19 +5,15 @@ import { WeekdayLabel } from "@/components/weekday-label";
 import { EmptyState } from "@/components/ui/empty-state";
 import { requireStaffSession } from "@/lib/auth/session";
 import {
-  countActiveClients,
   dashboardToday,
+  getOrderPipelineCounts,
   listDelayedAssignments,
   listOpenTodos,
   listAwaitingClientResponses,
   listUpcomingFittings,
   listUpcomingLookDates,
 } from "@/lib/dashboard/repository";
-import { summarizeDashboardFinance, type DashboardFinanceSummary } from "@/lib/dashboard/overview";
 import { daysBetween } from "@/lib/domain/business-date";
-import { canManageFinance } from "@/lib/domain/access-control";
-import { listOrderBalances, listVendorPaymentPositions } from "@/lib/finance/repository";
-import { formatMinorUnits } from "@/lib/forms/money";
 import { countUnreadNotifications, listNotifications } from "@/lib/notifications/repository";
 import { TRIGGER_LABELS } from "@/lib/notifications/triggers";
 import { getOrganizationTimezone } from "@/lib/organizations/repository";
@@ -59,7 +55,7 @@ export default async function OverviewPage() {
   const today = dashboardToday(timezone, now);
 
   const [
-    activeClients,
+    orderPipeline,
     upcomingLooks,
     upcomingFittings,
     delayed,
@@ -68,9 +64,8 @@ export default async function OverviewPage() {
     recentNotifications,
     unreadCount,
     pendingRatings,
-    financeSummary,
   ] = await Promise.all([
-    countActiveClients(session.organizationId),
+    getOrderPipelineCounts(session.organizationId, today),
     listUpcomingLookDates(session.organizationId, today),
     listUpcomingFittings(session.organizationId, now),
     listDelayedAssignments(session.organizationId, today),
@@ -79,25 +74,14 @@ export default async function OverviewPage() {
     listNotifications(session.organizationId, { unreadOnly: true, limit: PANEL_LIMIT }),
     countUnreadNotifications(session.organizationId),
     listPendingRatingPrompts(session.organizationId),
-    canManageFinance(session.role)
-      ? Promise.all([
-          listOrderBalances(session.organizationId),
-          listVendorPaymentPositions(session.organizationId),
-        ]).then(([orderBalances, vendorPositions]) =>
-          summarizeDashboardFinance({ orderBalances, vendorPositions }),
-        )
-      : Promise.resolve(null),
   ]);
 
   const firstName = session.fullName.split(" ")[0];
   const pipelineRows: PipelineRow[] = [
-    { label: "Active clients", value: activeClients, href: "/clients", hint: "live orders" },
-    { label: "Look dates", value: upcomingLooks.length, href: "/orders", hint: "next 60 days" },
-    { label: "Fittings", value: upcomingFittings.length, href: "/orders", hint: "next 30 days" },
-    { label: "Approvals", value: awaitingResponses.length, href: "/orders", hint: "client decisions" },
-    { label: "To-dos", value: todos.length, href: "/clients", hint: "open" },
+    { label: "Active orders", value: orderPipeline.activeOrders, href: "/orders?status=active", hint: "in progress" },
+    { label: "Completed orders", value: orderPipeline.completedOrders, href: "/orders?status=completed", hint: "satisfied" },
+    { label: "Delayed orders", value: orderPipeline.delayedOrders, href: "/orders?status=delayed", hint: "behind schedule" },
   ];
-  const totalSignal = pipelineRows.reduce((sum, row) => sum + row.value, 0);
   const maxPipelineValue = Math.max(1, ...pipelineRows.map((row) => row.value));
   const workRows = buildWorkRows({ delayed, awaitingResponses, upcomingLooks, today });
   const nextLook = upcomingLooks[0];
@@ -120,11 +104,10 @@ export default async function OverviewPage() {
       </header>
 
       <section className="grid gap-5 xl:grid-cols-[minmax(18rem,0.85fr)_minmax(18rem,1fr)]" aria-label="Operations snapshot">
-        <PipelineCard rows={pipelineRows} totalSignal={totalSignal} maxValue={maxPipelineValue} />
+        <PipelineCard rows={pipelineRows} totalOrders={orderPipeline.totalOrders} maxValue={maxPipelineValue} />
         <TodosCard todos={todos} today={today} />
       </section>
 
-      {financeSummary ? <FinanceSummaryCard summary={financeSummary} /> : null}
 
       <section className="grid gap-5 xl:grid-cols-[minmax(0,1.45fr)_minmax(18rem,0.65fr)]" aria-label="Priority work">
         <WorkInMotionCard rows={workRows} delayedCount={delayed.length} />
@@ -160,11 +143,11 @@ function NotificationCta({ unreadCount }: { unreadCount: number }) {
 
 function PipelineCard({
   rows,
-  totalSignal,
+  totalOrders,
   maxValue,
 }: {
   rows: PipelineRow[];
-  totalSignal: number;
+  totalOrders: number;
   maxValue: number;
 }) {
   return (
@@ -172,8 +155,10 @@ function PipelineCard({
       <div className="flex items-start justify-between gap-4">
         <div>
           <p className="text-[0.68rem] font-bold uppercase tracking-[0.16em] text-kuartz-muted">Pipeline</p>
-          <p className="mt-2 text-4xl font-extrabold text-kuartz-ink">{totalSignal}</p>
-          <p className="text-sm text-kuartz-secondary">active signals</p>
+          <Link href="/orders" className="mt-2 block w-fit text-4xl font-extrabold text-kuartz-ink hover:underline">
+            {totalOrders}
+          </Link>
+          <p className="text-sm text-kuartz-secondary">total orders</p>
         </div>
         <Link href="/orders" className="text-xs font-extrabold text-kuartz-ink underline-offset-4 hover:underline">
           View orders
@@ -304,46 +289,6 @@ function TodosCard({ todos, today }: { todos: Todo[]; today: string }) {
           No open Client to-dos.
         </p>
       )}
-    </section>
-  );
-}
-
-function FinanceSummaryCard({ summary }: { summary: DashboardFinanceSummary }) {
-  return (
-    <section
-      className="grid overflow-hidden rounded-[1.45rem] border border-white/85 bg-white/86 shadow-[0_22px_65px_rgba(21,22,63,0.08)] backdrop-blur-xl sm:grid-cols-2"
-      aria-labelledby="finance-summary-heading"
-    >
-      <div className="p-5 sm:p-6">
-        <div className="flex items-start justify-between gap-4">
-          <div>
-            <p className="text-[0.68rem] font-bold uppercase tracking-[0.16em] text-kuartz-muted">Finance</p>
-            <h2 id="finance-summary-heading" className="mt-2 text-xl font-extrabold text-kuartz-ink">
-              Money position
-            </h2>
-          </div>
-          <Link href="/finance" className="text-xs font-extrabold text-kuartz-ink underline-offset-4 hover:underline">
-            View finance
-          </Link>
-        </div>
-        <p className="mt-5 text-sm text-kuartz-secondary">Outstanding from Clients</p>
-        <p className="mt-1 text-3xl font-extrabold tracking-[-0.03em] text-kuartz-ink">
-          ₦{formatMinorUnits(summary.outstandingClientMinor)}
-        </p>
-        <p className="mt-1 text-xs text-kuartz-muted">
-          {summary.outstandingClientOrderCount} Order{summary.outstandingClientOrderCount === 1 ? "" : "s"} with a positive balance
-        </p>
-      </div>
-      <div className="border-t border-kuartz-line bg-kuartz-ink p-5 text-white sm:border-l sm:border-t-0 sm:p-6">
-        <p className="text-[0.68rem] font-bold uppercase tracking-[0.16em] text-white/70">Vendor commitments</p>
-        <p className="mt-5 text-sm text-white/70">Owed to Vendors</p>
-        <p className="mt-1 text-3xl font-extrabold tracking-[-0.03em]">
-          ₦{formatMinorUnits(summary.owedToVendorsMinor)}
-        </p>
-        <p className="mt-1 text-xs text-white/70">
-          {summary.unpaidVendorAssignmentCount} assignment{summary.unpaidVendorAssignmentCount === 1 ? "" : "s"} with an unpaid balance
-        </p>
-      </div>
     </section>
   );
 }
@@ -545,3 +490,4 @@ function countdownLabel(daysRemaining: number): string {
   if (daysRemaining === 1) return "Tomorrow";
   return `In ${daysRemaining}d`;
 }
+

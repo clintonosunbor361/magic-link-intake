@@ -5,6 +5,7 @@ import { getDatabase } from "@/db";
 import { clients, orders } from "@/db/schema";
 import { normalizeEmail, normalizeName, normalizePhone } from "@/lib/clients/duplicate-match";
 import type { ClientRepository } from "@/lib/clients/service";
+import { splitSearchTokens, tokenSearchCondition } from "@/lib/search";
 
 export function createClientRepository(): ClientRepository {
   const db = getDatabase();
@@ -148,12 +149,11 @@ export async function listClients(
   if (!options.includeArchived) conditions.push(isNull(clients.archivedAt));
 
   if (options.search) {
-    const term = `%${options.search.toLowerCase()}%`;
-    const searchCondition = or(
-      sql`lower(${clients.fullName}) like ${term}`,
-      sql`${clients.primaryPhoneNormalized} like ${term}`,
-      sql`lower(${clients.email}) like ${term}`,
-    );
+    const searchCondition = tokenSearchCondition(splitSearchTokens(options.search), [
+      sql`lower(${clients.fullName})`,
+      sql`${clients.primaryPhoneNormalized}`,
+      sql`lower(coalesce(${clients.email}, ''))`,
+    ]);
     if (searchCondition) conditions.push(searchCondition);
   }
 
@@ -213,13 +213,14 @@ export async function listClientOptions(organizationId: string) {
     .orderBy(clients.fullName);
 }
 
-export async function searchClients(organizationId: string, search: string) {
+export async function searchClients(organizationId: string, search: string, limit = 20) {
   const db = getDatabase();
-  const term = `%${search.toLowerCase()}%`;
-  const searchCondition = or(
-    sql`lower(${clients.fullName}) like ${term}`,
-    sql`${clients.primaryPhoneNormalized} like ${term}`,
-  );
+  const searchCondition = tokenSearchCondition(splitSearchTokens(search), [
+    sql`lower(${clients.fullName})`,
+    sql`${clients.primaryPhoneNormalized}`,
+    sql`lower(coalesce(${clients.email}, ''))`,
+  ]);
+  if (!searchCondition) return [];
 
   return db
     .select({
@@ -237,7 +238,7 @@ export async function searchClients(organizationId: string, search: string) {
     .from(clients)
     .where(and(eq(clients.organizationId, organizationId), isNull(clients.archivedAt), searchCondition))
     .orderBy(clients.fullName)
-    .limit(20);
+    .limit(limit);
 }
 
 export async function getClient(organizationId: string, clientId: string) {

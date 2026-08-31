@@ -38,10 +38,7 @@ export default async function NotificationsPage({
       <header className="border-b border-kuartz-line pb-8">
         <p className="eyebrow">Notifications</p>
         <h1 className="page-title">Deadline reminders</h1>
-        <p className="page-description">
-          Reminders fire 7, 3 and 1 days before a deadline and once when it passes. Everyone sees
-          every reminder here; the email goes to whoever owns the work.
-        </p>
+        <p className="page-description">View reminders for to-dos, production, accessories, and fittings.</p>
       </header>
 
       <div className="mt-6 flex flex-wrap items-center justify-between gap-4">
@@ -119,7 +116,7 @@ export default async function NotificationsPage({
                   <p className="mt-1 text-sm text-kuartz-secondary">{row.body}</p>
                   <p className="mt-1 text-xs text-kuartz-muted">
                     {dateTimeFormatter.format(row.createdAt)}
-                    {row.recipientName ? ` · ${row.recipientName}` : " · unassigned"}
+                    {row.recipientName ? ` | ${row.recipientName}` : " | unassigned"}
                   </p>
                 </div>
 
@@ -147,7 +144,7 @@ export default async function NotificationsPage({
           description={
             unreadOnly
               ? "Every reminder has been dealt with."
-              : "Reminders appear here as deadlines approach across to-dos, production, accessories and fittings."
+              : "Reminders appear here when deadlines are close."
           }
         />
       )}

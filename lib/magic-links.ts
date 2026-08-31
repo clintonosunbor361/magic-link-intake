@@ -2,7 +2,7 @@ import "server-only";
 
 import { and, desc, eq, gt, isNull } from "drizzle-orm";
 import { getDatabase } from "@/db";
-import { clients, magicLinkTokens } from "@/db/schema";
+import { clients, magicLinkTokens, staffProfiles } from "@/db/schema";
 import { normalizeEmail, normalizeName, normalizePhone } from "@/lib/clients/duplicate-match";
 import type { IntakeSubmissionInput } from "@/lib/intake-options";
 import { generateToken, hashToken } from "@/lib/tokens";
@@ -18,6 +18,9 @@ export type MagicLinkSummary = {
   expiresAt: number;
   usedAt?: number;
   status: LinkStatus;
+  generatedByName: string | null;
+  clientId: string | null;
+  clientName: string | null;
 };
 
 export type IntakeSubmission = IntakeSubmissionInput & {
@@ -120,8 +123,13 @@ export async function listMagicLinks(organizationId: string, now = Date.now()): 
       createdAt: magicLinkTokens.createdAt,
       expiresAt: magicLinkTokens.expiresAt,
       consumedAt: magicLinkTokens.consumedAt,
+      generatedByName: staffProfiles.fullName,
+      clientId: clients.id,
+      clientName: clients.fullName,
     })
     .from(magicLinkTokens)
+    .leftJoin(staffProfiles, eq(staffProfiles.id, magicLinkTokens.generatedByStaffId))
+    .leftJoin(clients, eq(clients.id, magicLinkTokens.clientId))
     .where(eq(magicLinkTokens.organizationId, organizationId))
     .orderBy(desc(magicLinkTokens.createdAt));
 
@@ -132,6 +140,9 @@ export async function listMagicLinks(organizationId: string, now = Date.now()): 
     expiresAt: row.expiresAt.getTime(),
     usedAt: row.consumedAt?.getTime(),
     status: getStatus(row, now),
+    generatedByName: row.generatedByName,
+    clientId: row.clientId,
+    clientName: row.clientName,
   }));
 }
 

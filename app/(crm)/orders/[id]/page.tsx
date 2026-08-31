@@ -187,7 +187,7 @@ export default async function OrderDetailPage({
           <Link href={`/clients/${order.clientId}`} className="hover:underline">
             {order.clientFullName}
           </Link>{" "}
-          · {dateFormatter.format(order.createdAt)}
+          | {dateFormatter.format(order.createdAt)}
         </p>
       </header>
 
@@ -217,6 +217,7 @@ export default async function OrderDetailPage({
             <h2 className="section-title">Order details</h2>
             <form action={updateOrderAction} className="mt-4 space-y-4 border-y border-kuartz-line py-5">
               <input type="hidden" name="orderId" value={order.id} />
+              <input type="hidden" name="returnTo" value={orderTabHref("overview")} />
               <input type="hidden" name="version" value={order.version} />
               <div className="grid gap-4 sm:grid-cols-2">
                 <label className="form-group">
@@ -257,6 +258,7 @@ export default async function OrderDetailPage({
             <FormDisclosure title="Looks" buttonLabel="Add Look">
               <form action={createLookAction} aria-label="Add a Look" className="space-y-3 rounded-[0.95rem] border border-kuartz-line bg-[#fbfaf7] p-4 shadow-[0_18px_48px_rgba(24,24,38,0.08)]">
                 <input type="hidden" name="orderId" value={order.id} />
+                <input type="hidden" name="returnTo" value={orderTabHref("looks")} />
                 <div className="grid gap-4 sm:grid-cols-2">
                   <label className="form-group">
                     <span>Name</span>
@@ -312,6 +314,7 @@ export default async function OrderDetailPage({
                       {!look.archivedAt && mayArchive("look", session.role) ? (
                       <form action={archiveLookAction}>
                         <input type="hidden" name="orderId" value={order.id} />
+                        <input type="hidden" name="returnTo" value={orderTabHref("looks")} />
                         <input type="hidden" name="lookId" value={look.id} />
                         <input type="hidden" name="version" value={look.version} />
                         <Button type="submit" variant="outline">
@@ -322,6 +325,7 @@ export default async function OrderDetailPage({
                     {look.archivedAt && mayRestore("look", session.role) ? (
                       <form action={restoreLookAction}>
                         <input type="hidden" name="orderId" value={order.id} />
+                        <input type="hidden" name="returnTo" value={orderTabHref("looks")} />
                         <input type="hidden" name="lookId" value={look.id} />
                         <input type="hidden" name="version" value={look.version} />
                         <Button type="submit" variant="outline">
@@ -338,6 +342,7 @@ export default async function OrderDetailPage({
                     </summary>
                   <form action={updateLookAction} className="mt-4 space-y-3 rounded-[0.95rem] border border-kuartz-line bg-[#fbfaf7] p-4">
                     <input type="hidden" name="orderId" value={order.id} />
+                    <input type="hidden" name="returnTo" value={orderTabHref("looks")} />
                     <input type="hidden" name="lookId" value={look.id} />
                     <input type="hidden" name="version" value={look.version} />
                     <div className="grid gap-4 sm:grid-cols-2">
@@ -383,6 +388,7 @@ export default async function OrderDetailPage({
                             ) : null}
                             <form action={updateItemAction} className="flex flex-wrap items-end gap-3">
                               <input type="hidden" name="orderId" value={order.id} />
+                              <input type="hidden" name="returnTo" value={orderTabHref("looks")} />
                               <input type="hidden" name="itemId" value={item.id} />
                               <input type="hidden" name="version" value={item.version} />
                               <label className="form-group">
@@ -414,6 +420,7 @@ export default async function OrderDetailPage({
                               {!item.archivedAt && mayArchive("item", session.role) ? (
                                 <form action={archiveItemAction}>
                                   <input type="hidden" name="orderId" value={order.id} />
+                                  <input type="hidden" name="returnTo" value={orderTabHref("looks")} />
                                   <input type="hidden" name="itemId" value={item.id} />
                                   <input type="hidden" name="version" value={item.version} />
                                   <Button type="submit" variant="ghost">
@@ -424,6 +431,7 @@ export default async function OrderDetailPage({
                               {item.archivedAt && mayRestore("item", session.role) ? (
                                 <form action={restoreItemAction}>
                                   <input type="hidden" name="orderId" value={order.id} />
+                                  <input type="hidden" name="returnTo" value={orderTabHref("looks")} />
                                   <input type="hidden" name="itemId" value={item.id} />
                                   <input type="hidden" name="version" value={item.version} />
                                   <Button type="submit" variant="ghost">
@@ -463,10 +471,11 @@ export default async function OrderDetailPage({
                     <FormDisclosure title="Items" buttonLabel="Add Item">
                       <form
                       action={createItemAction}
-                      aria-label={`Add Item — ${look.name}`}
+                      aria-label={`Add Item for ${look.name}`}
                       className="flex flex-wrap items-end gap-3 border-t border-kuartz-line pt-4"
                     >
                       <input type="hidden" name="orderId" value={order.id} />
+                      <input type="hidden" name="returnTo" value={orderTabHref("looks")} />
                       <input type="hidden" name="lookId" value={look.id} />
                       <label className="form-group">
                         <span>Type</span>
@@ -515,6 +524,7 @@ export default async function OrderDetailPage({
             <FormDisclosure title="Consultation Notes" buttonLabel="Add Consultation Note">
               <form action={createConsultationNoteAction} aria-label="Add a Consultation Note" className="space-y-3 rounded-[0.95rem] border border-kuartz-line bg-[#fbfaf7] p-4 shadow-[0_18px_48px_rgba(24,24,38,0.08)]">
                 <input type="hidden" name="orderId" value={order.id} />
+                <input type="hidden" name="returnTo" value={orderTabHref("style")} />
                 <div className="grid gap-4 sm:grid-cols-2">
                   <label className="form-group">
                     <span>Source</span>
@@ -577,6 +587,7 @@ export default async function OrderDetailPage({
 
                     <form action={updateConsultationNoteAction} className="mt-4 space-y-3">
                       <input type="hidden" name="orderId" value={order.id} />
+                      <input type="hidden" name="returnTo" value={orderTabHref("style")} />
                       <input type="hidden" name="noteId" value={note.id} />
                       <input type="hidden" name="version" value={note.version} />
                       <div className="grid gap-4 sm:grid-cols-2">
@@ -633,6 +644,7 @@ export default async function OrderDetailPage({
                       {!note.archivedAt && mayArchive("consultation_note", session.role) ? (
                         <form action={archiveConsultationNoteAction}>
                           <input type="hidden" name="orderId" value={order.id} />
+                          <input type="hidden" name="returnTo" value={orderTabHref("style")} />
                           <input type="hidden" name="noteId" value={note.id} />
                           <input type="hidden" name="version" value={note.version} />
                           <Button type="submit" variant="ghost">
@@ -643,6 +655,7 @@ export default async function OrderDetailPage({
                       {note.archivedAt && mayRestore("consultation_note", session.role) ? (
                         <form action={restoreConsultationNoteAction}>
                           <input type="hidden" name="orderId" value={order.id} />
+                          <input type="hidden" name="returnTo" value={orderTabHref("style")} />
                           <input type="hidden" name="noteId" value={note.id} />
                           <input type="hidden" name="version" value={note.version} />
                           <Button type="submit" variant="ghost">
@@ -668,7 +681,7 @@ export default async function OrderDetailPage({
                     <p className="text-kuartz-ink underline">
                       {formatStyleDirectionLabel(file.category)} · {file.lookName ?? "Whole Order"}
                     </p>
-                    <p className="font-semibold text-kuartz-muted">{file.sentInActiveBatch ? "Sent — awaiting client" : "Awaiting batch"}</p>
+                    <p className="font-semibold text-kuartz-muted">{file.sentInActiveBatch ? "Sent. Awaiting client." : "Awaiting batch"}</p>
                   </a>
                 ))
               ) : (
@@ -704,6 +717,7 @@ export default async function OrderDetailPage({
                 className="space-y-3 rounded-[0.95rem] border border-kuartz-line bg-[#fbfaf7] p-4 shadow-[0_18px_48px_rgba(24,24,38,0.08)]"
               >
                 <input type="hidden" name="orderId" value={order.id} />
+                <input type="hidden" name="returnTo" value={orderTabHref("style")} />
                 <div className="grid gap-4 sm:grid-cols-2">
                   <label className="form-group">
                     <span>Category</span>
@@ -753,7 +767,7 @@ export default async function OrderDetailPage({
                           const revisions = styleDirectionRevisions.filter((revision) => revision.styleDirectionFileId === file.id);
                           const currentUrl = file.currentRevisionKey ? signedUrlByKey.get(file.currentRevisionKey) : undefined;
                           return (
-                            <div id={`file-${file.id}`} key={file.id} role="group" aria-label={`${formatStyleDirectionLabel(file.category)} — ${group.lookName}`} className="border-y border-kuartz-line py-5">
+                            <div id={`file-${file.id}`} key={file.id} role="group" aria-label={`${formatStyleDirectionLabel(file.category)} for ${group.lookName}`} className="border-y border-kuartz-line py-5">
                               <div className="flex flex-wrap items-start justify-between gap-4">
                                 <div>
                                   <p className="font-semibold text-kuartz-ink">{formatStyleDirectionLabel(file.category)}</p>
@@ -772,6 +786,7 @@ export default async function OrderDetailPage({
 
                               <form action={reviseStyleDirectionFileAction} className="mt-4 flex flex-wrap items-end gap-3">
                                 <input type="hidden" name="orderId" value={order.id} />
+                                <input type="hidden" name="returnTo" value={orderTabHref("style")} />
                                 <input type="hidden" name="fileId" value={file.id} />
                                 <input type="hidden" name="version" value={file.version} />
                                 <label className="form-group">
@@ -814,6 +829,7 @@ export default async function OrderDetailPage({
                                 {!file.archivedAt && mayArchive("style_direction_file", session.role) ? (
                                   <form action={archiveStyleDirectionFileAction}>
                                     <input type="hidden" name="orderId" value={order.id} />
+                                    <input type="hidden" name="returnTo" value={orderTabHref("style")} />
                                     <input type="hidden" name="fileId" value={file.id} />
                                     <input type="hidden" name="version" value={file.version} />
                                     <Button type="submit" variant="ghost">
@@ -824,6 +840,7 @@ export default async function OrderDetailPage({
                                 {file.archivedAt && mayRestore("style_direction_file", session.role) ? (
                                   <form action={restoreStyleDirectionFileAction}>
                                     <input type="hidden" name="orderId" value={order.id} />
+                                    <input type="hidden" name="returnTo" value={orderTabHref("style")} />
                                     <input type="hidden" name="fileId" value={file.id} />
                                     <input type="hidden" name="version" value={file.version} />
                                     <Button type="submit" variant="ghost">
@@ -879,8 +896,8 @@ export default async function OrderDetailPage({
                   <div key={confirmation.id} className="grid gap-1 py-3 text-sm sm:grid-cols-[1fr_auto]">
                     <p className="text-kuartz-ink">
                       Created {dateFormatter.format(confirmation.createdAt)}
-                      {confirmation.deliveryMethod ? ` · ${confirmation.deliveryMethod === "email" ? "Emailed" : "Copied"}` : " · Not yet delivered"}
-                      {confirmation.decisionComment ? ` — "${confirmation.decisionComment}"` : ""}
+                      {confirmation.deliveryMethod ? ` | ${confirmation.deliveryMethod === "email" ? "Emailed" : "Copied"}` : " | Not yet delivered"}
+                      {confirmation.decisionComment ? `. Comment: "${confirmation.decisionComment}"` : ""}
                     </p>
                     <p className="font-semibold text-kuartz-muted">{confirmation.status}</p>
                   </div>
@@ -904,7 +921,7 @@ export default async function OrderDetailPage({
                 <div>
                   <h2 className="section-title">Measurements</h2>
                   <p className="mt-2 text-sm leading-6 text-kuartz-secondary">
-                    These are {order.clientFullName}'s Client measurements. Updates here also update the Client profile.
+                    These measurements come from the client profile. Updates here also update the client profile.
                   </p>
                 </div>
                 <MeasurementDrawer
@@ -943,7 +960,7 @@ export default async function OrderDetailPage({
               <div className="mt-5 rounded-[1rem] border border-kuartz-line bg-white/65 p-5">
                 <p className="font-semibold text-kuartz-ink">Measurement requirements</p>
                 <p className="mt-2 text-sm leading-6 text-kuartz-secondary">
-                  Missing measurements are shown beside Items in Looks & Items and blocked before Vendor Brief export unless a Super Admin overrides.
+                  Missing measurements appear beside items. Vendor brief export is blocked until required measurements are added or a Super Admin overrides.
                 </p>
               </div>
             </div>
@@ -953,7 +970,7 @@ export default async function OrderDetailPage({
             <div>
               <h2 className="section-title">Vendors</h2>
               <p className="mt-2 text-sm leading-6 text-kuartz-secondary">
-                Vendor assignment is currently handled on each Item in Looks & Items. This tab gives Kuartz a direct path to assign or review Vendors.
+                Assign vendors from Looks & Items or open the vendor directory.
               </p>
               <div className="mt-4 grid gap-3 sm:grid-cols-2">
                 <Button asChild variant="outline">
@@ -987,7 +1004,7 @@ export default async function OrderDetailPage({
             <div>
               <h2 className="section-title">Accessories</h2>
               <p className="mt-2 text-sm leading-6 text-kuartz-secondary">
-                Source accessories separately from garment production, linked to this Order or a specific Look.
+                Track accessories for this order or a specific look.
               </p>
               <div className="mt-4 rounded-[1rem] border border-kuartz-line bg-white/65 p-5">
                 <p className="text-sm text-kuartz-secondary">
@@ -1006,7 +1023,7 @@ export default async function OrderDetailPage({
             <div>
               <h2 className="section-title">Fittings</h2>
               <p className="mt-2 text-sm leading-6 text-kuartz-secondary">
-                Schedule fittings, record fitting notes, and send client fitting confirmations.
+                Schedule fittings, add notes, and send confirmations.
               </p>
               <div className="mt-4 rounded-[1rem] border border-kuartz-line bg-white/65 p-5">
                 <p className="text-sm text-kuartz-secondary">
@@ -1025,7 +1042,7 @@ export default async function OrderDetailPage({
             <div>
               <h2 className="section-title">Payments</h2>
               <p className="mt-2 text-sm leading-6 text-kuartz-secondary">
-                Manage the Order invoice, client payments, and balance position.
+                Manage the invoice, client payments, and balance.
               </p>
               <div className="mt-4 rounded-[1rem] border border-kuartz-line bg-white/65 p-5">
                 <p className="text-sm text-kuartz-secondary">
@@ -1051,13 +1068,13 @@ export default async function OrderDetailPage({
                 className="font-semibold text-kuartz-ink underline-offset-4 hover:underline"
               >
                 Accessories
-                {outstandingAccessories.length ? ` · ${outstandingAccessories.length} outstanding` : ""}
+                {outstandingAccessories.length ? ` | ${outstandingAccessories.length} outstanding` : ""}
               </Link>
               <Link
                 href={`/orders/${order.id}/fittings`}
                 className="font-semibold text-kuartz-ink underline-offset-4 hover:underline"
               >
-                Fittings{openFittings.length ? ` · ${openFittings.length} scheduled` : ""}
+                Fittings{openFittings.length ? ` | ${openFittings.length} scheduled` : ""}
               </Link>
               <Link
                 href={`/orders/${order.id}/vendor-ratings`}
@@ -1083,7 +1100,7 @@ export default async function OrderDetailPage({
                   <div className="flex justify-between">
                     <dt className="text-kuartz-secondary">Status</dt>
                     <dd className="font-semibold text-kuartz-ink">
-                      {invoiceStatus ? INVOICE_STATUS_LABELS[invoiceStatus] : "—"}
+                      {invoiceStatus ? INVOICE_STATUS_LABELS[invoiceStatus] : "-"}
                     </dd>
                   </div>
                   <div className="flex justify-between">
@@ -1162,7 +1179,7 @@ export default async function OrderDetailPage({
                         {openFittings.length} Fitting{openFittings.length === 1 ? "" : "s"} still scheduled.
                       </p>
                     ) : null}
-                    <p className="mt-1 text-xs">Completing anyway is allowed — this is a reminder, not a block.</p>
+                    <p className="mt-1 text-xs">Completing anyway is allowed. This is a reminder, not a block.</p>
                   </div>
                 ) : null}
                 {completionBlocked && canOverrideCompletionGate(session.role) ? (
@@ -1187,6 +1204,7 @@ export default async function OrderDetailPage({
           {!isArchived && mayArchive("order", session.role) ? (
             <form action={archiveOrderAction}>
               <input type="hidden" name="orderId" value={order.id} />
+              <input type="hidden" name="returnTo" value={orderTabHref("overview")} />
               <input type="hidden" name="version" value={order.version} />
               <Button type="submit" variant="outline" className="w-full">
                 Archive Order
@@ -1197,6 +1215,7 @@ export default async function OrderDetailPage({
           {isArchived && mayRestore("order", session.role) ? (
             <form action={restoreOrderAction}>
               <input type="hidden" name="orderId" value={order.id} />
+              <input type="hidden" name="returnTo" value={orderTabHref("overview")} />
               <input type="hidden" name="version" value={order.version} />
               <Button type="submit" variant="outline" className="w-full">
                 Restore Order

@@ -1,51 +1,86 @@
 import Link from "next/link";
 import { Plus } from "lucide-react";
 import { requireStaffSession } from "@/lib/auth/session";
-import { listOrders } from "@/lib/orders/repository";
+import { businessToday } from "@/lib/domain/business-date";
+import { getOrganizationTimezone } from "@/lib/organizations/repository";
+import { listOrders, type OrderStatusFilter } from "@/lib/orders/repository";
 import { formatMinorUnits } from "@/lib/forms/money";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
+import { NativeSelect } from "@/components/ui/native-select";
 
 export const dynamic = "force-dynamic";
 
 const dateFormatter = new Intl.DateTimeFormat("en-NG", { dateStyle: "medium", timeStyle: "short" });
+const ORDER_STATUS_OPTIONS: { value: OrderStatusFilter; label: string; heading: string }[] = [
+  { value: "all", label: "All orders", heading: "All Orders" },
+  { value: "active", label: "Active orders", heading: "Active Orders" },
+  { value: "completed", label: "Completed orders", heading: "Completed Orders" },
+  { value: "delayed", label: "Delayed orders", heading: "Delayed Orders" },
+];
+
+function parseOrderStatus(value: string | undefined): OrderStatusFilter {
+  return ORDER_STATUS_OPTIONS.some((option) => option.value === value) ? (value as OrderStatusFilter) : "all";
+}
 
 export default async function OrdersPage({
   searchParams,
 }: {
-  searchParams: Promise<{ search?: string; includeArchived?: string; page?: string }>;
+  searchParams: Promise<{ search?: string; includeArchived?: string; page?: string; status?: string }>;
 }) {
   const session = await requireStaffSession();
   const params = await searchParams;
+  const status = parseOrderStatus(params.status);
   const page = Math.max(1, Number(params.page ?? 1) || 1);
+  const timezone = await getOrganizationTimezone(session.organizationId);
   const { orders, hasNextPage } = await listOrders(session.organizationId, {
     search: params.search,
     includeArchived: params.includeArchived === "1",
     page,
+    status,
+    today: businessToday(timezone),
   });
+  const currentStatus = ORDER_STATUS_OPTIONS.find((option) => option.value === status) ?? ORDER_STATUS_OPTIONS[0];
 
   return (
     <div>
       <header className="flex flex-col gap-5 border-b border-kuartz-line pb-8 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <p className="eyebrow">Orders</p>
-          <h1 className="page-title">All Orders</h1>
-          <p className="page-description">Every agreed Order across every Client.</p>
+          <h1 className="page-title">{currentStatus.heading}</h1>
+          <p className="page-description">
+            {status === "delayed"
+              ? "Active orders with vendor work behind schedule."
+              : "Manage confirmed client orders."}
+          </p>
         </div>
         <Button asChild className="h-11 min-h-11 w-full self-start gap-2 py-0 sm:w-auto">
           <Link href="/orders/new"><Plus size={17} aria-hidden="true" /> Add Order</Link>
         </Button>
       </header>
 
-      <form method="get" className="mt-8 flex flex-wrap items-center gap-4">
-        <input
-          type="search"
-          name="search"
-          defaultValue={params.search ?? ""}
-          placeholder="Search by Order title or Client name"
-          className="min-h-[3.1rem] w-full max-w-sm rounded-[0.8rem] border border-kuartz-control bg-white/70 px-3.5 py-3 text-sm text-kuartz-ink outline-none focus:border-[#88925f] focus:bg-white focus:ring-4 focus:ring-kuartz-lime/20"
-        />
-        <label className="flex items-center gap-2 text-sm font-semibold text-kuartz-secondary">
+      <form method="get" className="mt-8 grid gap-4 rounded-[1rem] border border-kuartz-line bg-white/65 p-4 sm:grid-cols-[minmax(0,1fr)_14rem_auto_auto] sm:items-end">
+        <label className="form-group">
+          <span>Search</span>
+          <input
+            type="search"
+            name="search"
+            defaultValue={params.search ?? ""}
+            placeholder="Order title or client name"
+            className="min-h-[3.1rem] w-full rounded-[0.8rem] border border-kuartz-control bg-white/70 px-3.5 py-3 text-sm text-kuartz-ink outline-none focus:border-[#88925f] focus:bg-white focus:ring-4 focus:ring-kuartz-lime/20"
+          />
+        </label>
+        <label className="form-group">
+          <span>Status</span>
+          <NativeSelect name="status" defaultValue={status}>
+            {ORDER_STATUS_OPTIONS.map((option) => (
+              <option key={option.value} value={option.value}>
+                {option.label}
+              </option>
+            ))}
+          </NativeSelect>
+        </label>
+        <label className="flex min-h-[3.1rem] items-center gap-2 text-sm font-semibold text-kuartz-secondary">
           <input type="checkbox" name="includeArchived" value="1" defaultChecked={params.includeArchived === "1"} />
           Include archived
         </label>
@@ -111,7 +146,7 @@ export default async function OrdersPage({
           <EmptyState
             className="mt-4"
             title="No Orders yet"
-            description="Add confirmed work for an existing Client once price and scope are agreed."
+            description="Add an order after price and scope are agreed."
           />
         )}
         {orders.length && (page > 1 || hasNextPage) ? (
@@ -142,10 +177,11 @@ export default async function OrdersPage({
   );
 }
 
-function pageHref(params: { search?: string; includeArchived?: string }, page: number): string {
+function pageHref(params: { search?: string; includeArchived?: string; status?: string }, page: number): string {
   const query = new URLSearchParams();
   if (params.search) query.set("search", params.search);
   if (params.includeArchived === "1") query.set("includeArchived", "1");
+  if (parseOrderStatus(params.status) !== "all") query.set("status", parseOrderStatus(params.status));
   if (page > 1) query.set("page", String(page));
   const queryString = query.toString();
   return queryString ? `/orders?${queryString}` : "/orders";

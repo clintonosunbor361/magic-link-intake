@@ -30,10 +30,7 @@ export default async function VendorsPage({
       <header className="border-b border-kuartz-line pb-8">
         <p className="eyebrow">Directory</p>
         <h1 className="page-title">Vendors</h1>
-        <p className="page-description">
-          The people who produce your Items. Scores and job counts here are what the assignment
-          picker shows when you choose who makes what.
-        </p>
+        <p className="page-description">Manage vendors, specialties, ratings, and work history.</p>
       </header>
 
       {params.error ? (
@@ -114,7 +111,7 @@ export default async function VendorsPage({
               description={
                 params.q
                   ? "Try a shorter search, or clear it to see the whole directory."
-                  : "Add the workshops and tailors who produce your Items. You can also quick-create one while assigning an Item."
+                  : "Add the vendors who produce client items."
               }
             />
           )}

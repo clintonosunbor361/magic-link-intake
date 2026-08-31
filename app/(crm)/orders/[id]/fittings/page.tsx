@@ -165,7 +165,7 @@ export default async function OrderFittingsPage({
                     <label className="form-group">
                       <span>
                         Client-facing summary{" "}
-                        <span className="font-normal text-kuartz-secondary">— the only text the client sees</span>
+                        <span className="font-normal text-kuartz-secondary">(client sees this)</span>
                       </span>
                       <textarea name="clientSummary" defaultValue={fitting.clientSummary} className={textareaClass} />
                     </label>
@@ -215,7 +215,7 @@ export default async function OrderFittingsPage({
                         {confirmations.map((confirmation) => (
                           <p key={confirmation.id} className="py-2 text-sm text-kuartz-ink">
                             {confirmation.status}
-                            {confirmation.decisionComment ? ` — "${confirmation.decisionComment}"` : ""}
+                            {confirmation.decisionComment ? `. Comment: "${confirmation.decisionComment}"` : ""}
                           </p>
                         ))}
                       </div>
@@ -244,7 +244,7 @@ export default async function OrderFittingsPage({
                                 ? `Scheduled for ${dateTimeFormatter.format(entry.newScheduledAt)}`
                                 : entry.previousStatus !== entry.newStatus
                                   ? `${FITTING_STATUS_LABELS[entry.previousStatus]} → ${FITTING_STATUS_LABELS[entry.newStatus]}`
-                                  : `Moved from ${entry.previousScheduledAt ? dateTimeFormatter.format(entry.previousScheduledAt) : "—"} to ${dateTimeFormatter.format(entry.newScheduledAt)}`}
+                                  : `Moved from ${entry.previousScheduledAt ? dateTimeFormatter.format(entry.previousScheduledAt) : "-"} to ${dateTimeFormatter.format(entry.newScheduledAt)}`}
                             </p>
                             <p className="mt-1 text-xs text-kuartz-muted">
                               {entry.changedByName} · {entry.createdAt.toISOString().slice(0, 16).replace("T", " ")}
@@ -320,7 +320,7 @@ export default async function OrderFittingsPage({
           </form>
           </FormDisclosure>
           <p className="mt-3 text-xs leading-5 text-kuartz-muted">
-            A repeat fitting is simply another session — schedule as many as the Order needs.
+            Add as many fitting sessions as the order needs.
           </p>
         </aside>
       </section>

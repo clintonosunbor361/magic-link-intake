@@ -6,6 +6,7 @@ import {
   recordClientPaymentAction,
   voidClientPaymentAction,
 } from "@/app/actions/payments";
+import { InvoiceLineItemsFields } from "@/components/finance/invoice-line-items-fields";
 import { SendInvoiceButton } from "@/components/finance/send-invoice-button";
 import { Button } from "@/components/ui/button";
 import { Breadcrumbs } from "@/components/ui/breadcrumbs";
@@ -28,7 +29,6 @@ import { formatMinorUnits } from "@/lib/forms/money";
 import { getOrderWithLooksAndItems } from "@/lib/orders/repository";
 import { getOrganizationTimezone } from "@/lib/organizations/repository";
 
-const BLANK_LINE_ROWS = 4;
 const textareaClass =
   "min-h-[3.5rem] w-full rounded-[0.8rem] border border-kuartz-control bg-white/70 px-3.5 py-3 text-sm text-kuartz-ink outline-none focus:border-[#88925f] focus:bg-white focus:ring-4 focus:ring-kuartz-lime/20";
 
@@ -67,8 +67,7 @@ export default async function OrderInvoicePage({
         <p className="eyebrow">Invoice</p>
         <h1 className="page-title">{invoice ? invoice.invoiceNumber : "Create the Invoice"}</h1>
         <p className="page-description">
-          One Invoice per Order. Line items are entered by hand, totals are calculated, and the PDF is
-          generated fresh when you send it — nothing is stored.
+          Create one invoice for this order. Add the items or services being charged. The app calculates the total and balance.
         </p>
         {status ? (
           <p className="mt-4">
@@ -96,8 +95,8 @@ export default async function OrderInvoicePage({
               {mismatch.kind === "overpaid"
                 ? `Overpaid by ₦${formatMinorUnits(mismatch.excessMinor)}. Check the payment records against what the client actually sent.`
                 : mismatch.kind === "paid_against_void"
-                  ? "Payments are recorded against a voided Invoice. Reissue or reverse them so the records agree."
-                  : "Payments are recorded against a Draft Invoice that has never been sent."}
+                  ? "Payments are linked to a cancelled invoice. Review the records."
+                  : "Payments were recorded before this invoice was sent. Confirm this is correct."}
             </p>
           ))}
         </div>
@@ -176,7 +175,7 @@ export default async function OrderInvoicePage({
                         <p className="mt-1 text-sm text-kuartz-secondary">{payment.reference}</p>
                       ) : null}
                       {payment.voidedAt ? (
-                        <p className="mt-1 text-xs text-[#8c1d1d]">Voided — {payment.voidReason}</p>
+                        <p className="mt-1 text-xs text-[#8c1d1d]">Voided. Reason: {payment.voidReason}</p>
                       ) : canManage ? (
                         <div className="mt-3 grid gap-3 sm:grid-cols-2">
                           <form action={editClientPaymentAction} className="flex flex-wrap items-end gap-2">
@@ -217,7 +216,7 @@ export default async function OrderInvoicePage({
                 <EmptyState
                   className="mt-4"
                   title="No payments recorded"
-                  description="Record each payment as it arrives. The balance updates automatically."
+                  description="No client payments have been added yet."
                 />
               )}
             </div>
@@ -258,7 +257,7 @@ export default async function OrderInvoicePage({
                     <p className="mt-2 text-sm leading-6 text-kuartz-secondary">
                       {invoice.sentAt
                         ? `Sent ${invoice.sentAt.toISOString().slice(0, 10)}.`
-                        : "Sending generates the PDF and marks this Invoice Sent in the same step."}
+                        : "Generate the invoice PDF and mark it as sent."}
                     </p>
                     {!invoice.sentAt ? <SendInvoiceButton invoiceId={invoice.id} /> : null}
                   </div>
@@ -282,7 +281,7 @@ export default async function OrderInvoicePage({
                   </div>
                 ) : (
                   <p className="rounded-[0.8rem] border border-kuartz-line bg-[#f6f6f3] px-3 py-2.5 text-sm leading-6 text-kuartz-secondary">
-                    Voided {invoice.voidedAt?.toISOString().slice(0, 10)} — {invoice.voidReason}
+                    Voided {invoice.voidedAt?.toISOString().slice(0, 10)}. Reason: {invoice.voidReason}
                   </p>
                 )}
               </>
@@ -301,7 +300,7 @@ export default async function OrderInvoicePage({
         <EmptyState
           className="mt-9"
           title="No Invoice yet"
-          description="A Super Admin creates the Invoice for this Order."
+          description="Create an invoice before recording payments or sending a PDF."
         />
       )}
     </div>
@@ -321,17 +320,6 @@ function InvoiceFields({
   paymentInstructions: string;
   lines: { description: string; quantity: number; unitPriceMinor: number }[];
 }) {
-  // Existing lines plus spare blanks: a blank row is dropped server-side, so the form never needs
-  // client-side row management to add one more item.
-  const rows = [
-    ...lines.map((line) => ({
-      description: line.description,
-      quantity: String(line.quantity),
-      unitPrice: formatMinorUnits(line.unitPriceMinor),
-    })),
-    ...Array.from({ length: BLANK_LINE_ROWS }, () => ({ description: "", quantity: "", unitPrice: "" })),
-  ];
-
   return (
     <>
       <div className="grid gap-4 sm:grid-cols-2">
@@ -347,27 +335,7 @@ function InvoiceFields({
         </label>
       </div>
 
-      <fieldset>
-        <legend className="text-sm font-semibold text-kuartz-body">Line items</legend>
-        <div className="mt-3 space-y-3">
-          {rows.map((row, index) => (
-            <div key={index} className="grid gap-3 sm:grid-cols-[1fr_5rem_8rem]">
-              <label className="form-group">
-                <span className="sr-only">Description</span>
-                <Input name="lineDescription" defaultValue={row.description} placeholder="Description" />
-              </label>
-              <label className="form-group">
-                <span className="sr-only">Quantity</span>
-                <Input name="lineQuantity" defaultValue={row.quantity} placeholder="Qty" inputMode="numeric" />
-              </label>
-              <label className="form-group">
-                <span className="sr-only">Unit price</span>
-                <MoneyInput name="lineUnitPrice" defaultValue={row.unitPrice} placeholder="Unit price (₦)" />
-              </label>
-            </div>
-          ))}
-        </div>
-      </fieldset>
+      <InvoiceLineItemsFields lines={lines} />
 
       <label className="form-group">
         <span>

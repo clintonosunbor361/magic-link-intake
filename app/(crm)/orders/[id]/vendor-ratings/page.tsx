@@ -74,7 +74,7 @@ export default async function OrderVendorRatingsPage({
                     {row.vendorName}
                   </Link>
                 </h2>
-                <p className="text-sm text-kuartz-muted">{row.ratingId ? "Rated — editing revises it" : "Not rated yet"}</p>
+                <p className="text-sm text-kuartz-muted">{row.ratingId ? "Rated. Editing updates it." : "Not rated yet"}</p>
               </div>
 
               <div className="mt-4 flex flex-wrap items-end gap-4">

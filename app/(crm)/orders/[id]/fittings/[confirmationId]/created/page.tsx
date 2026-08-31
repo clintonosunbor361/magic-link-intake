@@ -55,7 +55,7 @@ export default async function FittingConfirmationCreatedPage({
           <div className="border border-kuartz-line bg-white/55 p-5">
             <p className="eyebrow">Fitting outcome · {order.clientFullName}</p><h2 className="section-title mt-2">Share another way</h2>
             <p className="mt-2 text-sm text-kuartz-muted">
-              This link is shown only once — send it now or copy it. Sending another confirmation for
+              This link is shown only once. Send it now or copy it. Sending another confirmation for
               this Fitting invalidates this link, and it expires after seven days.
             </p>
             <div className="mt-3 flex flex-wrap items-center gap-3">

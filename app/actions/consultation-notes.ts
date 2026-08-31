@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { requireStaffSession } from "@/lib/auth/session";
 import { readFormString } from "@/lib/forms/read-string";
+import { safeReturnPath, withReturnError } from "@/lib/forms/return-path";
 import { createConsultationNoteRepository } from "@/lib/consultation-notes/repository";
 import {
   archiveConsultationNote,
@@ -24,6 +25,7 @@ export async function createConsultationNoteAction(formData: FormData) {
   const session = await requireStaffSession();
   const orderId = readFormString(formData, "orderId");
   const lookId = readFormString(formData, "lookId") || null;
+  const returnTo = safeReturnPath(readFormString(formData, "returnTo"), `/orders/${orderId}`);
 
   try {
     await createConsultationNote(
@@ -42,11 +44,11 @@ export async function createConsultationNoteAction(formData: FormData) {
     );
   } catch (error) {
     const message = error instanceof Error ? error.message : "The Consultation Note could not be created.";
-    redirect(`/orders/${orderId}?error=${encodeURIComponent(message)}`);
+    redirect(withReturnError(returnTo, message));
   }
 
   revalidatePath(`/orders/${orderId}`);
-  redirect(`/orders/${orderId}`);
+  redirect(returnTo);
 }
 
 export async function updateConsultationNoteAction(formData: FormData) {
@@ -54,6 +56,7 @@ export async function updateConsultationNoteAction(formData: FormData) {
   const orderId = readFormString(formData, "orderId");
   const noteId = readFormString(formData, "noteId");
   const expectedVersion = Number(readFormString(formData, "version"));
+  const returnTo = safeReturnPath(readFormString(formData, "returnTo"), `/orders/${orderId}`);
 
   try {
     await updateConsultationNoteWithHistory(
@@ -72,11 +75,11 @@ export async function updateConsultationNoteAction(formData: FormData) {
     );
   } catch (error) {
     const message = error instanceof Error ? error.message : "The Consultation Note could not be updated.";
-    redirect(`/orders/${orderId}?error=${encodeURIComponent(message)}`);
+    redirect(withReturnError(returnTo, message));
   }
 
   revalidatePath(`/orders/${orderId}`);
-  redirect(`/orders/${orderId}`);
+  redirect(returnTo);
 }
 
 export async function archiveConsultationNoteAction(formData: FormData) {
@@ -84,6 +87,7 @@ export async function archiveConsultationNoteAction(formData: FormData) {
   const orderId = readFormString(formData, "orderId");
   const noteId = readFormString(formData, "noteId");
   const expectedVersion = Number(readFormString(formData, "version"));
+  const returnTo = safeReturnPath(readFormString(formData, "returnTo"), `/orders/${orderId}`);
 
   try {
     await archiveConsultationNote(
@@ -92,11 +96,11 @@ export async function archiveConsultationNoteAction(formData: FormData) {
     );
   } catch (error) {
     const message = error instanceof Error ? error.message : "The Consultation Note could not be updated.";
-    redirect(`/orders/${orderId}?error=${encodeURIComponent(message)}`);
+    redirect(withReturnError(returnTo, message));
   }
 
   revalidatePath(`/orders/${orderId}`);
-  redirect(`/orders/${orderId}`);
+  redirect(returnTo);
 }
 
 export async function restoreConsultationNoteAction(formData: FormData) {
@@ -104,6 +108,7 @@ export async function restoreConsultationNoteAction(formData: FormData) {
   const orderId = readFormString(formData, "orderId");
   const noteId = readFormString(formData, "noteId");
   const expectedVersion = Number(readFormString(formData, "version"));
+  const returnTo = safeReturnPath(readFormString(formData, "returnTo"), `/orders/${orderId}`);
 
   try {
     await restoreConsultationNote(
@@ -112,9 +117,9 @@ export async function restoreConsultationNoteAction(formData: FormData) {
     );
   } catch (error) {
     const message = error instanceof Error ? error.message : "The Consultation Note could not be updated.";
-    redirect(`/orders/${orderId}?error=${encodeURIComponent(message)}`);
+    redirect(withReturnError(returnTo, message));
   }
 
   revalidatePath(`/orders/${orderId}`);
-  redirect(`/orders/${orderId}`);
+  redirect(returnTo);
 }

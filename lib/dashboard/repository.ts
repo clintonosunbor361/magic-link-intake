@@ -39,6 +39,38 @@ export async function countActiveClients(organizationId: string): Promise<number
   return row?.count ?? 0;
 }
 
+export async function getOrderPipelineCounts(organizationId: string, today: BusinessDate) {
+  const db = getDatabase();
+  const [row] = await db
+    .select({
+      totalOrders: sql<number>`count(*)::int`,
+      activeOrders: sql<number>`count(*) filter (where ${orders.completedAt} is null)::int`,
+      completedOrders: sql<number>`count(*) filter (where ${orders.completedAt} is not null)::int`,
+      delayedOrders: sql<number>`count(*) filter (where ${orders.completedAt} is null and exists (
+        select 1
+        from "vendor_assignments" delayed_assignments
+        inner join "items" delayed_items on delayed_items."id" = delayed_assignments."item_id"
+        inner join "looks" delayed_looks on delayed_looks."id" = delayed_items."look_id"
+        inner join "production_statuses" delayed_statuses on delayed_statuses."id" = delayed_assignments."production_status_id"
+        where delayed_looks."order_id" = "orders"."id"
+          and delayed_assignments."archived_at" is null
+          and delayed_items."archived_at" is null
+          and delayed_looks."archived_at" is null
+          and delayed_statuses."is_completed" = false
+          and delayed_assignments."deadline" < ${today}
+      ))::int`,
+    })
+    .from(orders)
+    .where(and(eq(orders.organizationId, organizationId), isNull(orders.archivedAt)));
+
+  return {
+    totalOrders: row?.totalOrders ?? 0,
+    activeOrders: row?.activeOrders ?? 0,
+    completedOrders: row?.completedOrders ?? 0,
+    delayedOrders: row?.delayedOrders ?? 0,
+  };
+}
+
 /** Upcoming Look dates — the event countdowns the spec asks for, soonest first. */
 export async function listUpcomingLookDates(organizationId: string, today: BusinessDate, days = 60) {
   const db = getDatabase();

@@ -47,7 +47,7 @@ function vendorSummaryLine(vendor: VendorOption): string {
   const jobs = `${vendor.completedJobs} done, ${vendor.openJobs} open`;
   const last = vendor.lastJobDate ? `last ${vendor.lastJobDate}` : "no jobs yet";
 
-  return `${vendor.name} — ${specialties} · ${rating} · ${jobs} · ${last}`;
+  return `${vendor.name} | ${specialties} | ${rating} | ${jobs} | ${last}`;
 }
 
 export function ItemAssignmentDrawer({
@@ -115,6 +115,7 @@ export function ItemAssignmentDrawer({
 
             <form action={updateAssignmentTermsAction} className="flex flex-wrap items-end gap-3">
               <input type="hidden" name="orderId" value={orderId} />
+              <input type="hidden" name="returnTo" value={`/orders/${orderId}?tab=looks`} />
               <input type="hidden" name="assignmentId" value={assignment.id} />
               <input type="hidden" name="version" value={assignment.version} />
               <label className="form-group">
@@ -154,6 +155,7 @@ export function ItemAssignmentDrawer({
               </p>
               <form action={reassignVendorAction} className="mt-3 space-y-3">
                 <input type="hidden" name="orderId" value={orderId} />
+                <input type="hidden" name="returnTo" value={`/orders/${orderId}?tab=looks`} />
                 <input type="hidden" name="assignmentId" value={assignment.id} />
                 <input type="hidden" name="version" value={assignment.version} />
                 <label className="form-group">
@@ -200,6 +202,7 @@ export function ItemAssignmentDrawer({
           <>
             <form action={assignVendorAction} className="space-y-3">
               <input type="hidden" name="orderId" value={orderId} />
+              <input type="hidden" name="returnTo" value={`/orders/${orderId}?tab=looks`} />
               <input type="hidden" name="itemId" value={itemId} />
               <label className="form-group">
                 <span>Vendor</span>
@@ -233,7 +236,7 @@ export function ItemAssignmentDrawer({
                 Vendor not in the list? Quick-create one
               </summary>
               <form action={createVendorAction} className="mt-3 flex flex-wrap items-end gap-3">
-                <input type="hidden" name="returnTo" value={`/orders/${orderId}`} />
+                <input type="hidden" name="returnTo" value={`/orders/${orderId}?tab=looks`} />
                 <label className="form-group">
                   <span>Name</span>
                   <Input name="name" required maxLength={120} aria-label={`New Vendor name for ${itemLabel}`} />
@@ -282,11 +285,12 @@ export function LookBulkAssignForm({
       <div className="border-t border-[#e6e5df] px-3.5 py-4">
         <p className="text-sm leading-6 text-kuartz-secondary">
           {unassignedCount
-            ? `Assigns the ${unassignedCount} unassigned ${unassignedCount === 1 ? "Item" : "Items"} in ${lookName}. Items that already have a Vendor are skipped — reassign those individually.`
+            ? `Assigns the ${unassignedCount} unassigned ${unassignedCount === 1 ? "Item" : "Items"} in ${lookName}. Items that already have a Vendor are skipped. Reassign those individually.`
             : `Every Item in ${lookName} already has a Vendor. Reassign individually from each Item.`}
         </p>
         <form action={bulkAssignVendorAction} className="mt-3 space-y-3">
           <input type="hidden" name="orderId" value={orderId} />
+          <input type="hidden" name="returnTo" value={`/orders/${orderId}?tab=looks`} />
           <input type="hidden" name="lookId" value={lookId} />
           <label className="form-group">
             <span>Vendor</span>

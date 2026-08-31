@@ -53,7 +53,7 @@ export default async function ApprovalPage({ params, searchParams }: ApprovalPag
           {isCompleted ? "Your decisions" : "Style direction for your review"}
         </h1>
         <p className="mt-2 text-sm text-kuartz-muted">
-          {batch.orderTitle} — {batch.clientFullName}
+          {batch.orderTitle} | {batch.clientFullName}
         </p>
 
         {error ? (
@@ -90,7 +90,7 @@ export default async function ApprovalPage({ params, searchParams }: ApprovalPag
                         {isCompleted || item.decisionStatus !== "pending" ? (
                           <p className="mt-3 text-sm text-kuartz-muted">
                             Decision: {formatStyleDirectionLabel(item.decisionStatus)}
-                            {item.decisionComment ? ` — "${item.decisionComment}"` : ""}
+                            {item.decisionComment ? `. Comment: "${item.decisionComment}"` : ""}
                           </p>
                         ) : (
                           <form

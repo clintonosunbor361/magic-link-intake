@@ -1,11 +1,13 @@
 import "server-only";
 
-import { and, desc, eq, isNull, ne, or, sql } from "drizzle-orm";
+import { and, desc, eq, isNotNull, isNull, ne, sql } from "drizzle-orm";
 import { getDatabase } from "@/db";
-import { auditEntries, clients, items, itemTypes, looks, orders } from "@/db/schema";
+import { auditEntries, clients, items, itemTypes, looks, orders, productionStatuses, vendorAssignments } from "@/db/schema";
+import type { BusinessDate } from "@/lib/domain/business-date";
 import type { ActiveOrderCreationRepository, OrderRepository } from "@/lib/orders/order-service";
 import type { LookRepository } from "@/lib/orders/look-service";
 import type { ItemRepository } from "@/lib/orders/item-service";
+import { splitSearchTokens, tokenSearchCondition } from "@/lib/search";
 
 export function createOrderRepository(): OrderRepository {
   const db = getDatabase();
@@ -274,21 +276,39 @@ export function createItemRepository(): ItemRepository {
 }
 
 export const ORDERS_PAGE_SIZE = 25;
+export type OrderStatusFilter = "all" | "active" | "completed" | "delayed";
 
 export async function listOrders(
   organizationId: string,
-  options: { includeArchived?: boolean; search?: string; page?: number } = {},
+  options: { includeArchived?: boolean; search?: string; page?: number; status?: OrderStatusFilter; today?: BusinessDate } = {},
 ) {
   const db = getDatabase();
   const conditions = [eq(orders.organizationId, organizationId)];
   if (!options.includeArchived) conditions.push(isNull(orders.archivedAt));
+  if (options.status === "active") conditions.push(isNull(orders.completedAt));
+  if (options.status === "completed") conditions.push(isNotNull(orders.completedAt));
+  if (options.status === "delayed" && options.today) {
+    conditions.push(sql`exists (
+      select 1
+      from "vendor_assignments" delayed_assignments
+      inner join "items" delayed_items on delayed_items."id" = delayed_assignments."item_id"
+      inner join "looks" delayed_looks on delayed_looks."id" = delayed_items."look_id"
+      inner join "production_statuses" delayed_statuses on delayed_statuses."id" = delayed_assignments."production_status_id"
+      where delayed_looks."order_id" = "orders"."id"
+        and "orders"."completed_at" is null
+        and delayed_assignments."archived_at" is null
+        and delayed_items.archived_at is null
+        and delayed_looks.archived_at is null
+        and delayed_statuses."is_completed" = false
+        and delayed_assignments."deadline" < ${options.today}
+    )`);
+  }
 
   if (options.search) {
-    const term = `%${options.search.toLowerCase()}%`;
-    const searchCondition = or(
-      sql`lower(${orders.title}) like ${term}`,
-      sql`lower(${clients.fullName}) like ${term}`,
-    );
+    const searchCondition = tokenSearchCondition(splitSearchTokens(options.search), [
+      sql`lower(${orders.title})`,
+      sql`lower(${clients.fullName})`,
+    ]);
     if (searchCondition) conditions.push(searchCondition);
   }
 

@@ -30,6 +30,7 @@ Legend:
 - [x] Clients section
 - [x] Add Client manually
 - [x] External intake link generation
+- [x] Generated intake links are tracked on the Clients page
 - [x] External intake form submission
 - [x] Copyable intake links for WhatsApp
 - [x] Client duplicate checking
@@ -54,6 +55,9 @@ Legend:
 - [x] Removed from first-entry form: Look date and Look notes; these are handled after order creation
 - [x] Items can be added after order creation
 - [x] Order detail page
+- [x] Orders page status filters: all / active / completed / delayed
+- [x] Overview Pipeline card uses total orders with active/completed/delayed breakdown
+- [x] Pipeline rows link to the matching filtered Orders list
 - [x] Looks CRUD
 - [x] Items CRUD
 - [x] Item quantity support
@@ -223,6 +227,7 @@ Legend:
 
 - [x] Generate intake link
 - [x] Copy intake link
+- [ ] Generated intake link history shows active, used, and expired states correctly
 - [x] Expired intake link shows inactive page
 - [x] External client can submit intake form
 - [x] Submitted intake creates Client contact

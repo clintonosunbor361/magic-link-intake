@@ -41,10 +41,7 @@ export default async function FinancePage() {
       <header className="border-b border-kuartz-line pb-8">
         <p className="eyebrow">Finance</p>
         <h1 className="page-title">Money position</h1>
-        <p className="page-description">
-          What clients still owe Kuartz, and what Kuartz still owes Vendors. Both are calculated from
-          live records every time this page loads.
-        </p>
+        <p className="page-description">Track client balances and vendor payments.</p>
       </header>
 
       <section className="mt-9 grid gap-4 sm:grid-cols-2">
@@ -87,8 +84,8 @@ export default async function FinancePage() {
                   </p>
                   <p className="mt-1 text-kuartz-secondary">
                     {row.clientName}
-                    {row.invoiceNumber ? ` · ${row.invoiceNumber}` : ""}
-                    {row.completedAt ? " · Order completed" : ""}
+                    {row.invoiceNumber ? ` | ${row.invoiceNumber}` : ""}
+                    {row.completedAt ? " | Order completed" : ""}
                   </p>
                 </div>
                 <p className="font-semibold text-kuartz-ink sm:text-right">
@@ -113,7 +110,7 @@ export default async function FinancePage() {
         <section className="mt-10">
           <h2 className="section-title">Not invoiced yet</h2>
           <p className="mt-2 text-sm text-kuartz-secondary">
-            Live Orders with no Invoice. Nothing has been billed, so no balance exists to chase.
+            Orders that still need an invoice.
           </p>
           <div className="mt-4 divide-y divide-kuartz-line border-y border-kuartz-line">
             {notInvoiced.map((row) => (
@@ -149,7 +146,7 @@ export default async function FinancePage() {
                     </Link>
                   </p>
                   <p className="mt-1 text-kuartz-secondary">
-                    {row.vendorName} · {row.orderTitle} · due {row.deadline}
+                    {row.vendorName} | {row.orderTitle} | due {row.deadline}
                   </p>
                 </div>
                 <p className="font-semibold text-kuartz-ink sm:text-right">

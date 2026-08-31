@@ -45,7 +45,7 @@ export default async function VendorDetailPage({
         <h1 className="page-title">{vendor.name}</h1>
         {vendor.archivedAt ? (
           <p className="mt-3 text-sm font-semibold text-kuartz-muted">
-            Archived — this Vendor cannot be selected for new assignments.
+            Archived. This Vendor cannot be selected for new assignments.
           </p>
         ) : null}
       </header>

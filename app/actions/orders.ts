@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { requireStaffSession } from "@/lib/auth/session";
 import { readFormString } from "@/lib/forms/read-string";
+import { safeReturnPath, withReturnError } from "@/lib/forms/return-path";
 import { parseMoneyToMinorUnits } from "@/lib/forms/money";
 import { createActiveOrderRepository, createItemRepository, createLookRepository, createOrderRepository } from "@/lib/orders/repository";
 import { archiveOrder, createActiveOrder, restoreOrder, updateOrderDetails } from "@/lib/orders/order-service";
@@ -49,6 +50,7 @@ export async function updateOrderAction(formData: FormData) {
   const orderId = readFormString(formData, "orderId");
   const expectedVersion = Number(readFormString(formData, "version"));
   const ffDiscountAmount = readFormString(formData, "ffDiscountAmount");
+  const returnTo = safeReturnPath(readFormString(formData, "returnTo"), `/orders/${orderId}`);
 
   try {
     await updateOrderDetails(
@@ -68,18 +70,19 @@ export async function updateOrderAction(formData: FormData) {
     );
   } catch (error) {
     const message = error instanceof Error ? error.message : "The Order could not be updated.";
-    redirect(`/orders/${orderId}?error=${encodeURIComponent(message)}`);
+    redirect(withReturnError(returnTo, message));
   }
 
   revalidatePath("/orders");
   revalidatePath(`/orders/${orderId}`);
-  redirect(`/orders/${orderId}`);
+  redirect(returnTo);
 }
 
 export async function archiveOrderAction(formData: FormData) {
   const session = await requireStaffSession();
   const orderId = readFormString(formData, "orderId");
   const expectedVersion = Number(readFormString(formData, "version"));
+  const returnTo = safeReturnPath(readFormString(formData, "returnTo"), `/orders/${orderId}`);
 
   try {
     await archiveOrder(
@@ -88,18 +91,19 @@ export async function archiveOrderAction(formData: FormData) {
     );
   } catch (error) {
     const message = error instanceof Error ? error.message : "The Order could not be updated.";
-    redirect(`/orders/${orderId}?error=${encodeURIComponent(message)}`);
+    redirect(withReturnError(returnTo, message));
   }
 
   revalidatePath("/orders");
   revalidatePath(`/orders/${orderId}`);
-  redirect(`/orders/${orderId}`);
+  redirect(returnTo);
 }
 
 export async function restoreOrderAction(formData: FormData) {
   const session = await requireStaffSession();
   const orderId = readFormString(formData, "orderId");
   const expectedVersion = Number(readFormString(formData, "version"));
+  const returnTo = safeReturnPath(readFormString(formData, "returnTo"), `/orders/${orderId}`);
 
   try {
     await restoreOrder(
@@ -108,17 +112,18 @@ export async function restoreOrderAction(formData: FormData) {
     );
   } catch (error) {
     const message = error instanceof Error ? error.message : "The Order could not be updated.";
-    redirect(`/orders/${orderId}?error=${encodeURIComponent(message)}`);
+    redirect(withReturnError(returnTo, message));
   }
 
   revalidatePath("/orders");
   revalidatePath(`/orders/${orderId}`);
-  redirect(`/orders/${orderId}`);
+  redirect(returnTo);
 }
 
 export async function createLookAction(formData: FormData) {
   const session = await requireStaffSession();
   const orderId = readFormString(formData, "orderId");
+  const returnTo = safeReturnPath(readFormString(formData, "returnTo"), `/orders/${orderId}`);
 
   try {
     await createLook(
@@ -135,12 +140,12 @@ export async function createLookAction(formData: FormData) {
     );
   } catch (error) {
     const message = error instanceof Error ? error.message : "The Look could not be created.";
-    redirect(`/orders/${orderId}?error=${encodeURIComponent(message)}`);
+    redirect(withReturnError(returnTo, message));
   }
 
   revalidatePath("/orders");
   revalidatePath(`/orders/${orderId}`);
-  redirect(`/orders/${orderId}`);
+  redirect(returnTo);
 }
 
 export async function updateLookAction(formData: FormData) {
@@ -148,6 +153,7 @@ export async function updateLookAction(formData: FormData) {
   const orderId = readFormString(formData, "orderId");
   const lookId = readFormString(formData, "lookId");
   const expectedVersion = Number(readFormString(formData, "version"));
+  const returnTo = safeReturnPath(readFormString(formData, "returnTo"), `/orders/${orderId}`);
 
   try {
     await updateLook(
@@ -165,12 +171,12 @@ export async function updateLookAction(formData: FormData) {
     );
   } catch (error) {
     const message = error instanceof Error ? error.message : "The Look could not be updated.";
-    redirect(`/orders/${orderId}?error=${encodeURIComponent(message)}`);
+    redirect(withReturnError(returnTo, message));
   }
 
   revalidatePath("/orders");
   revalidatePath(`/orders/${orderId}`);
-  redirect(`/orders/${orderId}`);
+  redirect(returnTo);
 }
 
 export async function archiveLookAction(formData: FormData) {
@@ -178,6 +184,7 @@ export async function archiveLookAction(formData: FormData) {
   const orderId = readFormString(formData, "orderId");
   const lookId = readFormString(formData, "lookId");
   const expectedVersion = Number(readFormString(formData, "version"));
+  const returnTo = safeReturnPath(readFormString(formData, "returnTo"), `/orders/${orderId}`);
 
   try {
     await archiveLook(
@@ -186,12 +193,12 @@ export async function archiveLookAction(formData: FormData) {
     );
   } catch (error) {
     const message = error instanceof Error ? error.message : "The Look could not be updated.";
-    redirect(`/orders/${orderId}?error=${encodeURIComponent(message)}`);
+    redirect(withReturnError(returnTo, message));
   }
 
   revalidatePath("/orders");
   revalidatePath(`/orders/${orderId}`);
-  redirect(`/orders/${orderId}`);
+  redirect(returnTo);
 }
 
 export async function restoreLookAction(formData: FormData) {
@@ -199,6 +206,7 @@ export async function restoreLookAction(formData: FormData) {
   const orderId = readFormString(formData, "orderId");
   const lookId = readFormString(formData, "lookId");
   const expectedVersion = Number(readFormString(formData, "version"));
+  const returnTo = safeReturnPath(readFormString(formData, "returnTo"), `/orders/${orderId}`);
 
   try {
     await restoreLook(
@@ -207,18 +215,19 @@ export async function restoreLookAction(formData: FormData) {
     );
   } catch (error) {
     const message = error instanceof Error ? error.message : "The Look could not be updated.";
-    redirect(`/orders/${orderId}?error=${encodeURIComponent(message)}`);
+    redirect(withReturnError(returnTo, message));
   }
 
   revalidatePath("/orders");
   revalidatePath(`/orders/${orderId}`);
-  redirect(`/orders/${orderId}`);
+  redirect(returnTo);
 }
 
 export async function createItemAction(formData: FormData) {
   const session = await requireStaffSession();
   const orderId = readFormString(formData, "orderId");
   const lookId = readFormString(formData, "lookId");
+  const returnTo = safeReturnPath(readFormString(formData, "returnTo"), `/orders/${orderId}`);
 
   try {
     await createItem(
@@ -235,12 +244,12 @@ export async function createItemAction(formData: FormData) {
     );
   } catch (error) {
     const message = error instanceof Error ? error.message : "The Item could not be created.";
-    redirect(`/orders/${orderId}?error=${encodeURIComponent(message)}`);
+    redirect(withReturnError(returnTo, message));
   }
 
   revalidatePath("/orders");
   revalidatePath(`/orders/${orderId}`);
-  redirect(`/orders/${orderId}`);
+  redirect(returnTo);
 }
 
 export async function updateItemAction(formData: FormData) {
@@ -248,6 +257,7 @@ export async function updateItemAction(formData: FormData) {
   const orderId = readFormString(formData, "orderId");
   const itemId = readFormString(formData, "itemId");
   const expectedVersion = Number(readFormString(formData, "version"));
+  const returnTo = safeReturnPath(readFormString(formData, "returnTo"), `/orders/${orderId}`);
 
   try {
     await updateItem(
@@ -265,12 +275,12 @@ export async function updateItemAction(formData: FormData) {
     );
   } catch (error) {
     const message = error instanceof Error ? error.message : "The Item could not be updated.";
-    redirect(`/orders/${orderId}?error=${encodeURIComponent(message)}`);
+    redirect(withReturnError(returnTo, message));
   }
 
   revalidatePath("/orders");
   revalidatePath(`/orders/${orderId}`);
-  redirect(`/orders/${orderId}`);
+  redirect(returnTo);
 }
 
 export async function archiveItemAction(formData: FormData) {
@@ -278,6 +288,7 @@ export async function archiveItemAction(formData: FormData) {
   const orderId = readFormString(formData, "orderId");
   const itemId = readFormString(formData, "itemId");
   const expectedVersion = Number(readFormString(formData, "version"));
+  const returnTo = safeReturnPath(readFormString(formData, "returnTo"), `/orders/${orderId}`);
 
   try {
     await archiveItem(
@@ -286,12 +297,12 @@ export async function archiveItemAction(formData: FormData) {
     );
   } catch (error) {
     const message = error instanceof Error ? error.message : "The Item could not be updated.";
-    redirect(`/orders/${orderId}?error=${encodeURIComponent(message)}`);
+    redirect(withReturnError(returnTo, message));
   }
 
   revalidatePath("/orders");
   revalidatePath(`/orders/${orderId}`);
-  redirect(`/orders/${orderId}`);
+  redirect(returnTo);
 }
 
 export async function restoreItemAction(formData: FormData) {
@@ -299,6 +310,7 @@ export async function restoreItemAction(formData: FormData) {
   const orderId = readFormString(formData, "orderId");
   const itemId = readFormString(formData, "itemId");
   const expectedVersion = Number(readFormString(formData, "version"));
+  const returnTo = safeReturnPath(readFormString(formData, "returnTo"), `/orders/${orderId}`);
 
   try {
     await restoreItem(
@@ -307,10 +319,10 @@ export async function restoreItemAction(formData: FormData) {
     );
   } catch (error) {
     const message = error instanceof Error ? error.message : "The Item could not be updated.";
-    redirect(`/orders/${orderId}?error=${encodeURIComponent(message)}`);
+    redirect(withReturnError(returnTo, message));
   }
 
   revalidatePath("/orders");
   revalidatePath(`/orders/${orderId}`);
-  redirect(`/orders/${orderId}`);
+  redirect(returnTo);
 }
