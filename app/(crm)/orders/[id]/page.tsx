@@ -28,7 +28,7 @@ import {
 import { issueOrderConfirmationAction } from "@/app/actions/client-confirmations";
 import { completeOrderAction } from "@/app/actions/order-completion";
 import { requireStaffSession } from "@/lib/auth/session";
-import { canManageFinance, canOverrideCompletionGate } from "@/lib/domain/access-control";
+import { canManageFinance, canManageMeasurementFieldDefinitions, canOverrideCompletionGate } from "@/lib/domain/access-control";
 import { mayArchive, mayRestore } from "@/lib/domain/record-lifecycle";
 import { listOutstandingAccessories } from "@/lib/accessories/repository";
 import { listOpenFittingSessions } from "@/lib/fittings/repository";
@@ -55,10 +55,12 @@ import { listConfirmationsForSubject } from "@/lib/client-confirmations/reposito
 import { formatMinorUnits } from "@/lib/forms/money";
 import { businessToday } from "@/lib/domain/business-date";
 import { getOrganizationTimezone } from "@/lib/organizations/repository";
+import { createMeasurementProfileRepository, listMeasurementProfileSnapshot } from "@/lib/measurement-profiles/repository";
+import { getOrCreateMeasurementProfile } from "@/lib/measurement-profiles/service";
 import { getLiveAssignmentDetailForItem } from "@/lib/production/assignment-repository";
 import { listVendorsWithStats } from "@/lib/vendors/repository";
-import { ItemAssignmentDrawer, LookBulkAssignForm } from "@/components/production/assignment-drawer";
 import { MeasurementDrawer } from "@/components/clients/measurement-drawer";
+import { ItemAssignmentDrawer, LookBulkAssignForm } from "@/components/production/assignment-drawer";
 import { OrderWorkspaceNav } from "@/components/orders/order-workspace-nav";
 import { Button } from "@/components/ui/button";
 import { Breadcrumbs } from "@/components/ui/breadcrumbs";
@@ -66,11 +68,6 @@ import { FormDisclosure } from "@/components/ui/form-disclosure";
 import { MoneyInput } from "@/components/ui/money-input";
 import { Input } from "@/components/ui/input";
 import { NativeSelect } from "@/components/ui/native-select";
-import {
-  createMeasurementProfileRepository,
-  listMeasurementProfileSnapshot,
-} from "@/lib/measurement-profiles/repository";
-import { getOrCreateMeasurementProfile } from "@/lib/measurement-profiles/service";
 
 const dateFormatter = new Intl.DateTimeFormat("en-NG", { dateStyle: "medium", timeStyle: "short" });
 const ORDER_WORKSPACE_TABS = [
@@ -106,23 +103,6 @@ export default async function OrderDetailPage({
   const order = await getOrderWithLooksAndItems(session.organizationId, id);
   if (!order) notFound();
 
-  const activeTab: OrderWorkspaceTab = ORDER_WORKSPACE_TABS.some((item) => item.id === tab)
-    ? (tab as OrderWorkspaceTab)
-    : "overview";
-  const orderTabHref = (tabId: OrderWorkspaceTab) => `/orders/${order.id}?tab=${tabId}`;
-  const workspaceTabs = ORDER_WORKSPACE_TABS.map((item) => ({ ...item, href: orderTabHref(item.id) }));
-
-  const measurementProfile =
-    activeTab === "measurements"
-      ? await getOrCreateMeasurementProfile(
-          { organizationId: session.organizationId, clientId: order.clientId },
-          createMeasurementProfileRepository(),
-        )
-      : null;
-  const measurementFields = measurementProfile
-    ? await listMeasurementProfileSnapshot(session.organizationId, measurementProfile.id)
-    : [];
-
   const itemTypes = await listItemTypes(session.organizationId);
   const [
     consultationNoteSources,
@@ -141,6 +121,11 @@ export default async function OrderDetailPage({
     listRevisionQueueFiles(session.organizationId, order.id),
     getMissingMeasurementsForOrder(session.organizationId, order.id),
   ]);
+  const measurementProfile = await getOrCreateMeasurementProfile(
+    { organizationId: session.organizationId, clientId: order.clientId },
+    createMeasurementProfileRepository(),
+  );
+  const measurementFields = await listMeasurementProfileSnapshot(session.organizationId, measurementProfile.id);
   const orderConfirmations = await listConfirmationsForSubject(session.organizationId, "order_detail", order.id);
   const styleDirectionRevisions = await listStyleDirectionFileRevisionsForFiles(
     session.organizationId,
@@ -186,6 +171,12 @@ export default async function OrderDetailPage({
   const invoiceStatus = invoice ? deriveInvoiceStatus({ lifecycle: invoice.lifecycle, balance }) : null;
   const isCompleted = Boolean(order.completedAt);
   const completionBlocked = blocksOrderCompletion(balance);
+  const activeTab: OrderWorkspaceTab = ORDER_WORKSPACE_TABS.some((item) => item.id === tab)
+    ? (tab as OrderWorkspaceTab)
+    : "overview";
+  const orderTabHref = (tabId: OrderWorkspaceTab) => `/orders/${order.id}?tab=${tabId}`;
+  const workspaceTabs = ORDER_WORKSPACE_TABS.map((item) => ({ ...item, href: orderTabHref(item.id) }));
+
   return (
     <div>
       <Breadcrumbs items={[{ label: "Orders", href: "/orders" }, { label: order.title }]} />
@@ -913,74 +904,48 @@ export default async function OrderDetailPage({
                 <div>
                   <h2 className="section-title">Measurements</h2>
                   <p className="mt-2 text-sm leading-6 text-kuartz-secondary">
-                    Client-level measurements used by every Item on this Order.
+                    These are {order.clientFullName}'s Client measurements. Updates here also update the Client profile.
                   </p>
                 </div>
-                {measurementProfile ? (
-                  <MeasurementDrawer
-                    clientId={order.clientId}
-                    orderId={order.id}
-                    measurementProfileId={measurementProfile.id}
-                    fields={measurementFields}
-                    disabled={Boolean(measurementProfile.archivedAt)}
-                  />
-                ) : null}
+                <MeasurementDrawer
+                  clientId={order.clientId}
+                  measurementProfileId={measurementProfile.id}
+                  fields={measurementFields}
+                  returnTo={orderTabHref("measurements")}
+                  canAddCustomFields={canManageMeasurementFieldDefinitions(session.role)}
+                  disabled={Boolean(measurementProfile.archivedAt)}
+                />
               </div>
-              {measurementProfile?.archivedAt ? (
-                <p className="form-alert mt-4" role="status">
-                  This Client&rsquo;s measurement profile is archived. Restore it from the Client profile before editing.
-                </p>
-              ) : null}
-              <p className="mt-2 text-sm leading-6 text-kuartz-secondary">
-                Missing required measurements continue to block Vendor Brief export unless a Super Admin records an override.
-              </p>
+              {measurementProfile.archivedAt ? <p className="mt-3 text-sm text-kuartz-muted">This measurement profile is archived.</p> : null}
               <div className="mt-5 divide-y divide-kuartz-line border-y border-kuartz-line">
                 {measurementFields.length ? (
                   measurementFields.map((field) => (
-                    <div key={field.fieldId} className="grid gap-3 py-4 text-sm sm:grid-cols-[minmax(12rem,0.38fr)_minmax(0,1fr)]">
+                    <div key={field.fieldId} className="grid gap-3 py-4 text-sm sm:grid-cols-[minmax(11rem,0.32fr)_minmax(0,1fr)]">
                       <div>
                         <p className="font-semibold text-kuartz-ink">{field.fieldName}</p>
                         <p className="mt-1 text-xs text-kuartz-muted">{field.unit}</p>
                       </div>
                       <div>
-                        <p className="font-semibold text-kuartz-ink">
-                          {field.value ? `${field.value} ${field.unit}` : "Not recorded yet"}
-                        </p>
+                        <p className="font-semibold text-kuartz-ink">{field.value ? `${field.value} ${field.unit}` : "Not recorded yet"}</p>
                         {field.value ? (
                           <p className="mt-1 text-xs text-kuartz-muted">
-                            {field.lastEditedByName
-                              ? `Last edited by ${field.lastEditedByName}`
-                              : field.createdByName
-                                ? `Set by ${field.createdByName}`
-                                : "Recorded"}
-                            {field.lastEditedAt ? ` · ${dateFormatter.format(field.lastEditedAt)}` : ""}
+                            {field.lastEditedByName ? `Last edited by ${field.lastEditedByName}` : `Set by ${field.createdByName}`}
+                            {field.lastEditedAt ? ` - ${dateFormatter.format(field.lastEditedAt)}` : ""}
                           </p>
-                        ) : null}
-                        {field.revisions.length ? (
-                          <details className="mt-2">
-                            <summary className="cursor-pointer text-xs font-semibold text-kuartz-secondary">
-                              Edit history ({field.revisions.length})
-                            </summary>
-                            <ul className="mt-2 space-y-1 text-sm text-kuartz-muted">
-                              {field.revisions.map((revision) => (
-                                <li key={revision.id}>
-                                  {revision.previousValue ?? "(unset)"} {"→"} {revision.newValue} · {revision.changedByName ?? "Unknown staff"} · {dateFormatter.format(revision.createdAt)}
-                                  {revision.note ? ` · “${revision.note}”` : ""}
-                                </li>
-                              ))}
-                            </ul>
-                          </details>
                         ) : null}
                       </div>
                     </div>
                   ))
                 ) : (
-                  <p className="py-6 text-sm text-kuartz-muted">No measurement fields are configured yet.</p>
+                  <p className="py-8 text-sm text-kuartz-muted">No measurement fields have been set up yet.</p>
                 )}
               </div>
-              <Link href={`/clients/${order.clientId}`} className="mt-4 inline-block text-sm font-semibold text-kuartz-ink underline-offset-4 hover:underline">
-                Open {order.clientFullName}&rsquo;s full Client profile
-              </Link>
+              <div className="mt-5 rounded-[1rem] border border-kuartz-line bg-white/65 p-5">
+                <p className="font-semibold text-kuartz-ink">Measurement requirements</p>
+                <p className="mt-2 text-sm leading-6 text-kuartz-secondary">
+                  Missing measurements are shown beside Items in Looks & Items and blocked before Vendor Brief export unless a Super Admin overrides.
+                </p>
+              </div>
             </div>
           ) : null}
 

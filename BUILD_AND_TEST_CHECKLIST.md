@@ -64,7 +64,7 @@ Legend:
 - [x] Overview tab with next actions
 - [x] Looks & Items tab
 - [x] Looks are displayed as compact workspace cards instead of always-open edit forms
-- [x] Measurements tab edits the reusable Client measurement profile directly inside the Order workspace
+- [x] Measurements tab inside Order workspace can view and edit Client profile measurements
 - [x] Style Direction tab
 - [~] Vendors tab; currently routes assignment work through Looks & Items and Vendor directory
 - [~] Production tab; currently links to Production workspace and Item assignments
@@ -97,7 +97,7 @@ Legend:
 - [x] Measurement confirmation magic link
 - [x] Measurement requirement rules by item type
 - [x] Vendor brief blocker for missing required measurements
-- [x] Add/edit measurements directly from Order workspace
+- [ ] Add/edit measurements directly from Order workspace
 - [ ] UX for missing measurements inside Order workspace
 
 ### Vendors / Production
@@ -147,7 +147,7 @@ Legend:
 - [x] Configurable accessory statuses
 - [x] Accessories can link to order/look
 - [x] Accessory delivery date follows linked Look date logic
-- [x] Accessory item UX covers assigned staff, supplier, budget in minor units, purchase date, derived delivery date/look due date, status, and notes
+- [~] Accessory item fields exist, but confirm UX covers assigned staff, supplier, budget, purchase date, delivery date/look due date, and status clearly
 - [~] Accessory workflow still needs final business grilling
 - [~] Exists as separate page, not Order workspace tab yet
 
@@ -182,7 +182,7 @@ Legend:
 - [x] Cron route for notifications
 - [x] Email/dashboard notification architecture
 - [~] SMS reminders are in the original workflow document but deferred from the current product architecture
-- [x] Client to-dos show all open to-dos sorted by closest due date
+- [~] Client to-dos should show all open to-dos sorted by closest due date, confirm current behavior
 - [ ] Final notification delivery test with Resend/live env
 
 ### Settings
@@ -264,7 +264,7 @@ Legend:
 - [ ] Tabs render correctly
 - [ ] Overview tab is default landing tab
 - [ ] Looks & Items tab contains only Looks/Items work
-- [ ] Measurements tab can edit Client measurements
+- [x] Measurements tab can edit Client measurements
 - [ ] Style Direction tab contains creative/reference work only
 - [ ] Vendors tab handles assignment work
 - [ ] Production tab handles status/deadline tracking
@@ -296,8 +296,8 @@ Legend:
 - [ ] Add measurements from Client profile
 - [ ] Edit measurements from Client profile
 - [ ] Measurement history records previous/new value
-- [x] Add/edit measurements from Order workspace
-- [x] Order workspace edits save to Client profile
+- [ ] Add/edit measurements from Order workspace
+- [ ] Order workspace edits save to Client profile
 - [ ] Add custom measurement field
 - [ ] Configure measurement requirements by item type
 - [ ] Missing required measurements are detected per item
@@ -349,10 +349,10 @@ Legend:
 - [ ] Link accessory to whole order
 - [ ] Link accessory to specific Look
 - [ ] Accessory delivery date follows Look date
-- [x] Assigned staff can be selected for accessory item
-- [x] Supplier can be entered for accessory item
-- [x] Budget can be entered for accessory item
-- [x] Purchase date can be entered for accessory item
+- [ ] Assigned staff can be selected for accessory item
+- [ ] Supplier can be entered for accessory item
+- [ ] Budget can be entered for accessory item
+- [ ] Purchase date can be entered for accessory item
 - [ ] Accessory status changes
 - [ ] Custom accessory type works
 - [ ] Archived accessory types/statuses no longer appear for new records
@@ -388,9 +388,9 @@ Legend:
 - [ ] Pending measurement confirmations appear correctly
 - [ ] Pending moodboard approvals appear correctly
 - [ ] Pending sketch approvals appear correctly
-- [x] Outstanding balances are correct
-- [x] Vendor payment summaries are correct
-- [x] Open client to-dos show, closest due first
+- [ ] Outstanding balances are correct
+- [ ] Vendor payment summaries are correct
+- [ ] Open client to-dos show, closest due first
 - [ ] Dashboard notification created for due reminders
 - [ ] Email notification sends through Resend
 - [ ] Overdue alerts fire after deadline passes

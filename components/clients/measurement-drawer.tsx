@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useState } from "react";
 import { Ruler, X } from "lucide-react";
+import { createMeasurementFieldDefinitionAction } from "@/app/actions/measurement-field-definitions";
 import { setMeasurementValuesAction } from "@/app/actions/measurement-profiles";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -16,42 +17,29 @@ type MeasurementFieldView = {
 
 export function MeasurementDrawer({
   clientId,
-  orderId,
   measurementProfileId,
   fields,
   disabled,
+  returnTo,
+  canAddCustomFields = false,
 }: {
   clientId: string;
-  orderId?: string;
   measurementProfileId: string;
   fields: MeasurementFieldView[];
   disabled?: boolean;
+  returnTo?: string;
+  canAddCustomFields?: boolean;
 }) {
   const [open, setOpen] = useState(false);
-  const triggerRef = useRef<HTMLButtonElement>(null);
-  const closeRef = useRef<HTMLButtonElement>(null);
-  const actionLabel = fields.some((field) => field.value) ? "Edit measurements" : "Add measurements";
-
-  function closeDrawer() {
-    setOpen(false);
-    triggerRef.current?.focus();
-  }
-
-  useEffect(() => {
-    if (!open) return;
-    closeRef.current?.focus();
-    const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") closeDrawer();
-    };
-    document.addEventListener("keydown", onKeyDown);
-    return () => document.removeEventListener("keydown", onKeyDown);
-  }, [open]);
+  const targetPath = returnTo ?? `/clients/${clientId}`;
+  const nextSortOrder = fields.length ? fields.length + 1 : 1;
+  const hasRecordedMeasurements = fields.some((field) => field.value);
 
   return (
     <>
-      <Button ref={triggerRef} type="button" variant="outline" className="gap-2" disabled={disabled} onClick={() => setOpen(true)}>
+      <Button type="button" variant="outline" className="gap-2" disabled={disabled} onClick={() => setOpen(true)}>
         <Ruler size={16} aria-hidden="true" />
-        {actionLabel}
+        Add measurements
       </Button>
 
       {open ? (
@@ -60,33 +48,52 @@ export function MeasurementDrawer({
             type="button"
             aria-label="Close measurements drawer"
             className="absolute inset-0 cursor-default bg-kuartz-ink/38 backdrop-blur-[2px]"
-            onClick={closeDrawer}
+            onClick={() => setOpen(false)}
           />
           <aside className="absolute right-0 top-0 flex h-full w-full max-w-[42rem] flex-col border-l border-kuartz-line bg-[#fbfaf7] shadow-[0_24px_90px_rgba(21,22,63,0.22)]">
             <div className="flex items-start justify-between gap-4 border-b border-kuartz-line px-5 py-5 sm:px-6">
               <div>
                 <p className="eyebrow">Measurements</p>
                 <h2 id="measurement-drawer-title" className="mt-2 text-2xl font-extrabold text-kuartz-ink">
-                  {actionLabel}
+                  {hasRecordedMeasurements ? "Edit measurements" : "Add measurements"}
                 </h2>
               </div>
               <button
                 type="button"
-                ref={closeRef}
                 aria-label="Close measurements drawer"
                 className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-kuartz-line bg-white text-kuartz-ink transition hover:border-kuartz-ink"
-                onClick={closeDrawer}
+                onClick={() => setOpen(false)}
               >
                 <X size={18} aria-hidden="true" />
               </button>
             </div>
 
-            <form action={setMeasurementValuesAction} className="flex min-h-0 flex-1 flex-col">
-              <input type="hidden" name="clientId" value={clientId} />
-              {orderId ? <input type="hidden" name="returnToOrderId" value={orderId} /> : null}
-              <input type="hidden" name="measurementProfileId" value={measurementProfileId} />
+            <div className="min-h-0 flex-1 overflow-y-auto px-5 py-5 sm:px-6">
+              {canAddCustomFields ? (
+                <form action={createMeasurementFieldDefinitionAction} className="mb-5 rounded-[0.95rem] border border-kuartz-line bg-white/78 p-4">
+                  <input type="hidden" name="returnTo" value={targetPath} />
+                  <input type="hidden" name="sortOrder" value={nextSortOrder} />
+                  <p className="text-sm font-extrabold text-kuartz-ink">Add custom field</p>
+                  <div className="mt-3 grid gap-3 sm:grid-cols-[minmax(0,1fr)_8rem_auto] sm:items-end">
+                    <label className="form-group">
+                      <span>Field name</span>
+                      <Input name="name" placeholder="e.g. Cap size" required />
+                    </label>
+                    <label className="form-group">
+                      <span>Unit</span>
+                      <Input name="unit" placeholder="in" required />
+                    </label>
+                    <Button type="submit" variant="outline">
+                      Add field
+                    </Button>
+                  </div>
+                </form>
+              ) : null}
 
-              <div className="min-h-0 flex-1 overflow-y-auto px-5 py-5 sm:px-6">
+              <form action={setMeasurementValuesAction} id="measurement-values-form">
+                <input type="hidden" name="clientId" value={clientId} />
+                <input type="hidden" name="measurementProfileId" value={measurementProfileId} />
+                <input type="hidden" name="returnTo" value={targetPath} />
                 <div className="grid gap-4 sm:grid-cols-2">
                   {fields.map((field) => (
                     <div key={field.fieldId} className="rounded-[0.95rem] border border-kuartz-line bg-white/78 p-4">
@@ -108,15 +115,17 @@ export function MeasurementDrawer({
                     </div>
                   ))}
                 </div>
-              </div>
+              </form>
+            </div>
 
               <div className="flex flex-wrap items-center justify-end gap-3 border-t border-kuartz-line bg-white/76 px-5 py-4 sm:px-6">
-                <Button type="button" variant="ghost" onClick={closeDrawer}>
+                <Button type="button" variant="ghost" onClick={() => setOpen(false)}>
                   Cancel
                 </Button>
-                <Button type="submit">Save measurements</Button>
+                <Button type="submit" form="measurement-values-form">
+                  Save measurements
+                </Button>
               </div>
-            </form>
           </aside>
         </div>
       ) : null}

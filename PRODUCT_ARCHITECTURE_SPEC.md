@@ -349,6 +349,8 @@ Kuartz can add or update measurements from:
 
 When measurements are edited from an Order workspace, the values still save back to the Client measurement profile. The Order workspace is only another access point, so Kuartz does not need to leave an active Order to update measurements.
 
+Measurement entry should use a side drawer with the active measurement fields. Super Admin can add a custom measurement field from the drawer when a needed body part is not already in the fixed list.
+
 Measurement profile supports history:
 
 - Changed field

@@ -10,6 +10,12 @@ const validFields = {
 };
 
 describe("createActiveOrder", () => {
+  it("requires a Client before checking the repository", async () => {
+    const repository = { clientBelongsToOrganization: vi.fn(), createOrderWithLooks: vi.fn() };
+    await expect(createActiveOrder({ organizationId: "org-1", actorStaffId: "staff-1", fields: { ...validFields, clientId: " ", primaryOwnerStaffId: "staff-1", looks: [{ name: "Reception", lookDate: null, notes: "" }] } }, repository)).rejects.toThrow("Client is required.");
+    expect(repository.clientBelongsToOrganization).not.toHaveBeenCalled();
+  });
+
   it("creates an Order and its Looks as one repository operation", async () => {
     const repository = { clientBelongsToOrganization: vi.fn().mockResolvedValue(true), createOrderWithLooks: vi.fn().mockResolvedValue({ orderId: "order-1", lookIds: ["look-1", "look-2"] }) };
     const result = await createActiveOrder({

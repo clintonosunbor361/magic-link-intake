@@ -27,6 +27,7 @@ export async function createActiveOrder(
   input: { organizationId: string; actorStaffId: string; fields: CreateActiveOrderInput },
   repository: ActiveOrderCreationRepository,
 ) {
+  if (!input.fields.clientId.trim()) throw new Error("Client is required.");
   if (!(await repository.clientBelongsToOrganization(input.organizationId, input.fields.clientId))) throw new Error("Client was not found.");
   if (!input.fields.title.trim()) throw new Error("Order title is required.");
   if (!input.fields.eventType.trim()) throw new Error("Event type is required.");
