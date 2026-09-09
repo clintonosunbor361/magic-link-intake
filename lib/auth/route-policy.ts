@@ -11,6 +11,8 @@ export function decideRouteAccess(input: {
   configured: boolean;
   signedIn: boolean;
 }): "allow" | "setup" | "sign_in" {
+  // Cron authenticates its bearer capability in the route, independently of staff cookies.
+  if (input.pathname === "/api/cron/notifications") return "allow";
   if (isPublicPath(input.pathname)) return "allow";
   if (!input.configured) return "setup";
   return input.signedIn ? "allow" : "sign_in";

@@ -209,10 +209,7 @@ export async function restoreFittingAction(formData: FormData) {
   redirect(fittingsPath(orderId));
 }
 
-/**
- * Issues the outcome-confirmation link. Guarded by assertConfirmable: the fitting must have happened
- * and must have a client-facing summary, because the link asks the client to confirm that summary.
- */
+/** Issues a scoped appointment confirmation. */
 export async function issueFittingConfirmationAction(formData: FormData) {
   const session = await requireStaffSession();
   const orderId = readFormString(formData, "orderId");
@@ -223,7 +220,8 @@ export async function issueFittingConfirmationAction(formData: FormData) {
   try {
     const fitting = await getFittingSessionDetail(session.organizationId, sessionId);
     if (!fitting) throw new Error("Fitting was not found.");
-    assertConfirmable(fitting.status, fitting.clientSummary);
+    assertConfirmable(fitting.status);
+    if (fitting.archivedAt || fitting.orderId !== orderId) throw new Error("Fitting was not found.");
 
     const issued = await issueConfirmation(
       {

@@ -5,32 +5,32 @@ const live = (id: string, lookDate: string | null) => ({ id, lookDate, archivedA
 const archived = (id: string, lookDate: string | null) => ({ id, lookDate, archivedAt: new Date() });
 
 describe("resolveAccessoryDeliveryDate — whole-Order accessories", () => {
-  it("inherits the earliest dated live Look", () => {
+  it("does not infer a deadline from dated Looks", () => {
     const result = resolveAccessoryDeliveryDate({
       lookId: null,
       looks: [live("look-2", "2026-09-20"), live("look-1", "2026-09-05"), live("look-3", "2026-10-01")],
     });
 
-    expect(result).toEqual({ state: "inherited", date: "2026-09-05", sourceLookId: "look-1" });
+    expect(result).toEqual({ state: "none" });
   });
 
-  it("ignores archived Looks when picking the earliest", () => {
+  it("does not infer a deadline when some Looks are archived", () => {
     // An archived Look's event is not happening, so an accessory must not be pulled early for it.
     const result = resolveAccessoryDeliveryDate({
       lookId: null,
       looks: [archived("look-1", "2026-01-01"), live("look-2", "2026-09-20")],
     });
 
-    expect(result).toEqual({ state: "inherited", date: "2026-09-20", sourceLookId: "look-2" });
+    expect(result).toEqual({ state: "none" });
   });
 
-  it("ignores Looks with no date", () => {
+  it("does not infer a deadline when some Looks are undated", () => {
     const result = resolveAccessoryDeliveryDate({
       lookId: null,
       looks: [live("look-1", null), live("look-2", "2026-09-20")],
     });
 
-    expect(result).toMatchObject({ date: "2026-09-20" });
+    expect(result).toEqual({ state: "none" });
   });
 
   it("has no date when no live Look carries one", () => {

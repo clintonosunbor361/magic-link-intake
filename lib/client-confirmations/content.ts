@@ -47,14 +47,10 @@ export type FittingConfirmationContent = {
   orderTitle: string;
   lookName: string | null;
   scheduledAt: Date;
-  clientSummary: string;
+  location: string;
 };
 
-/**
- * The Fitting payload the client sees: when the session happened, which Look it covered, and the
- * summary staff wrote for them. Internal fitting notes are deliberately absent — they are the
- * client-invisible half of the record, the same rule production notes follow.
- */
+/** Appointment details only; internal summaries and adjustment notes never leave staff views. */
 export async function getFittingSessionConfirmationContent(
   organizationId: string,
   fittingSessionId: string,

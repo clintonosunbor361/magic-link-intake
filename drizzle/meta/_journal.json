@@ -239,6 +239,20 @@
       "when": 1787821460749,
       "tag": "0033_enforce_accessory_budget",
       "breakpoints": true
+    },
+    {
+      "idx": 34,
+      "version": "7",
+      "when": 1788675955775,
+      "tag": "0034_assignment_ratings",
+      "breakpoints": true
+    },
+    {
+      "idx": 35,
+      "version": "7",
+      "when": 1788852601725,
+      "tag": "0035_notification_delivery_retries",
+      "breakpoints": true
     }
   ]
 }

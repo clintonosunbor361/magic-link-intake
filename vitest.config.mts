@@ -9,7 +9,7 @@ export default defineConfig({
     },
   },
   test: {
-    include: ["tests/**/*.test.{ts,tsx}"],
+    include: ["tests/**/*.test.{ts,tsx}", ...(process.env.KUARTZ_DB_TESTS === "1" ? ["tests/integration/*.integration.ts"] : [])],
     setupFiles: ["./tests/setup.ts"],
   },
 });

@@ -1,3 +1,8 @@
+import { changeProductionStatusAction } from "@/app/actions/vendor-assignments";
+import { listProductionStatuses } from "@/lib/production-statuses/repository";
+import { OrderAccessoriesWorkspace } from "@/components/orders/accessories-workspace";
+import { OrderFittingsWorkspace } from "@/components/orders/fittings-workspace";
+import { OrderPaymentsWorkspace } from "@/components/orders/invoice-workspace";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import {
@@ -28,7 +33,7 @@ import {
 import { issueOrderConfirmationAction } from "@/app/actions/client-confirmations";
 import { completeOrderAction } from "@/app/actions/order-completion";
 import { requireStaffSession } from "@/lib/auth/session";
-import { canManageFinance, canManageMeasurementFieldDefinitions, canOverrideCompletionGate } from "@/lib/domain/access-control";
+import { canRecordFinance, canManageMeasurementFieldDefinitions, canOverrideCompletionGate } from "@/lib/domain/access-control";
 import { mayArchive, mayRestore } from "@/lib/domain/record-lifecycle";
 import { listOutstandingAccessories } from "@/lib/accessories/repository";
 import { listOpenFittingSessions } from "@/lib/fittings/repository";
@@ -143,9 +148,10 @@ export default async function OrderDetailPage({
 
   // Vendor assignment context. Assignments are looked up per Item rather than in one grouped query
   // because this page already renders Items individually, and the count here is small by design.
-  const [vendors, timezone] = await Promise.all([
+  const [vendors, timezone, productionStatuses] = await Promise.all([
     listVendorsWithStats(session.organizationId),
     getOrganizationTimezone(session.organizationId),
+    listProductionStatuses(session.organizationId),
   ]);
   const today = businessToday(timezone);
   const allItemIds = order.looks.flatMap((look) => look.items.map((item) => item.id));
@@ -440,16 +446,7 @@ export default async function OrderDetailPage({
                                 </form>
                               ) : null}
                             </div>
-                            {!item.archivedAt ? (
-                              <ItemAssignmentDrawer
-                                orderId={order.id}
-                                itemId={item.id}
-                                itemLabel={item.customLabel ?? item.itemTypeName}
-                                assignment={assignmentByItemId.get(item.id) ?? null}
-                                vendors={vendors}
-                                today={today}
-                              />
-                            ) : null}
+
                           </div>
                           );
                         })
@@ -457,16 +454,6 @@ export default async function OrderDetailPage({
                         <p className="py-3 text-sm text-kuartz-muted">No Items yet on this Look.</p>
                       )}
                     </div>
-
-                    <LookBulkAssignForm
-                      orderId={order.id}
-                      lookId={look.id}
-                      lookName={look.name}
-                      unassignedCount={
-                        look.items.filter((item) => !item.archivedAt && !assignmentByItemId.get(item.id)).length
-                      }
-                      vendors={vendors}
-                    />
 
                     <FormDisclosure title="Items" buttonLabel="Add Item">
                       <form
@@ -773,7 +760,7 @@ export default async function OrderDetailPage({
                                   <p className="font-semibold text-kuartz-ink">{formatStyleDirectionLabel(file.category)}</p>
                                   <p className="mt-1 text-sm text-kuartz-muted">
                                     {file.requiresClientApproval ? "Requires client approval" : "Internal reference only"}
-                                    {file.approvalStatus ? ` · ${formatStyleDirectionLabel(file.approvalStatus)}` : ""}
+                                    {file.approvalStatus ? ` · Revision ${file.currentRevisionNumber}: ${formatStyleDirectionLabel(file.approvalStatus)}` : ""}
                                     {file.archivedAt ? " · Archived" : ""}
                                   </p>
                                 </div>
@@ -863,7 +850,7 @@ export default async function OrderDetailPage({
           </div>
           ) : null}
 
-          {activeTab === "style" && canManageFinance(session.role) ? <div>
+          {activeTab === "style" ? <div>
             <div className="flex items-end justify-between gap-4">
               <h2 className="section-title">Approval batches</h2>
               <Link href={`/orders/${order.id}/approval-batches/new`} className="text-sm font-semibold text-kuartz-ink underline">
@@ -933,6 +920,13 @@ export default async function OrderDetailPage({
                   disabled={Boolean(measurementProfile.archivedAt)}
                 />
               </div>
+              <div className="mt-5 space-y-2">
+                <h3 className="font-semibold">Item measurement readiness</h3>
+                {order.looks.filter((look) => !look.archivedAt).flatMap((look) => look.items.filter((item) => !item.archivedAt).map((item) => {
+                  const missing = missingMeasurementsByItemId.get(item.id) ?? [];
+                  return <p key={item.id} className="text-sm text-kuartz-secondary">{look.name} · {item.customLabel || item.itemTypeName}: {missing.length ? `Missing ${missing.map((field) => field.fieldName).join(", ")}` : "Required measurements recorded"}</p>;
+                }))}
+              </div>
               {measurementProfile.archivedAt ? <p className="mt-3 text-sm text-kuartz-muted">This measurement profile is archived.</p> : null}
               <div className="mt-5 divide-y divide-kuartz-line border-y border-kuartz-line">
                 {measurementFields.length ? (
@@ -966,96 +960,41 @@ export default async function OrderDetailPage({
             </div>
           ) : null}
 
-          {activeTab === "vendors" ? (
-            <div>
-              <h2 className="section-title">Vendors</h2>
-              <p className="mt-2 text-sm leading-6 text-kuartz-secondary">
-                Assign vendors from Looks & Items or open the vendor directory.
-              </p>
-              <div className="mt-4 grid gap-3 sm:grid-cols-2">
-                <Button asChild variant="outline">
-                  <Link href={orderTabHref("looks")}>Assign Vendors to Items</Link>
-                </Button>
-                <Button asChild variant="outline">
-                  <Link href="/vendors">Open Vendor directory</Link>
-                </Button>
-              </div>
+          {activeTab === "vendors" || activeTab === "production" ? (
+            <div className="space-y-7">
+              <h2 className="section-title">{activeTab === "vendors" ? "Vendor assignments" : "Production"}</h2>
+              {order.looks.filter((look) => !look.archivedAt).map((look) => <section key={look.id} className="border-t border-kuartz-line pt-5">
+                <h3 className="font-semibold">{look.name}</h3>
+                {look.items.filter((item) => !item.archivedAt).map((item) => {
+                  const assignment = assignmentByItemId.get(item.id) ?? null;
+                  return <div key={item.id} className="mt-4 flex flex-wrap items-center justify-between gap-4 rounded-xl border border-kuartz-line p-4">
+                    <div><p className="font-medium">{item.customLabel || item.itemTypeName} × {item.quantity}</p>
+                      <p className="mt-1 text-sm text-kuartz-secondary">{assignment ? `${assignment.vendorName} · ${assignment.productionStatusName} · Due ${assignment.deadline}` : "No vendor assigned"}</p>
+                    </div>
+                    {activeTab === "vendors" ? <ItemAssignmentDrawer orderId={order.id} itemId={item.id} itemLabel={item.customLabel || item.itemTypeName} assignment={assignment} vendors={vendors} today={today} /> : assignment ? <div className="space-y-3">
+                      <form action={changeProductionStatusAction} className="flex flex-wrap items-end gap-3">
+                        <input type="hidden" name="assignmentId" value={assignment.id} />
+                        <input type="hidden" name="version" value={assignment.version} />
+                        <input type="hidden" name="returnTo" value={orderTabHref("production")} />
+                        <label className="form-group"><span>Status for {item.customLabel || item.itemTypeName}</span><NativeSelect name="newStatusId" defaultValue={assignment.productionStatusId}>{productionStatuses.map((status) => <option key={status.id} value={status.id}>{status.name}</option>)}</NativeSelect></label>
+                        <Button type="submit" variant="outline">Save status</Button>
+                      </form>
+                      <Link className="text-sm underline" href={`/production/${assignment.id}`}>Deadline, notes, payments and history</Link>
+                    </div> : <Link className="underline" href={orderTabHref("vendors")}>Assign a vendor</Link>}
+                  </div>;
+                })}
+                {!look.items.some((item) => !item.archivedAt) ? <p className="mt-3 text-sm text-kuartz-secondary">Add Items in Looks &amp; Items to start assigning vendors.</p> : null}
+                {activeTab === "vendors" ? <LookBulkAssignForm orderId={order.id} lookId={look.id} lookName={look.name} unassignedCount={look.items.filter((item) => !item.archivedAt && !assignmentByItemId.get(item.id)).length} vendors={vendors} /> : null}
+              </section>)}
+              <Button asChild variant="outline"><Link href={`/orders/${order.id}/vendor-ratings`}>Vendor ratings</Link></Button>
             </div>
           ) : null}
 
-          {activeTab === "production" ? (
-            <div>
-              <h2 className="section-title">Production</h2>
-              <p className="mt-2 text-sm leading-6 text-kuartz-secondary">
-                Production status and deadlines are tracked per vendor assignment.
-              </p>
-              <div className="mt-4 grid gap-3 sm:grid-cols-2">
-                <Button asChild variant="outline">
-                  <Link href="/production">Open Production workspace</Link>
-                </Button>
-                <Button asChild variant="outline">
-                  <Link href={orderTabHref("looks")}>Review Item assignments</Link>
-                </Button>
-              </div>
-            </div>
-          ) : null}
+          {activeTab === "accessories" ? <OrderAccessoriesWorkspace orderId={order.id} embedded /> : null}
 
-          {activeTab === "accessories" ? (
-            <div>
-              <h2 className="section-title">Accessories</h2>
-              <p className="mt-2 text-sm leading-6 text-kuartz-secondary">
-                Track accessories for this order or a specific look.
-              </p>
-              <div className="mt-4 rounded-[1rem] border border-kuartz-line bg-white/65 p-5">
-                <p className="text-sm text-kuartz-secondary">
-                  {outstandingAccessories.length
-                    ? `${outstandingAccessories.length} accessory item${outstandingAccessories.length === 1 ? "" : "s"} still outstanding.`
-                    : "No outstanding accessory items."}
-                </p>
-                <Button asChild className="mt-4" variant="outline">
-                  <Link href={`/orders/${order.id}/accessories`}>Open Accessories</Link>
-                </Button>
-              </div>
-            </div>
-          ) : null}
+          {activeTab === "fittings" ? <OrderFittingsWorkspace orderId={order.id} embedded /> : null}
 
-          {activeTab === "fittings" ? (
-            <div>
-              <h2 className="section-title">Fittings</h2>
-              <p className="mt-2 text-sm leading-6 text-kuartz-secondary">
-                Schedule fittings, add notes, and send confirmations.
-              </p>
-              <div className="mt-4 rounded-[1rem] border border-kuartz-line bg-white/65 p-5">
-                <p className="text-sm text-kuartz-secondary">
-                  {openFittings.length
-                    ? `${openFittings.length} fitting session${openFittings.length === 1 ? "" : "s"} still open.`
-                    : "No open fitting sessions."}
-                </p>
-                <Button asChild className="mt-4" variant="outline">
-                  <Link href={`/orders/${order.id}/fittings`}>Open Fittings</Link>
-                </Button>
-              </div>
-            </div>
-          ) : null}
-
-          {activeTab === "payments" ? (
-            <div>
-              <h2 className="section-title">Payments</h2>
-              <p className="mt-2 text-sm leading-6 text-kuartz-secondary">
-                Manage the invoice, client payments, and balance.
-              </p>
-              <div className="mt-4 rounded-[1rem] border border-kuartz-line bg-white/65 p-5">
-                <p className="text-sm text-kuartz-secondary">
-                  {balance.state === "not_invoiced"
-                    ? "This Order has not been invoiced yet."
-                    : `Outstanding balance: ₦${formatMinorUnits(balance.balanceMinor)}.`}
-                </p>
-                <Button asChild className="mt-4" variant="outline">
-                  <Link href={`/orders/${order.id}/invoice`}>{invoice ? "Open Invoice" : "Create Invoice"}</Link>
-                </Button>
-              </div>
-            </div>
-          ) : null}
+          {activeTab === "payments" ? <OrderPaymentsWorkspace orderId={order.id} embedded /> : null}
         </div>
 
         {activeTab === "overview" ? (
@@ -1154,7 +1093,7 @@ export default async function OrderDetailPage({
                 <input type="hidden" name="orderId" value={order.id} />
                 <p className="text-sm leading-6 text-kuartz-secondary">
                   {completionBlocked
-                    ? canManageFinance(session.role)
+                    ? canRecordFinance(session.role)
                       ? balance.state === "not_invoiced"
                         ? "This Order has not been invoiced, so nothing can have been settled."
                         : `₦${formatMinorUnits(balance.balanceMinor)} is still outstanding.`

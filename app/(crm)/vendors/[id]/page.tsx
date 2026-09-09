@@ -8,6 +8,8 @@ import { requireStaffSession } from "@/lib/auth/session";
 import { mayArchive } from "@/lib/domain/record-lifecycle";
 import { listVendorSpecialties } from "@/lib/vendor-specialties/repository";
 import { getVendorWithStats } from "@/lib/vendors/repository";
+import { listVendorRatingHistory } from "@/lib/vendors/rating-repository";
+import { RatingHistory } from "@/components/vendors/rating-history";
 
 export default async function VendorDetailPage({
   params,
@@ -19,9 +21,10 @@ export default async function VendorDetailPage({
   const session = await requireStaffSession();
   const [{ id }, query] = await Promise.all([params, searchParams]);
 
-  const [vendor, specialties] = await Promise.all([
+  const [vendor, specialties, ratings] = await Promise.all([
     getVendorWithStats(session.organizationId, id),
     listVendorSpecialties(session.organizationId),
+    listVendorRatingHistory(session.organizationId, id),
   ]);
   if (!vendor) notFound();
 
@@ -70,6 +73,7 @@ export default async function VendorDetailPage({
             </div>
           </div>
 
+          <RatingHistory ratings={ratings} />
           <div>
             <h2 className="section-title">Specialties</h2>
             <div className="mt-4">

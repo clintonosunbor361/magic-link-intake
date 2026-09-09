@@ -1,6 +1,10 @@
 import { describe, expect, it, vi } from "vitest";
 import {
   type DeadlineSource,
+  type EmailCandidate,
+  type NotificationRepository,
+  NotificationDeliveryError,
+  canRetryEmail,
   dispatchNotifications,
   notificationKey,
   planNotifications,
@@ -87,22 +91,32 @@ function planFor(overrides: Partial<PlannedNotification> = {}): PlannedNotificat
   };
 }
 
-function repository(overrides: Record<string, unknown> = {}) {
+function repository(overrides: Partial<NotificationRepository> = {}) {
+  const rows = new Map<string, EmailCandidate>();
   return {
-    insertMissing: vi.fn(async ({ planned }: { planned: readonly PlannedNotification[] }) =>
-      planned.map((plan, index) => ({
-        id: `note-${index}`,
-        sourceType: plan.sourceType,
-        sourceId: plan.sourceId,
-        trigger: plan.trigger,
-        dueDate: plan.dueDate,
-        recipientStaffId: plan.recipientStaffId,
-        title: plan.title,
-        body: plan.body,
-        href: plan.href,
-      })),
-    ),
-    recordEmailOutcome: vi.fn().mockResolvedValue(undefined),
+    insertMissing: vi.fn(async ({ planned }: { planned: readonly PlannedNotification[] }) => {
+      const created = [];
+      for (const plan of planned) {
+        const key = notificationKey(plan);
+        if (rows.has(key)) continue;
+        const row = { ...plan, id: `note-${rows.size}`, emailAttempts: 0, emailFirstAttemptAt: null,
+          emailRetrySafe: true, emailPayload: null };
+        rows.set(key, row);
+        created.push(row);
+      }
+      return created;
+    }),
+    listEmailCandidates: vi.fn(async () => [...rows.values()].filter((row) => !(row as EmailCandidate & { done?: boolean }).done && (row as EmailCandidate & { emailEligible: boolean }).emailEligible && row.recipientStaffId !== null)),
+    claimEmail: vi.fn(async (input: Parameters<NotificationRepository["claimEmail"]>[0]) => ({ claimId: "claim-1", payload: input.payload })),
+    recordEmailOutcome: vi.fn(async (input: Parameters<NotificationRepository["recordEmailOutcome"]>[0]) => {
+      const row = [...rows.values()].find((row) => row.id === input.notificationId);
+      if (row) {
+        row.emailAttempts += 1;
+        row.emailFirstAttemptAt ??= new Date();
+        row.emailRetrySafe = input.outcome.state === "failed" && input.outcome.retrySafe;
+        if (input.outcome.state !== "failed") Object.assign(row, { done: true });
+      }
+    }),
     getStaffEmail: vi.fn().mockResolvedValue({ email: "staff@kuartz.test", fullName: "Ada" }),
     ...overrides,
   };
@@ -122,7 +136,7 @@ describe("dispatchNotifications", () => {
       expect.objectContaining({ to: "staff@kuartz.test", url: "https://app.kuartz.test/production/asg-1" }),
     );
     expect(repo.recordEmailOutcome).toHaveBeenCalledWith({
-      notificationId: "note-0",
+      organizationId: "org-1", notificationId: "note-0", claimId: "claim-1",
       outcome: { state: "sent" },
     });
   });
@@ -136,8 +150,8 @@ describe("dispatchNotifications", () => {
 
     expect(result).toMatchObject({ created: 1, emailed: 0, failed: 1 });
     expect(repo.recordEmailOutcome).toHaveBeenCalledWith({
-      notificationId: "note-0",
-      outcome: { state: "failed", error: "Resend is down" },
+      organizationId: "org-1", notificationId: "note-0", claimId: "claim-1",
+      outcome: { state: "failed", error: "Resend is down", retrySafe: false },
     });
   });
 
@@ -169,7 +183,7 @@ describe("dispatchNotifications", () => {
     expect(email.sendDeadlineEmail).not.toHaveBeenCalled();
   });
 
-  it("sends nothing when the row already existed — idempotency comes from the insert", async () => {
+  it("sends nothing when no pending or failed rows exist", async () => {
     // insertMissing returns only genuinely new rows, so a second run has no email candidates.
     const repo = repository({ insertMissing: vi.fn().mockResolvedValue([]) });
     const email = { sendDeadlineEmail: vi.fn() };
@@ -214,5 +228,51 @@ describe("notificationKey", () => {
     expect(notificationKey({ ...base, dueDate: "2026-09-10" })).not.toBe(
       notificationKey({ ...base, dueDate: "2026-10-20" }),
     );
+  });
+});
+
+
+describe("durable delivery retries", () => {
+  it("retries a failed email on an existing notification, then stops after success", async () => {
+    const repo = repository();
+    const email = { sendDeadlineEmail: vi.fn().mockRejectedValueOnce(new NotificationDeliveryError("Rate limited", true)).mockResolvedValue(undefined) };
+    const input = { ...dispatchInput, planned: [planFor()] };
+    expect(await dispatchNotifications(input, repo, email)).toMatchObject({ created: 1, failed: 1 });
+    expect(await dispatchNotifications(input, repo, email)).toMatchObject({ created: 0, emailed: 1 });
+    await dispatchNotifications(input, repo, email);
+    expect(email.sendDeadlineEmail).toHaveBeenCalledTimes(2);
+    expect(email.sendDeadlineEmail.mock.calls[0][0].idempotencyKey).toBe(email.sendDeadlineEmail.mock.calls[1][0].idempotencyKey);
+  });
+  it("does not send when another worker owns the claim", async () => {
+    const repo = repository({ claimEmail: vi.fn().mockResolvedValue(null) });
+    const email = { sendDeadlineEmail: vi.fn() };
+    await dispatchNotifications({ ...dispatchInput, planned: [planFor()] }, repo, email);
+    expect(email.sendDeadlineEmail).not.toHaveBeenCalled();
+  });
+  it("skips a recipient whose active membership was removed", async () => {
+    const repo = repository({ getStaffEmail: vi.fn().mockResolvedValue(null) });
+    const email = { sendDeadlineEmail: vi.fn() };
+    expect(await dispatchNotifications({ ...dispatchInput, planned: [planFor()] }, repo, email)).toMatchObject({ skipped: 1 });
+    expect(email.sendDeadlineEmail).not.toHaveBeenCalled();
+  });
+  it("does not retry failed reminders for completed or moved deadlines", async () => {
+    const repo = repository();
+    const email = { sendDeadlineEmail: vi.fn().mockRejectedValue(new Error("timeout")) };
+    await dispatchNotifications({ ...dispatchInput, planned: [planFor()] }, repo, email);
+    expect(await dispatchNotifications({ ...dispatchInput, planned: [] }, repo, email)).toMatchObject({ skipped: 1 });
+    expect(email.sendDeadlineEmail).toHaveBeenCalledTimes(1);
+  });
+  it("keeps an acknowledgement failure uncertain instead of recording it as a rejected send", async () => {
+    const repo = repository({ recordEmailOutcome: vi.fn().mockRejectedValue(new Error("DB unavailable")) });
+    const email = { sendDeadlineEmail: vi.fn().mockResolvedValue(undefined) };
+    await expect(dispatchNotifications({ ...dispatchInput, planned: [planFor()] }, repo, email)).rejects.toThrow("DB unavailable");
+    expect(repo.recordEmailOutcome).toHaveBeenCalledTimes(1);
+  });
+  it("limits ambiguous retries to the provider deduplication window", () => {
+    const row = { emailAttempts: 1, emailRetrySafe: false, emailFirstAttemptAt: new Date("2026-09-08T06:00:00Z") };
+    expect(canRetryEmail(row, new Date("2026-09-08T06:01:00Z"))).toBe(true);
+    expect(canRetryEmail(row, new Date("2026-09-09T06:00:00Z"))).toBe(false);
+    expect(canRetryEmail({ ...row, emailRetrySafe: true }, new Date("2026-09-09T06:00:00Z"))).toBe(true);
+    expect(canRetryEmail({ ...row, emailAttempts: 5, emailRetrySafe: true }, new Date())).toBe(false);
   });
 });

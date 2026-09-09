@@ -31,3 +31,7 @@ describe("staff route policy", () => {
     expect(decideRouteAccess({ pathname: "/", configured: false, signedIn: false })).toBe("setup");
   });
 });
+
+ it("lets Cron enforce its own bearer authorization without a staff cookie", () => {
+  expect(decideRouteAccess({ pathname: "/api/cron/notifications", configured: true, signedIn: false })).toBe("allow");
+});

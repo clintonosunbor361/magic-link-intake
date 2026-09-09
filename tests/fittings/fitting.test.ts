@@ -51,17 +51,11 @@ describe("assertReschedulable", () => {
 });
 
 describe("assertConfirmable", () => {
-  it("allows confirmation once the Fitting is completed and has a summary", () => {
-    expect(() => assertConfirmable("completed", "Sleeves taken up 2cm, happy with the fit.")).not.toThrow();
+  it("allows confirmation of a scheduled appointment without outcome notes", () => {
+    expect(() => assertConfirmable("scheduled")).not.toThrow();
   });
-
-  it("refuses before the Fitting has happened — the link confirms an outcome, not an appointment", () => {
-    expect(() => assertConfirmable("scheduled", "Anything")).toThrow("Mark this Fitting completed");
-    expect(() => assertConfirmable("missed", "Anything")).toThrow("Mark this Fitting completed");
-  });
-
-  it("refuses when there is no client-facing summary to confirm", () => {
-    expect(() => assertConfirmable("completed", "   ")).toThrow("client-facing summary");
+  it.each(["completed", "missed", "cancelled"] as const)("rejects a %s appointment", (status) => {
+    expect(() => assertConfirmable(status)).toThrow("Only a scheduled Fitting");
   });
 });
 

@@ -33,7 +33,7 @@ export function createClientConfirmationRepository(): ClientConfirmationReposito
         const [row] = await db
           .select({ id: fittingSessions.id })
           .from(fittingSessions)
-          .where(and(eq(fittingSessions.organizationId, organizationId), eq(fittingSessions.id, subjectId)))
+          .where(and(eq(fittingSessions.organizationId, organizationId), eq(fittingSessions.id, subjectId), eq(fittingSessions.status, "scheduled"), isNull(fittingSessions.archivedAt)))
           .limit(1);
         return !!row;
       }
@@ -130,6 +130,8 @@ export function createClientConfirmationDecisionRepository(): ClientConfirmation
         const [confirmation] = await tx
           .select({
             id: clientConfirmations.id,
+            subjectType: clientConfirmations.subjectType,
+            subjectId: clientConfirmations.subjectId,
             organizationId: clientConfirmations.organizationId,
             expiresAt: clientConfirmations.expiresAt,
             supersededAt: clientConfirmations.supersededAt,
@@ -140,6 +142,15 @@ export function createClientConfirmationDecisionRepository(): ClientConfirmation
 
         if (!confirmation || confirmation.supersededAt || confirmation.expiresAt <= new Date()) {
           return { ok: false as const, reason: "inactive" as const };
+        }
+
+        if (confirmation.subjectType === "fitting_session") {
+          const [fitting] = await tx.select({ id: fittingSessions.id }).from(fittingSessions).where(and(
+            eq(fittingSessions.id, confirmation.subjectId),
+            eq(fittingSessions.organizationId, confirmation.organizationId),
+            eq(fittingSessions.status, "scheduled"), isNull(fittingSessions.archivedAt),
+          ));
+          if (!fitting) return { ok: false as const, reason: "inactive" as const };
         }
 
         const [updated] = await tx

@@ -113,6 +113,8 @@ export function IntakeForm({ token, actionPath, error }: IntakeFormProps) {
         />
       </div>
 
+      <label className="block space-y-3"><span className="label">Brief / what you need help with (optional)</span><textarea name="brief" className="field min-h-28" maxLength={5000} /></label>
+
       <div className="flex justify-end pt-4">
         <button type="submit" disabled={isSubmitting} className="primary-action w-full sm:w-auto">
           {isSubmitting ? "Sending" : "Continue"}

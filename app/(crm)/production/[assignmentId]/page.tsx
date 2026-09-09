@@ -12,7 +12,7 @@ import { Input } from "@/components/ui/input";
 import { NativeSelect } from "@/components/ui/native-select";
 import { requireStaffSession } from "@/lib/auth/session";
 import { businessToday } from "@/lib/domain/business-date";
-import { canManageFinance } from "@/lib/domain/access-control";
+import { canManageFinance, canRecordFinance } from "@/lib/domain/access-control";
 import { computeVendorPaymentPosition } from "@/lib/finance/balances";
 import { listVendorPayments, sumLiveVendorPaymentsMinor } from "@/lib/finance/repository";
 import { formatMinorUnits } from "@/lib/forms/money";
@@ -41,7 +41,8 @@ export default async function AssignmentDetailPage({
   const timezone = await getOrganizationTimezone(session.organizationId);
   const today = businessToday(timezone);
 
-  const canManage = canManageFinance(session.role);
+  const canManage = canRecordFinance(session.role);
+  const canCorrect = canManageFinance(session.role);
   const [statuses, history, notes, briefContext, payments, paidMinor] = await Promise.all([
     listProductionStatuses(session.organizationId),
     listStatusHistory(session.organizationId, assignmentId),
@@ -176,7 +177,7 @@ export default async function AssignmentDetailPage({
                     ) : null}
                     {payment.voidedAt ? (
                       <p className="mt-1 text-xs text-[#8c1d1d]">Voided. Reason: {payment.voidReason}</p>
-                    ) : canManage ? (
+                    ) : canCorrect ? (
                       <form action={voidVendorPaymentAction} className="mt-3 flex flex-wrap items-end gap-2">
                         <input type="hidden" name="assignmentId" value={assignment.id} />
                         <input type="hidden" name="paymentId" value={payment.id} />

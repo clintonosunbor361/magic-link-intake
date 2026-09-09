@@ -2,25 +2,20 @@ import { assertCanRateVendors, type StaffRole } from "@/lib/domain/access-contro
 import { resolveVersionedTransition } from "@/lib/domain/concurrency";
 import { assertValidScores, hasScoreChanged, type VendorRatingScores } from "@/lib/vendors/ratings";
 
-// One rating per (Order, Vendor). Ratings are editable rather than immutable: a rating is a
-// judgement, and judgements legitimately change when the reason for a low score turns out to belong
-// to someone else. Each edit appends a revision row with explicit previous/new scores, so the
-// correction is recoverable without a second row polluting the average.
-//
-// Milestone 5 builds this service and its table; the prompt flow that surfaces "rate the vendors on
-// this completed Order" is Milestone 7 and is deliberately not built here.
+// One rating per assignment; revisions preserve the previous scores.
 
 export type VendorRatingRecord = { id: string; version: number } & VendorRatingScores;
 
 export type VendorRatingRepository = {
   orderBelongsToOrganization(organizationId: string, orderId: string): Promise<boolean>;
   vendorIsAvailable(organizationId: string, vendorId: string): Promise<boolean>;
-  vendorWorkedOnOrder(organizationId: string, orderId: string, vendorId: string): Promise<boolean>;
-  getRating(organizationId: string, orderId: string, vendorId: string): Promise<VendorRatingRecord | null>;
+  assignmentIsReadyForRating(organizationId: string, orderId: string, vendorId: string, assignmentId: string): Promise<boolean>;
+  getRating(organizationId: string, orderId: string, vendorId: string, assignmentId: string): Promise<VendorRatingRecord | null>;
   createRating(input: {
     organizationId: string;
     orderId: string;
     vendorId: string;
+    assignmentId: string;
     scores: VendorRatingScores;
     actorStaffId: string;
   }): Promise<{ id: string }>;
@@ -41,6 +36,7 @@ export async function rateVendorOnOrder(
     organizationId: string;
     orderId: string;
     vendorId: string;
+    assignmentId: string;
     scores: VendorRatingScores;
   },
   repository: VendorRatingRepository,
@@ -56,19 +52,20 @@ export async function rateVendorOnOrder(
   }
   // A Vendor can only be rated on an Order they actually worked on — otherwise a rating would
   // attach to a relationship that never existed.
-  if (!(await repository.vendorWorkedOnOrder(input.organizationId, input.orderId, input.vendorId))) {
-    throw new Error("This Vendor has no assignment on this Order.");
+  if (!(await repository.assignmentIsReadyForRating(input.organizationId, input.orderId, input.vendorId, input.assignmentId))) {
+    throw new Error("This assignment must belong to this Order and have completed production or a completed Order before rating.");
   }
 
-  const existing = await repository.getRating(input.organizationId, input.orderId, input.vendorId);
+  const existing = await repository.getRating(input.organizationId, input.orderId, input.vendorId, input.assignmentId);
   if (existing) {
-    throw new Error("This Vendor is already rated on this Order. Edit the existing rating instead.");
+    throw new Error("This Vendor is already rated on this assignment. Edit the existing rating instead.");
   }
 
   return repository.createRating({
     organizationId: input.organizationId,
     orderId: input.orderId,
     vendorId: input.vendorId,
+    assignmentId: input.assignmentId,
     scores,
     actorStaffId: input.actor.staffId,
   });
@@ -80,6 +77,7 @@ export async function reviseVendorRating(
     organizationId: string;
     orderId: string;
     vendorId: string;
+    assignmentId: string;
     scores: VendorRatingScores;
     expectedVersion: number;
   },
@@ -88,8 +86,8 @@ export async function reviseVendorRating(
   assertCanRateVendors(input.actor.role);
   const scores = assertValidScores(input.scores);
 
-  const existing = await repository.getRating(input.organizationId, input.orderId, input.vendorId);
-  if (!existing) throw new Error("This Vendor has not been rated on this Order yet.");
+  const existing = await repository.getRating(input.organizationId, input.orderId, input.vendorId, input.assignmentId);
+  if (!existing) throw new Error("This Vendor has not been rated on this assignment yet.");
 
   const previous: VendorRatingScores = {
     quality: existing.quality,
@@ -102,7 +100,7 @@ export async function reviseVendorRating(
   return resolveVersionedTransition({
     expectedVersion: input.expectedVersion,
     fetchCurrent: async () => existing,
-    notFoundMessage: "This Vendor has not been rated on this Order yet.",
+    notFoundMessage: "This Vendor has not been rated on this assignment yet.",
     staleMessage: "This rating changed. Reload and try again.",
     persist: (nextVersion) =>
       repository.updateRating({

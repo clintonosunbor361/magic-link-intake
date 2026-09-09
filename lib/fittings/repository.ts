@@ -4,6 +4,7 @@ import { and, asc, desc, eq, isNull } from "drizzle-orm";
 import { getDatabase } from "@/db";
 import {
   clients,
+  clientConfirmations,
   fittingSessionHistory,
   fittingSessionNotes,
   fittingSessions,
@@ -97,6 +98,13 @@ export function createFittingSessionRepository(): FittingSessionRepository {
           )
           .returning({ id: fittingSessions.id });
         if (!rows.length) throw new Error("This Fitting changed. Reload and try again.");
+
+        await tx.update(clientConfirmations).set({ supersededAt: new Date() }).where(and(
+          eq(clientConfirmations.organizationId, input.organizationId),
+          eq(clientConfirmations.subjectType, "fitting_session"),
+          eq(clientConfirmations.subjectId, input.sessionId),
+          isNull(clientConfirmations.supersededAt),
+        ));
 
         // Because the reschedule overwrites scheduledAt, this row is the only place the previous
         // date survives.
@@ -308,7 +316,7 @@ export async function getFittingConfirmationContent(organizationId: string, sess
       orderTitle: orders.title,
       lookName: looks.name,
       scheduledAt: fittingSessions.scheduledAt,
-      clientSummary: fittingSessions.clientSummary,
+      location: fittingSessions.location,
     })
     .from(fittingSessions)
     .innerJoin(orders, eq(orders.id, fittingSessions.orderId))
@@ -319,6 +327,7 @@ export async function getFittingConfirmationContent(organizationId: string, sess
         eq(fittingSessions.organizationId, organizationId),
         eq(fittingSessions.id, sessionId),
         isNull(fittingSessions.archivedAt),
+        eq(fittingSessions.status, "scheduled"),
       ),
     )
     .limit(1);

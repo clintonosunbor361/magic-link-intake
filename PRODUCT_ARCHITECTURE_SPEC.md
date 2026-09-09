@@ -1,6 +1,6 @@
 # Kuartz Fashion CRM - Product and Architecture Spec
 
-Last updated: August 22, 2026
+Last updated: September 5, 2026
 
 ## 1. Product Summary
 
@@ -725,11 +725,11 @@ Rules:
 - Statuses can be archived.
 - At least one status is marked as delivered/completed.
 
-Stage 5 still needs further grilling from whole-order accessory behavior onward.
+Whole-Order accessories have no deadline until linked to a dated Look. See the confirmed release decisions.
 
 ## 12. Fitting and Vendor Rating
 
-These stages still need detailed grilling.
+The confirmed release scope is appointment confirmation and one rating per Item assignment; see section 17.
 
 Known from original workflow:
 
@@ -761,6 +761,13 @@ Applies to:
 - Vendor production deadlines
 - Accessory reminders based on linked look due dates
 - Fitting dates
+
+Notification delivery decisions confirmed September 8, 2026:
+
+- Email the assigned staff member for Client to-dos and Accessory Items. If an Accessory Item has no assignee, email the Order owner. Production and Fitting reminders go to the Order owner.
+- Dashboard reminders are visible to both staff roles in the organization. Email recipients must remain active organization members.
+- Send one overdue email per deadline, not daily overdue emails. Failed delivery retries automatically; successfully accepted emails are not resent. Rescheduled deadlines produce their own reminder cycle.
+- Run daily in the existing Vercel cron window (06:00 UTC). Catch-up dashboard history does not generate a backlog of emails.
 
 ### Dashboard
 
@@ -920,29 +927,19 @@ Recommended implementation order:
 12. Notifications and dashboard
 13. Polish, PWA, PDFs
 
-## 17. Open Decisions
+## 17. Confirmed Phase 1 Release Decisions
 
-These decisions are intentionally paused or still need grilling:
+Confirmed with Kuartz on September 5, 2026; these supersede earlier implementation assumptions.
 
-1. Delete strategy
-   - Soft delete vs hard delete
-   - Auto-purge after 30 days or not
-   - Which records are recoverable
+- Admin Assistants can create invoices and record new client and vendor payments. Payment edits/voids, invoice voiding, agreed-price changes after invoicing, and balance overrides remain Super Admin-only. Financial corrections retain audited history.
+- Whole-Order accessories have no inferred delivery date or deadline reminders. Date-based reminders require a linked, dated, active Look.
+- Client fitting confirmation confirms the scheduled appointment details only. Fitting notes and adjustments remain internal. Outcome approval and vendor sharing/export of corrections are deferred.
+- Record one vendor rating per Item assignment, with Quality, Timeliness, and Communication each from one to five. Completed production prompts for a rating; Order completion surfaces outstanding prompts without duplicates. Vendor scores average saved ratings.
+- Multiple active Orders per Client are allowed. Order creation warns and shows existing active Orders.
+- Operational records use archive/restore. Permanent deletion and automatic purging are unavailable. Preserve linked records, payment evidence, and audit history.
+- Refresh data after saves and on return to the page; provide manual refresh for teammate changes. Live subscriptions remain deferred.
 
-2. Real-time / multi-user freshness
-   - No full real-time locked yet
-   - Need to decide between manual refresh, auto-refresh, conflict warnings, or real-time subscriptions
+## 18. Deferred Decisions
 
-3. Multiple active orders per client
-   - Whether a client can have multiple active orders simultaneously
-   - Whether app should warn or block when creating another active order
-
-4. Hosting
-   - Vercel Free is recommended, but Cloudflare Pages remains a possible alternative.
-
-5. Stage 5 Accessory Sourcing details
-   - Whole-order accessory behavior onward still needs grilling.
-
-6. Stage 6 Fitting Session details
-
-7. Stage 7 Vendor Rating details
+- Alternative hosting remains deferred; validate the existing Vercel Phase 1 environment.
+- Additional accessory, fitting, and rating lifecycle behavior beyond the defined release scope remains deferred.

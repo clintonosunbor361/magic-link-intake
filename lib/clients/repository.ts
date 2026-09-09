@@ -228,9 +228,14 @@ export async function searchClients(organizationId: string, search: string, limi
       fullName: clients.fullName,
       primaryPhone: clients.primaryPhone,
       email: clients.email,
+      activeOrders: sql<{ id: string; title: string }[]>`coalesce((
+        select json_agg(json_build_object('id', o.id, 'title', o.title) order by o.created_at desc)
+        from orders o where o.client_id = ${clients.id} and o.organization_id = ${clients.organizationId}
+        and o.archived_at is null and o.completed_at is null
+      ), '[]'::json)`,
       latestOrderTitle: sql<string | null>`(
         select o.title from orders o
-        where o.client_id = ${clients.id}
+        where o.client_id = ${clients.id} and o.organization_id = ${clients.organizationId} and o.archived_at is null
         order by o.created_at desc
         limit 1
       )`,
@@ -260,6 +265,7 @@ export async function listOrdersForClient(organizationId: string, clientId: stri
       eventType: orders.eventType,
       finalAgreedPriceMinor: orders.finalAgreedPriceMinor,
       archivedAt: orders.archivedAt,
+      completedAt: orders.completedAt,
       createdAt: orders.createdAt,
     })
     .from(orders)

@@ -1,6 +1,7 @@
 import "server-only";
 
-import { and, desc, eq, isNull, sql } from "drizzle-orm";
+import { randomUUID } from "node:crypto";
+import { and, asc, desc, eq, gt, inArray, isNull, lt, or, sql } from "drizzle-orm";
 import { getDatabase } from "@/db";
 import {
   accessoryItems,
@@ -15,6 +16,7 @@ import {
   notifications,
   orders,
   organizations,
+  organizationMemberships,
   productionStatuses,
   staffProfiles,
   vendorAssignments,
@@ -22,7 +24,7 @@ import {
 } from "@/db/schema";
 import { resolveAccessoryDeliveryDate } from "@/lib/accessories/delivery-date";
 import { toBusinessDate } from "@/lib/domain/business-date";
-import type { CreatedNotification, DeadlineSource, NotificationRepository } from "@/lib/notifications/service";
+import { MAX_EMAIL_ATTEMPTS, EMAIL_BATCH_SIZE, IDEMPOTENCY_WINDOW_MS, type CreatedNotification, type DeadlineSource, type NotificationRepository } from "@/lib/notifications/service";
 
 export function createNotificationRepository(): NotificationRepository {
   const db = getDatabase();
@@ -46,6 +48,8 @@ export function createNotificationRepository(): NotificationRepository {
             title: plan.title,
             body: plan.body,
             href: plan.href,
+            emailState: plan.emailEligible && plan.recipientStaffId ? "pending" as const : "skipped" as const,
+            emailRetrySafe: true,
           })),
         )
         .onConflictDoNothing()
@@ -63,22 +67,50 @@ export function createNotificationRepository(): NotificationRepository {
 
       return rows as CreatedNotification[];
     },
+    async listEmailCandidates(organizationId) {
+      return db.select().from(notifications).where(and(
+        eq(notifications.organizationId, organizationId),
+        inArray(notifications.emailState, ["pending", "failed"]),
+        lt(notifications.emailAttempts, MAX_EMAIL_ATTEMPTS),
+        or(eq(notifications.emailAttempts, 0), eq(notifications.emailRetrySafe, true), gt(notifications.emailFirstAttemptAt, new Date(Date.now() - IDEMPOTENCY_WINDOW_MS))),
+        isNull(notifications.archivedAt),
+        or(isNull(notifications.emailClaimedAt), lt(notifications.emailClaimedAt, new Date(Date.now() - 5 * 60_000))),
+      )).orderBy(asc(notifications.createdAt)).limit(EMAIL_BATCH_SIZE);
+    },
+    async claimEmail(input) {
+      const claimId = randomUUID();
+      const [row] = await db.update(notifications).set({
+        emailClaimId: claimId, emailClaimedAt: input.now,
+        emailAttempts: sql`${notifications.emailAttempts} + 1`,
+        emailFirstAttemptAt: sql`coalesce(${notifications.emailFirstAttemptAt}, ${input.now.toISOString()}::timestamptz)`,
+        emailPayload: sql`coalesce(${notifications.emailPayload}, ${JSON.stringify(input.payload)}::jsonb)`,
+        // Until the outcome is acknowledged, this attempt may have reached Resend.
+        emailRetrySafe: false,
+      }).where(and(
+        eq(notifications.organizationId, input.organizationId), eq(notifications.id, input.notificationId),
+        eq(notifications.emailAttempts, input.expectedAttempts),
+        inArray(notifications.emailState, ["pending", "failed"]),
+        isNull(notifications.archivedAt),
+        or(isNull(notifications.emailClaimedAt), lt(notifications.emailClaimedAt, new Date(input.now.getTime() - 5 * 60_000))),
+      )).returning({ payload: notifications.emailPayload });
+      return row?.payload ? { claimId, payload: row.payload } : null;
+    },
     async recordEmailOutcome(input) {
-      await db
-        .update(notifications)
-        .set({
-          emailState: input.outcome.state,
-          emailSentAt: input.outcome.state === "sent" ? new Date() : null,
-          emailLastError: input.outcome.state === "failed" ? input.outcome.error : null,
-          emailAttempts: sql`${notifications.emailAttempts} + 1`,
-        })
-        .where(eq(notifications.id, input.notificationId));
+      await db.update(notifications).set({
+        emailState: input.outcome.state,
+        emailSentAt: input.outcome.state === "sent" ? new Date() : null,
+        emailLastError: input.outcome.state === "failed" ? input.outcome.error : null,
+        emailRetrySafe: input.outcome.state === "failed" && input.outcome.retrySafe,
+        emailClaimId: null, emailClaimedAt: null,
+      }).where(and(eq(notifications.organizationId, input.organizationId),
+        eq(notifications.id, input.notificationId), eq(notifications.emailClaimId, input.claimId)));
     },
     async getStaffEmail(organizationId, staffId) {
       const [row] = await db
         .select({ email: staffProfiles.email, fullName: staffProfiles.fullName })
         .from(staffProfiles)
-        .where(eq(staffProfiles.id, staffId))
+        .innerJoin(organizationMemberships, eq(organizationMemberships.userId, staffProfiles.id))
+        .where(and(eq(staffProfiles.id, staffId), eq(organizationMemberships.organizationId, organizationId), isNull(organizationMemberships.archivedAt)))
         .limit(1);
       return row ?? null;
     },
@@ -146,6 +178,8 @@ export async function collectDeadlineSources(
         and(
           eq(vendorAssignments.organizationId, organizationId),
           isNull(vendorAssignments.archivedAt),
+          isNull(items.archivedAt),
+          isNull(looks.archivedAt),
           isNull(orders.archivedAt),
           // Finished work needs no reminder, and a completed Order is closed out entirely.
           eq(productionStatuses.isCompleted, false),
@@ -158,6 +192,7 @@ export async function collectDeadlineSources(
         orderId: accessoryItems.orderId,
         lookId: accessoryItems.lookId,
         customLabel: accessoryItems.customLabel,
+        assignedToStaffId: accessoryItems.assignedToStaffId,
         typeName: accessoryTypes.name,
         orderTitle: orders.title,
         primaryOwnerStaffId: orders.primaryOwnerStaffId,
@@ -230,7 +265,7 @@ export async function collectDeadlineSources(
       sourceType: "vendor_assignment",
       sourceId: assignment.id,
       dueDate: assignment.deadline,
-      subject: assignment.itemLabel ?? assignment.itemTypeName,
+      subject: assignment.itemLabel || assignment.itemTypeName,
       context: `${assignment.vendorName} · ${assignment.orderTitle}`,
       href: `/production/${assignment.id}`,
       recipientStaffId: assignment.primaryOwnerStaffId,
@@ -250,10 +285,10 @@ export async function collectDeadlineSources(
       sourceType: "accessory_item",
       sourceId: accessory.id,
       dueDate: resolved.date,
-      subject: accessory.customLabel ?? accessory.typeName,
+      subject: accessory.customLabel || accessory.typeName,
       context: accessory.orderTitle,
       href: `/orders/${accessory.orderId}/accessories`,
-      recipientStaffId: accessory.primaryOwnerStaffId,
+      recipientStaffId: accessory.assignedToStaffId ?? accessory.primaryOwnerStaffId,
     });
   }
 
@@ -293,6 +328,9 @@ export async function listNotifications(
       href: notifications.href,
       readAt: notifications.readAt,
       emailState: notifications.emailState,
+      emailAttempts: notifications.emailAttempts,
+      emailFirstAttemptAt: notifications.emailFirstAttemptAt,
+      emailRetrySafe: notifications.emailRetrySafe,
       createdAt: notifications.createdAt,
       recipientName: staffProfiles.fullName,
     })

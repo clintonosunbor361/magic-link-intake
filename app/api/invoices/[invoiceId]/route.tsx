@@ -1,7 +1,7 @@
 import { type NextRequest, NextResponse } from "next/server";
 import { requireStaffSession } from "@/lib/auth/session";
 import { businessToday } from "@/lib/domain/business-date";
-import { canManageFinance } from "@/lib/domain/access-control";
+import { canRecordFinance } from "@/lib/domain/access-control";
 import { buildInvoiceDocument } from "@/lib/finance/invoice-document";
 import { renderInvoicePdf } from "@/lib/finance/invoice-pdf";
 import { markInvoiceSent } from "@/lib/finance/invoice-service";
@@ -22,7 +22,7 @@ export async function POST(request: NextRequest, context: { params: Promise<{ in
   const session = await requireStaffSession();
   const { invoiceId } = await context.params;
 
-  if (!canManageFinance(session.role)) {
+  if (!canRecordFinance(session.role)) {
     return NextResponse.json({ error: "Super Admin access is required for financial records." }, { status: 403 });
   }
 

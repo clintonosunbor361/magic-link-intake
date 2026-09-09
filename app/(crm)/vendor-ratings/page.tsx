@@ -7,7 +7,7 @@ const dateFormatter = new Intl.DateTimeFormat("en-NG", { dateStyle: "medium" });
 
 /**
  * Every outstanding rating prompt across all completed Orders. Nothing is stored to build this —
- * the list is derived, so it is always exactly the set of (Order, Vendor) pairs still missing a
+ * the list is derived, so it is always exactly the set of Item assignments still missing a
  * rating, and a prompt disappears the moment its rating is saved.
  */
 export default async function PendingVendorRatingsPage() {
@@ -23,7 +23,7 @@ export default async function PendingVendorRatingsPage() {
   for (const prompt of prompts) {
     const existing = byOrder.get(prompt.orderId);
     if (existing) {
-      existing.vendors.push({ id: prompt.vendorId, name: prompt.vendorName });
+      existing.vendors.push({ id: prompt.assignmentId, name: `${prompt.vendorName} · ${prompt.lookName} · ${prompt.itemLabel}` });
       continue;
     }
     byOrder.set(prompt.orderId, {
@@ -31,7 +31,7 @@ export default async function PendingVendorRatingsPage() {
       orderTitle: prompt.orderTitle,
       clientName: prompt.clientName,
       completedAt: prompt.completedAt,
-      vendors: [{ id: prompt.vendorId, name: prompt.vendorName }],
+      vendors: [{ id: prompt.assignmentId, name: `${prompt.vendorName} · ${prompt.lookName} · ${prompt.itemLabel}` }],
     });
   }
   const groups = [...byOrder.values()].sort(
@@ -44,7 +44,7 @@ export default async function PendingVendorRatingsPage() {
         <p className="eyebrow">Vendor ratings</p>
         <h1 className="page-title">Pending ratings</h1>
         <p className="page-description">
-          Vendors who worked on a completed Order and have not been rated on it yet. Each one clears
+          Completed assignments and assignments on completed Orders that have not been rated. Each clears
           as soon as you rate it.
         </p>
       </header>
@@ -71,7 +71,7 @@ export default async function PendingVendorRatingsPage() {
                 href={`/orders/${group.orderId}/vendor-ratings`}
                 className="inline-flex min-h-[2.75rem] items-center justify-center rounded-[0.8rem] border border-kuartz-ink px-4 text-sm font-semibold text-kuartz-ink transition-colors duration-200 hover:bg-kuartz-ink hover:text-white"
               >
-                Rate {group.vendors.length} Vendor{group.vendors.length === 1 ? "" : "s"}
+                Rate {group.vendors.length} assignment{group.vendors.length === 1 ? "" : "s"}
               </Link>
             </div>
           ))}
@@ -80,7 +80,7 @@ export default async function PendingVendorRatingsPage() {
         <EmptyState
           className="mt-9"
           title="Nothing pending"
-          description="Every Vendor on every completed Order has been rated."
+          description="Every eligible Item assignment has been rated."
         />
       )}
     </div>

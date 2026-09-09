@@ -21,8 +21,11 @@ export default async function globalSetup() {
     environment.SUPABASE_SERVICE_ROLE_KEY,
     { auth: { persistSession: false, autoRefreshToken: false } },
   );
+  const { data: existingUsers } = await admin.auth.admin.listUsers();
   const createdUsers = await Promise.all(
     Object.values(E2E_USERS).map(async (user) => {
+      const existing = existingUsers?.users.find((entry) => entry.email === user.email);
+      if (existing) return [user.email, existing.id] as const;
       const { data, error } = await admin.auth.admin.createUser({
         email: user.email,
         password: user.password,
@@ -36,6 +39,8 @@ export default async function globalSetup() {
   const sql = postgres(environment.DATABASE_URL, { prepare: false, max: 1 });
 
   try {
+    const existing = await sql`select id from organizations where id = '30000000-0000-0000-0000-000000000003'`;
+    if (existing.length) return;
     await sql.begin(async (transaction) => {
       await transaction`
         insert into organizations (id, name, slug)

@@ -11,6 +11,7 @@ type ClientResult = {
   primaryPhone: string;
   email: string | null;
   latestOrderTitle: string | null;
+  activeOrders?: { id: string; title: string }[];
 };
 
 export function ClientPicker({
@@ -113,6 +114,10 @@ export function ClientPicker({
             <p className="text-[#5a7030]">
               {selected.latestOrderTitle ? `Latest order: ${selected.latestOrderTitle}` : "No prior Orders"}
             </p>
+            {required && selected.activeOrders?.length ? <div role="status" className="mt-3 text-kuartz-ink">
+              <p>This Client already has active Orders. Check these before creating another:</p>
+              <ul>{selected.activeOrders.map((order) => <li key={order.id}><a className="underline" href={`/orders/${order.id}`}>{order.title}</a></li>)}</ul>
+            </div> : null}
           </div>
           <Button type="button" variant="ghost" onClick={() => setSelected(null)}>
             Change

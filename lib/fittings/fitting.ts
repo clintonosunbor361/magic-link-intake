@@ -59,16 +59,10 @@ export function assertReschedulable(current: FittingSessionStatus): void {
   }
 }
 
-/**
- * The client link is only meaningful once the fitting has happened — it asks the client to confirm
- * the fit and the alterations agreed, not to accept an appointment.
- */
-export function assertConfirmable(current: FittingSessionStatus, clientSummary: string): void {
-  if (current !== "completed") {
-    throw new Error("Mark this Fitting completed before asking the client to confirm the outcome.");
-  }
-  if (!clientSummary.trim()) {
-    throw new Error("Write the client-facing summary before sending the confirmation link.");
+/** Client confirmation accepts the scheduled appointment; internal outcomes are not shared. */
+export function assertConfirmable(current: FittingSessionStatus): void {
+  if (current !== "scheduled") {
+    throw new Error("Only a scheduled Fitting can receive an appointment confirmation.");
   }
 }
 

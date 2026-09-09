@@ -41,7 +41,7 @@ export default async function OrderVendorRatingsPage({
         <p className="eyebrow">Vendor ratings</p>
         <h1 className="page-title">Rate the Vendors</h1>
         <p className="page-description">
-          One rating per Vendor on this Order, scored out of 5 on each criterion. The overall score
+          One rating per Item assignment on this Order, scored out of 5 on each criterion. The overall score
           is the average of the three. Ratings can be revised later, and every change keeps a record.
         </p>
       </header>
@@ -57,13 +57,14 @@ export default async function OrderVendorRatingsPage({
         <section className="mt-9 space-y-8">
           {vendorRows.map((row) => (
             <form
-              key={row.vendorId}
+              key={row.assignmentId}
               action={rateVendorAction}
-              aria-label={`Rate ${row.vendorName}`}
+              aria-label={`Rate ${row.vendorName} for ${row.lookName} · ${row.itemLabel}`}
               className="border-t border-kuartz-line pt-6"
             >
               <input type="hidden" name="orderId" value={id} />
               <input type="hidden" name="vendorId" value={row.vendorId} />
+              <input type="hidden" name="assignmentId" value={row.assignmentId} />
               {row.ratingVersion !== null ? (
                 <input type="hidden" name="ratingVersion" value={row.ratingVersion} />
               ) : null}
@@ -73,6 +74,7 @@ export default async function OrderVendorRatingsPage({
                   <Link href={`/vendors/${row.vendorId}`} className="underline-offset-4 hover:underline">
                     {row.vendorName}
                   </Link>
+                  <span className="block text-sm font-normal">{row.lookName} · {row.itemLabel || "Item assignment"}</span>
                 </h2>
                 <p className="text-sm text-kuartz-muted">{row.ratingId ? "Rated. Editing updates it." : "Not rated yet"}</p>
               </div>
@@ -104,8 +106,8 @@ export default async function OrderVendorRatingsPage({
       ) : (
         <EmptyState
           className="mt-9"
-          title="No Vendors on this Order yet"
-          description="Assign a Vendor to at least one Item before rating anyone."
+          title="No completed assignments to rate"
+          description="Complete production or the Order to rate its assignments."
         />
       )}
     </div>

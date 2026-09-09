@@ -39,11 +39,11 @@ describe("createOrderInvoice", () => {
     expect(repo.createInvoice).toHaveBeenCalledWith(expect.objectContaining({ actorStaffId: "staff-1" }));
   });
 
-  it("refuses an Admin Assistant before touching the database", async () => {
+  it("allows an Admin Assistant to create an invoice", async () => {
     const repo = repository();
 
-    await expect(createOrderInvoice({ actor: assistant, ...baseInput }, repo)).rejects.toThrow("Super Admin");
-    expect(repo.orderBelongsToOrganization).not.toHaveBeenCalled();
+    await createOrderInvoice({ actor: assistant, ...baseInput }, repo);
+    expect(repo.createInvoice).toHaveBeenCalledWith(expect.objectContaining({ actorStaffId: "staff-2" }));
   });
 
   it("rejects a second Invoice for the same Order", async () => {
@@ -133,10 +133,11 @@ describe("markInvoiceSent", () => {
     expect(repo.markSent).not.toHaveBeenCalled();
   });
 
-  it("refuses an Admin Assistant", async () => {
+  it("allows an Admin Assistant to send an invoice", async () => {
     const repo = repository();
 
-    await expect(markInvoiceSent({ actor: assistant, ...sendInput }, repo)).rejects.toThrow("Super Admin");
+    await markInvoiceSent({ actor: assistant, ...sendInput }, repo);
+    expect(repo.markSent).toHaveBeenCalled();
   });
 });
 

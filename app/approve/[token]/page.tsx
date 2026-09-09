@@ -9,12 +9,13 @@ export const dynamic = "force-dynamic";
 
 type ApprovalPageProps = {
   params: Promise<{ token: string }>;
-  searchParams: Promise<{ error?: string; itemId?: string }>;
+  searchParams: Promise<{ error?: string; itemId?: string; decision?: string }>;
 };
 
 export default async function ApprovalPage({ params, searchParams }: ApprovalPageProps) {
   const { token } = await params;
-  const { error, itemId } = await searchParams;
+  const { error, itemId, decision } = await searchParams;
+  const selectedDecision = APPROVAL_DECISIONS.find((value) => value === decision) ?? "approved";
 
   const batch = await getApprovalBatchForToken(token);
   if (!batch || batch.status === "Superseded" || batch.status === "Expired") {
@@ -57,7 +58,7 @@ export default async function ApprovalPage({ params, searchParams }: ApprovalPag
         </p>
 
         {error ? (
-          <div className="mt-6 rounded-2xl border border-kuartz-line bg-white/70 px-4 py-3 text-sm font-semibold text-kuartz-navy shadow-sm">
+          <div role="alert" className="mt-6 rounded-2xl border border-kuartz-line bg-white/70 px-4 py-3 text-sm font-semibold text-kuartz-navy shadow-sm">
             {error}
           </div>
         ) : null}
@@ -101,7 +102,7 @@ export default async function ApprovalPage({ params, searchParams }: ApprovalPag
                             <input type="hidden" name="batchItemId" value={item.id} />
                             <label className="block space-y-2">
                               <span className="label">Decision</span>
-                              <select name="decision" className="field" defaultValue="approved">
+                              <select name="decision" className="field" defaultValue={isHighlighted ? selectedDecision : "approved"}>
                                 {APPROVAL_DECISIONS.map((decision) => (
                                   <option key={decision} value={decision}>
                                     {formatStyleDirectionLabel(decision)}

@@ -27,6 +27,12 @@ export function getLocalSupabaseEnvironment(): Record<string, string> {
     return value;
   };
 
+  for (const key of ["API_URL", "DB_URL"]) {
+    if (!["127.0.0.1", "localhost", "[::1]"].includes(new URL(required(key)).hostname)) {
+      throw new Error("Release tests require local Supabase; hosted endpoints are forbidden.");
+    }
+  }
+
   return {
     NEXT_PUBLIC_SUPABASE_URL: required("API_URL"),
     NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY:

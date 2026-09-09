@@ -6,6 +6,7 @@ import { requireStaffSession } from "@/lib/auth/session";
 import { businessToday } from "@/lib/domain/business-date";
 import { listNotifications } from "@/lib/notifications/repository";
 import { TRIGGER_LABELS } from "@/lib/notifications/triggers";
+import { canRetryEmail } from "@/lib/notifications/service";
 import { getOrganizationTimezone } from "@/lib/organizations/repository";
 import { computeUrgencyBand, urgencyToneClasses } from "@/lib/production/urgency";
 
@@ -104,7 +105,7 @@ export default async function NotificationsPage({
                     ) : null}
                     {row.emailState === "failed" ? (
                       <span className="rounded-full border border-[#f0b4b4] bg-[#fdf0f0] px-2.5 py-0.5 text-xs font-semibold text-[#8c1d1d]">
-                        Email failed
+                        {canRetryEmail(row, new Date()) ? "Email failed · retry pending" : "Email needs review"}
                       </span>
                     ) : null}
                   </div>
@@ -143,7 +144,7 @@ export default async function NotificationsPage({
           title={unreadOnly ? "Nothing unread" : "No notifications yet"}
           description={
             unreadOnly
-              ? "Every reminder has been dealt with."
+              ? "No unread reminders. Open work may still need attention."
               : "Reminders appear here when deadlines are close."
           }
         />

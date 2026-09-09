@@ -13,7 +13,7 @@ export const dynamic = "force-dynamic";
 
 type ConfirmPageProps = {
   params: Promise<{ token: string }>;
-  searchParams: Promise<{ error?: string }>;
+  searchParams: Promise<{ error?: string; decision?: string }>;
 };
 
 function formatDecisionLabel(decision: string): string {
@@ -28,7 +28,8 @@ const INACTIVE_PROPS = {
 
 export default async function ConfirmPage({ params, searchParams }: ConfirmPageProps) {
   const { token } = await params;
-  const { error } = await searchParams;
+  const { error, decision } = await searchParams;
+  const selectedDecision = CLIENT_CONFIRMATION_DECISIONS.find((value) => value === decision) ?? "confirmed";
 
   const confirmation = await getConfirmationForToken(token);
   if (!confirmation || confirmation.status === "Superseded" || confirmation.status === "Expired") {
@@ -59,23 +60,23 @@ export default async function ConfirmPage({ params, searchParams }: ConfirmPageP
         <p className="mt-2 text-sm text-kuartz-muted">{content.clientFullName}</p>
 
         {error ? (
-          <div className="mt-6 rounded-2xl border border-kuartz-line bg-white/70 px-4 py-3 text-sm font-semibold text-kuartz-navy shadow-sm">
+          <div role="alert" className="mt-6 rounded-2xl border border-kuartz-line bg-white/70 px-4 py-3 text-sm font-semibold text-kuartz-navy shadow-sm">
             {error}
           </div>
         ) : null}
 
         <div className="mt-8">
-          {"clientSummary" in content ? (
+          {"scheduledAt" in content ? (
             <div className="space-y-4">
               <p className="font-semibold text-kuartz-navy">{content.orderTitle}</p>
               <p className="text-sm text-kuartz-muted">
-                Fitting on {content.scheduledAt.toISOString().slice(0, 10)}
+                Appointment: {new Intl.DateTimeFormat("en-NG", { dateStyle: "full", timeStyle: "short", timeZone: "Africa/Lagos" }).format(content.scheduledAt)} (Lagos time)
                 {content.lookName ? ` · ${content.lookName}` : ""}
               </p>
-              {content.clientSummary ? (
-                <p className="whitespace-pre-line text-sm leading-6 text-kuartz-navy">{content.clientSummary}</p>
+              {content.location ? (
+                <p className="whitespace-pre-line text-sm leading-6 text-kuartz-navy">{content.location}</p>
               ) : (
-                <p className="text-sm text-kuartz-muted">No summary was recorded for this fitting.</p>
+                <p className="text-sm text-kuartz-muted">Location will be confirmed by Kuartz.</p>
               )}
             </div>
           ) : "fields" in content ? (
@@ -124,7 +125,7 @@ export default async function ConfirmPage({ params, searchParams }: ConfirmPageP
             <form action={`/confirm/${encodeURIComponent(token)}/decide`} method="post" className="flex flex-wrap items-end gap-4">
               <label className="block space-y-2">
                 <span className="label">Decision</span>
-                <select name="decision" className="field" defaultValue="confirmed">
+                <select name="decision" className="field" defaultValue={selectedDecision}>
                   {CLIENT_CONFIRMATION_DECISIONS.map((decision) => (
                     <option key={decision} value={decision}>
                       {formatDecisionLabel(decision)}

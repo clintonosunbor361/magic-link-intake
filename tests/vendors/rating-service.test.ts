@@ -8,7 +8,7 @@ function repository(overrides: Record<string, unknown> = {}) {
   return {
     orderBelongsToOrganization: vi.fn().mockResolvedValue(true),
     vendorIsAvailable: vi.fn().mockResolvedValue(true),
-    vendorWorkedOnOrder: vi.fn().mockResolvedValue(true),
+    assignmentIsReadyForRating: vi.fn().mockResolvedValue(true),
     getRating: vi.fn().mockResolvedValue(null),
     createRating: vi.fn().mockResolvedValue({ id: "rating-1" }),
     updateRating: vi.fn().mockResolvedValue(undefined),
@@ -21,7 +21,7 @@ describe("rateVendorOnOrder", () => {
     const repo = repository();
 
     const result = await rateVendorOnOrder(
-      { actor, organizationId: "org-1", orderId: "order-1", vendorId: "vendor-1", scores },
+      { actor, organizationId: "org-1", orderId: "order-1", vendorId: "vendor-1", assignmentId: "assignment-1", scores },
       repo,
     );
 
@@ -29,22 +29,22 @@ describe("rateVendorOnOrder", () => {
     expect(repo.createRating).toHaveBeenCalledWith(expect.objectContaining({ scores, actorStaffId: "staff-1" }));
   });
 
-  it("refuses a Vendor with no assignment on the Order", async () => {
-    const repo = repository({ vendorWorkedOnOrder: vi.fn().mockResolvedValue(false) });
+  it("refuses an unrelated or unfinished assignment", async () => {
+    const repo = repository({ assignmentIsReadyForRating: vi.fn().mockResolvedValue(false) });
 
     await expect(
-      rateVendorOnOrder({ actor, organizationId: "org-1", orderId: "order-1", vendorId: "vendor-2", scores }, repo),
-    ).rejects.toThrow("no assignment on this Order");
+      rateVendorOnOrder({ actor, organizationId: "org-1", orderId: "order-1", vendorId: "vendor-2", assignmentId: "assignment-2", scores }, repo),
+    ).rejects.toThrow("completed production");
     expect(repo.createRating).not.toHaveBeenCalled();
   });
 
-  it("enforces one rating per Order and Vendor", async () => {
+  it("enforces one rating per assignment", async () => {
     const repo = repository({
       getRating: vi.fn().mockResolvedValue({ id: "rating-1", version: 1, ...scores }),
     });
 
     await expect(
-      rateVendorOnOrder({ actor, organizationId: "org-1", orderId: "order-1", vendorId: "vendor-1", scores }, repo),
+      rateVendorOnOrder({ actor, organizationId: "org-1", orderId: "order-1", vendorId: "vendor-1", assignmentId: "assignment-1", scores }, repo),
     ).rejects.toThrow("already rated");
   });
 
@@ -53,7 +53,7 @@ describe("rateVendorOnOrder", () => {
 
     await expect(
       rateVendorOnOrder(
-        { actor, organizationId: "org-1", orderId: "order-1", vendorId: "vendor-1", scores: { ...scores, quality: 6 } },
+        { actor, organizationId: "org-1", orderId: "order-1", vendorId: "vendor-1", assignmentId: "assignment-1", scores: { ...scores, quality: 6 } },
         repo,
       ),
     ).rejects.toThrow("whole number from 1 to 5");
@@ -64,7 +64,7 @@ describe("rateVendorOnOrder", () => {
     const repo = repository({ orderBelongsToOrganization: vi.fn().mockResolvedValue(false) });
 
     await expect(
-      rateVendorOnOrder({ actor, organizationId: "org-1", orderId: "order-other", vendorId: "vendor-1", scores }, repo),
+      rateVendorOnOrder({ actor, organizationId: "org-1", orderId: "order-other", vendorId: "vendor-1", assignmentId: "assignment-1", scores }, repo),
     ).rejects.toThrow("Order was not found.");
   });
 });
@@ -80,7 +80,7 @@ describe("reviseVendorRating", () => {
         actor,
         organizationId: "org-1",
         orderId: "order-1",
-        vendorId: "vendor-1",
+        vendorId: "vendor-1", assignmentId: "assignment-1",
         scores: { quality: 4, timeliness: 5, communication: 5 },
         expectedVersion: 1,
       },
@@ -103,7 +103,7 @@ describe("reviseVendorRating", () => {
     });
 
     const result = await reviseVendorRating(
-      { actor, organizationId: "org-1", orderId: "order-1", vendorId: "vendor-1", scores, expectedVersion: 3 },
+      { actor, organizationId: "org-1", orderId: "order-1", vendorId: "vendor-1", assignmentId: "assignment-1", scores, expectedVersion: 3 },
       repo,
     );
 
@@ -116,7 +116,7 @@ describe("reviseVendorRating", () => {
 
     await expect(
       reviseVendorRating(
-        { actor, organizationId: "org-1", orderId: "order-1", vendorId: "vendor-1", scores, expectedVersion: 1 },
+        { actor, organizationId: "org-1", orderId: "order-1", vendorId: "vendor-1", assignmentId: "assignment-1", scores, expectedVersion: 1 },
         repo,
       ),
     ).rejects.toThrow("not been rated");
@@ -133,7 +133,7 @@ describe("reviseVendorRating", () => {
           actor,
           organizationId: "org-1",
           orderId: "order-1",
-          vendorId: "vendor-1",
+          vendorId: "vendor-1", assignmentId: "assignment-1",
           scores: { ...scores, quality: 2 },
           expectedVersion: 1,
         },

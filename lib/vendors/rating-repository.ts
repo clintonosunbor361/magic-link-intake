@@ -1,13 +1,16 @@
 import "server-only";
 
-import { and, eq, isNotNull, isNull, sql } from "drizzle-orm";
+import { and, or, desc, eq, isNotNull, isNull, sql } from "drizzle-orm";
 import { getDatabase } from "@/db";
 import {
   auditEntries,
   clients,
   items,
+  itemTypes,
+  staffProfiles,
   looks,
   orders,
+  productionStatuses,
   vendorAssignments,
   vendorRatingRevisions,
   vendorRatings,
@@ -34,7 +37,7 @@ export function createVendorRatingRepository(): VendorRatingRepository {
         .limit(1);
       return !!row;
     },
-    async vendorWorkedOnOrder(organizationId, orderId, vendorId) {
+    async assignmentIsReadyForRating(organizationId, orderId, vendorId, assignmentId) {
       // Archived assignments count: a Vendor who was reassigned away from an Item still did the
       // work they did, and remains rateable on that Order.
       const [row] = await db
@@ -42,17 +45,21 @@ export function createVendorRatingRepository(): VendorRatingRepository {
         .from(vendorAssignments)
         .innerJoin(items, eq(items.id, vendorAssignments.itemId))
         .innerJoin(looks, eq(looks.id, items.lookId))
+        .innerJoin(orders, eq(orders.id, looks.orderId))
+        .innerJoin(productionStatuses, eq(productionStatuses.id, vendorAssignments.productionStatusId))
         .where(
           and(
             eq(vendorAssignments.organizationId, organizationId),
             eq(vendorAssignments.vendorId, vendorId),
+            eq(vendorAssignments.id, assignmentId),
             eq(looks.orderId, orderId),
+            or(isNotNull(orders.completedAt), eq(productionStatuses.isCompleted, true)),
           ),
         )
         .limit(1);
       return !!row;
     },
-    async getRating(organizationId, orderId, vendorId) {
+    async getRating(organizationId, orderId, vendorId, assignmentId) {
       const [row] = await db
         .select({
           id: vendorRatings.id,
@@ -67,6 +74,7 @@ export function createVendorRatingRepository(): VendorRatingRepository {
             eq(vendorRatings.organizationId, organizationId),
             eq(vendorRatings.orderId, orderId),
             eq(vendorRatings.vendorId, vendorId),
+            eq(vendorRatings.assignmentId, assignmentId),
             isNull(vendorRatings.archivedAt),
           ),
         )
@@ -80,6 +88,7 @@ export function createVendorRatingRepository(): VendorRatingRepository {
           organizationId: input.organizationId,
           orderId: input.orderId,
           vendorId: input.vendorId,
+          assignmentId: input.assignmentId,
           quality: input.scores.quality,
           timeliness: input.scores.timeliness,
           communication: input.scores.communication,
@@ -135,11 +144,14 @@ export function createVendorRatingRepository(): VendorRatingRepository {
   };
 }
 
-/** Distinct Vendors with an assignment on this Order, and their current rating if any. */
+/** Assignment ratings, including existing ratings if production is subsequently reopened. */
 export async function listOrderVendorsForRating(organizationId: string, orderId: string) {
   const db = getDatabase();
   return db
-    .selectDistinctOn([vendors.id], {
+    .select({
+      assignmentId: vendorAssignments.id,
+      itemLabel: sql<string>`coalesce(nullif(${items.customLabel}, ''), ${itemTypes.name})`,
+      lookName: looks.name,
       vendorId: vendors.id,
       vendorName: vendors.name,
       ratingId: vendorRatings.id,
@@ -150,34 +162,33 @@ export async function listOrderVendorsForRating(organizationId: string, orderId:
     })
     .from(vendorAssignments)
     .innerJoin(items, eq(items.id, vendorAssignments.itemId))
+    .innerJoin(itemTypes, eq(itemTypes.id, items.itemTypeId))
+    .innerJoin(productionStatuses, eq(productionStatuses.id, vendorAssignments.productionStatusId))
     .innerJoin(looks, eq(looks.id, items.lookId))
     .innerJoin(vendors, eq(vendors.id, vendorAssignments.vendorId))
+    .innerJoin(orders, eq(orders.id, looks.orderId))
     .leftJoin(
       vendorRatings,
       and(
         eq(vendorRatings.orderId, orderId),
         eq(vendorRatings.vendorId, vendors.id),
+        eq(vendorRatings.assignmentId, vendorAssignments.id),
         isNull(vendorRatings.archivedAt),
       ),
     )
-    .where(and(eq(vendorAssignments.organizationId, organizationId), eq(looks.orderId, orderId)))
+    .where(and(eq(vendorAssignments.organizationId, organizationId), eq(looks.orderId, orderId),
+      or(isNotNull(vendorRatings.id), isNotNull(orders.completedAt), eq(productionStatuses.isCompleted, true))))
     .orderBy(vendors.id);
 }
 
-/**
- * Pending rating prompts, derived rather than stored.
- *
- * A prompt is any (completed Order x Vendor with an assignment on it) that has no rating yet. There
- * is no prompts table and no dismissal: "exactly once per unit" is structural, because the pair
- * either has a rating row or it does not. Re-completing an Order, replaying the action, or adding a
- * Vendor after completion all produce the right answer without a backfill.
- *
- * The prompt clears the moment the rating is saved.
- */
+/** Outstanding assignment ratings, derived idempotently from completed work or completed Orders. */
 export async function listPendingRatingPrompts(organizationId: string) {
   const db = getDatabase();
   return db
-    .selectDistinctOn([orders.id, vendors.id], {
+    .select({
+      assignmentId: vendorAssignments.id,
+      lookName: looks.name,
+      itemLabel: sql<string>`coalesce(nullif(${items.customLabel}, ''), ${itemTypes.name})`,
       orderId: orders.id,
       orderTitle: orders.title,
       completedAt: orders.completedAt,
@@ -187,6 +198,8 @@ export async function listPendingRatingPrompts(organizationId: string) {
     })
     .from(vendorAssignments)
     .innerJoin(items, eq(items.id, vendorAssignments.itemId))
+    .innerJoin(itemTypes, eq(itemTypes.id, items.itemTypeId))
+    .innerJoin(productionStatuses, eq(productionStatuses.id, vendorAssignments.productionStatusId))
     .innerJoin(looks, eq(looks.id, items.lookId))
     .innerJoin(orders, eq(orders.id, looks.orderId))
     .innerJoin(clients, eq(clients.id, orders.clientId))
@@ -196,15 +209,15 @@ export async function listPendingRatingPrompts(organizationId: string) {
       and(
         eq(vendorRatings.orderId, orders.id),
         eq(vendorRatings.vendorId, vendors.id),
+        eq(vendorRatings.assignmentId, vendorAssignments.id),
         isNull(vendorRatings.archivedAt),
       ),
     )
     .where(
       and(
         eq(vendorAssignments.organizationId, organizationId),
-        // Only completed Orders prompt: rating a Vendor mid-production would be judging unfinished
-        // work.
-        isNotNull(orders.completedAt),
+        // Completed production or Order completion surfaces each outstanding assignment once.
+        or(isNotNull(orders.completedAt), eq(productionStatuses.isCompleted, true)),
         isNull(orders.archivedAt),
         isNull(vendorRatings.id),
       ),
@@ -219,4 +232,39 @@ export async function countVendorRatings(organizationId: string): Promise<number
     .from(vendorRatings)
     .where(eq(vendorRatings.organizationId, organizationId));
   return row?.count ?? 0;
+}
+
+/** Includes legacy Order ratings without assigning their evidence to an arbitrary Item. */
+export async function listVendorRatingHistory(organizationId: string, vendorId: string) {
+  const db = getDatabase();
+  const ratings = await db.select({
+    id: vendorRatings.id, assignmentId: vendorRatings.assignmentId,
+    orderId: orders.id, orderTitle: orders.title, clientName: clients.fullName,
+    lookName: looks.name,
+    itemLabel: sql<string | null>`coalesce(nullif(${items.customLabel}, ''), ${itemTypes.name})`,
+    quality: vendorRatings.quality, timeliness: vendorRatings.timeliness,
+    communication: vendorRatings.communication, createdAt: vendorRatings.createdAt,
+    archivedAt: vendorRatings.archivedAt, ratedBy: staffProfiles.fullName,
+  }).from(vendorRatings)
+    .innerJoin(orders, eq(orders.id, vendorRatings.orderId))
+    .innerJoin(clients, eq(clients.id, orders.clientId))
+    .innerJoin(staffProfiles, eq(staffProfiles.id, vendorRatings.ratedByStaffId))
+    .leftJoin(vendorAssignments, eq(vendorAssignments.id, vendorRatings.assignmentId))
+    .leftJoin(items, eq(items.id, vendorAssignments.itemId))
+    .leftJoin(itemTypes, eq(itemTypes.id, items.itemTypeId))
+    .leftJoin(looks, eq(looks.id, items.lookId))
+    .where(and(eq(vendorRatings.organizationId, organizationId), eq(vendorRatings.vendorId, vendorId)))
+    .orderBy(desc(vendorRatings.createdAt));
+  const revisions = await db.select({
+    id: vendorRatingRevisions.id, ratingId: vendorRatingRevisions.vendorRatingId,
+    previousQuality: vendorRatingRevisions.previousQuality, newQuality: vendorRatingRevisions.newQuality,
+    previousTimeliness: vendorRatingRevisions.previousTimeliness, newTimeliness: vendorRatingRevisions.newTimeliness,
+    previousCommunication: vendorRatingRevisions.previousCommunication, newCommunication: vendorRatingRevisions.newCommunication,
+    createdAt: vendorRatingRevisions.createdAt, changedBy: staffProfiles.fullName,
+  }).from(vendorRatingRevisions)
+    .innerJoin(vendorRatings, eq(vendorRatings.id, vendorRatingRevisions.vendorRatingId))
+    .innerJoin(staffProfiles, eq(staffProfiles.id, vendorRatingRevisions.changedByStaffId))
+    .where(and(eq(vendorRatingRevisions.organizationId, organizationId), eq(vendorRatings.organizationId, organizationId), eq(vendorRatings.vendorId, vendorId)))
+    .orderBy(desc(vendorRatingRevisions.createdAt));
+  return ratings.map((rating) => ({ ...rating, revisions: revisions.filter((revision) => revision.ratingId === rating.id) }));
 }

@@ -1,4 +1,4 @@
-import { assertCanManageFinance, type StaffRole } from "@/lib/domain/access-control";
+import { assertCanRecordFinance, assertCanManageFinance, type StaffRole } from "@/lib/domain/access-control";
 import { resolveVersionedTransition } from "@/lib/domain/concurrency";
 
 // Client and Vendor payments differ in what they hang off and whether they carry a receipt, but the
@@ -59,7 +59,7 @@ export async function recordClientPayment(
   },
   repository: ClientPaymentRepository,
 ) {
-  assertCanManageFinance(input.actor.role);
+  assertCanRecordFinance(input.actor.role);
   assertValidPayment(input.payment);
 
   const invoice = await repository.getInvoiceForPayment(input.organizationId, input.invoiceId);
@@ -221,7 +221,7 @@ export async function recordVendorPayment(
   repository: VendorPaymentRepository,
   storage: VendorPaymentStorage,
 ) {
-  assertCanManageFinance(input.actor.role);
+  assertCanRecordFinance(input.actor.role);
   assertValidPayment(input.payment);
   if (input.receipt) assertValidReceipt(input.receipt);
 

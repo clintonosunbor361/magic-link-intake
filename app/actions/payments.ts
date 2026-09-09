@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import { compressImage } from "@/lib/storage/image";
 import { requireStaffSession } from "@/lib/auth/session";
 import {
   editClientPayment,
@@ -9,6 +10,7 @@ import {
   recordVendorPayment,
   voidClientPayment,
   voidVendorPayment,
+  type VendorPaymentReceipt,
 } from "@/lib/finance/payment-service";
 import {
   createClientPaymentRepository,
@@ -106,10 +108,15 @@ export async function recordVendorPaymentAction(formData: FormData) {
 
   try {
     const file = formData.get("receipt");
-    const receipt =
+    let receipt: VendorPaymentReceipt | null =
       file instanceof File && file.size > 0
         ? { buffer: Buffer.from(await file.arrayBuffer()), declaredMimeType: file.type }
         : null;
+
+    if (receipt && receipt.declaredMimeType.startsWith("image/")) {
+      const image = await compressImage(receipt.buffer);
+      receipt = { buffer: image.buffer, declaredMimeType: image.mimeType };
+    }
 
     await recordVendorPayment(
       {

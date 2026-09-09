@@ -26,6 +26,7 @@ export async function rateVendorAction(formData: FormData) {
     organizationId: session.organizationId,
     orderId,
     vendorId,
+    assignmentId: readFormString(formData, "assignmentId"),
     scores: scoresFrom(formData),
   };
 

@@ -2,7 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { requireStaffSession } from "@/lib/auth/session";
 import { EmptyState } from "@/components/ui/empty-state";
-import { canManageFinance } from "@/lib/domain/access-control";
+import { canRecordFinance } from "@/lib/domain/access-control";
 import { listOrderBalances, listVendorPaymentPositions } from "@/lib/finance/repository";
 import { formatMinorUnits } from "@/lib/forms/money";
 
@@ -12,7 +12,7 @@ import { formatMinorUnits } from "@/lib/forms/money";
 
 export default async function FinancePage() {
   const session = await requireStaffSession();
-  if (!canManageFinance(session.role)) redirect("/");
+  if (!canRecordFinance(session.role)) redirect("/");
 
   const [balances, vendorPositions] = await Promise.all([
     listOrderBalances(session.organizationId),

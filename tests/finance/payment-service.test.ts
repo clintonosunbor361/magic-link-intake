@@ -37,13 +37,13 @@ describe("recordClientPayment", () => {
     );
   });
 
-  it("refuses an Admin Assistant before any lookup", async () => {
+  it("allows an Admin Assistant to record a client payment", async () => {
     const repo = clientRepository();
 
     await expect(
       recordClientPayment({ actor: assistant, organizationId: "org-1", invoiceId: "inv-1", payment }, repo),
-    ).rejects.toThrow("Super Admin");
-    expect(repo.getInvoiceForPayment).not.toHaveBeenCalled();
+    ).resolves.toEqual({ id: "pay-1" });
+    expect(repo.createPayment).toHaveBeenCalled();
   });
 
   it("rejects a zero or negative amount", async () => {
@@ -231,13 +231,13 @@ describe("recordVendorPayment", () => {
     expect(storage.putObject).not.toHaveBeenCalled();
   });
 
-  it("refuses an Admin Assistant", async () => {
+  it("allows an Admin Assistant to record a vendor payment", async () => {
     const repo = vendorRepository();
 
     await expect(
       recordVendorPayment({ actor: assistant, ...vendorInput, receipt: null }, repo, vendorStorage()),
-    ).rejects.toThrow("Super Admin");
-    expect(repo.assignmentBelongsToOrganization).not.toHaveBeenCalled();
+    ).resolves.toBeDefined();
+    expect(repo.createPayment).toHaveBeenCalled();
   });
 });
 

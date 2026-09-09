@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input";
 import { MoneyInput } from "@/components/ui/money-input";
 import { NativeSelect } from "@/components/ui/native-select";
 import { requireStaffSession } from "@/lib/auth/session";
-import { getClient } from "@/lib/clients/repository";
+import { getClient, listOrdersForClient } from "@/lib/clients/repository";
 import { EVENT_TYPES } from "@/lib/intake-options";
 import { listStaffMembers } from "@/lib/team/repository";
 
@@ -22,12 +22,15 @@ export default async function NewClientOrderPage({
 }) {
   const session = await requireStaffSession();
   const [{ id }, { error }] = await Promise.all([params, searchParams]);
-  const [client, staff] = await Promise.all([
+  const [client, staff, existingOrders] = await Promise.all([
     getClient(session.organizationId, id),
     listStaffMembers(session.organizationId),
+    listOrdersForClient(session.organizationId, id),
   ]);
 
   if (!client || client.archivedAt) notFound();
+
+  const activeOrders = existingOrders.filter((order) => !order.archivedAt && !order.completedAt);
 
   return (
     <div>
@@ -42,6 +45,10 @@ export default async function NewClientOrderPage({
 
       {error ? <p className="form-alert mt-6" role="alert">{error}</p> : null}
 
+      {activeOrders.length ? <div role="status" className="mt-6 rounded-xl border border-kuartz-line p-4 text-sm">
+        <p>This Client already has active Orders. Check these before creating another:</p>
+        <ul className="mt-2">{activeOrders.map((order) => <li key={order.id}><Link className="underline" href={`/orders/${order.id}`}>{order.title}</Link></li>)}</ul>
+      </div> : null}
       <form action={createActiveOrderAction} className="mt-9 max-w-2xl space-y-8">
         <input type="hidden" name="clientId" value={id} />
 

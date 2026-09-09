@@ -39,8 +39,19 @@ npm run typecheck
 npm run build
 ```
 
-`npm run test:milestone0` runs the complete sequence. Database tests reset local Supabase and must never target a hosted or production database.
+`npm run test:milestone0` runs the complete sequence. Database tests apply local migrations and roll back their fixtures; they must never target a hosted or production database.
 
 ## Production boundary
 
 Milestone 0 verifies local migrations, bootstrap, RLS, browser journeys, accessibility, and build output. Hosted Supabase/Vercel provisioning, production secrets, backups, monitoring, and rollback execution belong to the production-platform milestone.
+
+## Current release gate
+
+Use `npm run test:release` for unit/UI tests, local pgTAP, transactional integration tests,
+critical browser journeys, strict typecheck, and the production build. The local test scripts apply
+migrations but **do not reset the database**. Existing developer records are preserved.
+`test:integration:local` uses rolled-back fixtures; browser fixtures are confined to dedicated local
+organizations. Test configuration rejects hosted Supabase endpoints and refuses server reuse.
+
+See [Notification operation](notifications.md) for cron configuration, recipient rules, retry behavior,
+and a production dry run. See [Release verification](release-verification.md) for checklist evidence.

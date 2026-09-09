@@ -1,4 +1,4 @@
-import { assertCanManageFinance, type StaffRole } from "@/lib/domain/access-control";
+import { assertCanRecordFinance, assertCanManageFinance, type StaffRole } from "@/lib/domain/access-control";
 import { resolveVersionedTransition } from "@/lib/domain/concurrency";
 import {
   assertLineItemsEditable,
@@ -85,7 +85,7 @@ export async function createOrderInvoice(
   },
   repository: InvoiceRepository,
 ) {
-  assertCanManageFinance(input.actor.role);
+  assertCanRecordFinance(input.actor.role);
 
   if (!(await repository.orderBelongsToOrganization(input.organizationId, input.orderId))) {
     throw new Error("Order was not found.");
@@ -120,7 +120,7 @@ export async function updateDraftInvoice(
   },
   repository: InvoiceRepository,
 ) {
-  assertCanManageFinance(input.actor.role);
+  assertCanRecordFinance(input.actor.role);
   const lines = normalizeLines(input.lines);
 
   let invoice: InvoiceRecord | null = null;
@@ -163,7 +163,7 @@ export async function markInvoiceSent(
   },
   repository: InvoiceRepository,
 ) {
-  assertCanManageFinance(input.actor.role);
+  assertCanRecordFinance(input.actor.role);
 
   let invoice: InvoiceRecord | null = null;
   return resolveVersionedTransition({

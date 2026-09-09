@@ -16,6 +16,7 @@ export default defineConfig({
   globalSetup: "./tests/e2e/global-setup.ts",
   use: {
     baseURL,
+    actionTimeout: 15_000,
     trace: "retain-on-failure",
     screenshot: "only-on-failure",
   },
@@ -23,24 +24,26 @@ export default defineConfig({
     { name: "desktop-chromium", use: { ...devices["Desktop Chrome"] } },
     {
       name: "mobile-chromium",
-      testMatch: "**/milestone-zero.spec.ts",
+      grep: /staff screens remain usable/,
       use: { ...devices["Pixel 7"] },
     },
     {
       name: "small-mobile-chromium",
-      testMatch: "**/milestone-zero.spec.ts",
+      grep: /staff screens remain usable/,
       use: { ...devices["Desktop Chrome"], viewport: { width: 375, height: 667 }, isMobile: true, hasTouch: true },
     },
   ],
   webServer: {
     command: "npm start -- --hostname 127.0.0.1 --port 3210",
     url: baseURL,
-    reuseExistingServer: !process.env.CI,
+    reuseExistingServer: false,
     timeout: 120_000,
     env: {
       ...process.env,
       ...localEnvironment,
       NEXT_PUBLIC_APP_URL: baseURL,
+      RESEND_API_KEY: "",
+      CRON_SECRET: "local-release-cron-secret",
     },
   },
 });

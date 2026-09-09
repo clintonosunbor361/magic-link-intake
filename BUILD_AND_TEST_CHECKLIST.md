@@ -1,6 +1,11 @@
 # Kuartz CRM Build and Test Checklist
 
-Last updated: August 22, 2026
+Last updated: September 9, 2026
+
+Release verification is recorded in [docs/release-verification.md](docs/release-verification.md).
+Notification delivery follows the agreed single-overdue-email policy with bounded failure retries;
+the authorized provider test was delivered. Production migration, deployment, and scheduled-run
+verification remain pending and are not implied by implementation checkmarks.
 
 Legend:
 
@@ -72,9 +77,9 @@ Legend:
 - [x] Style Direction tab
 - [~] Vendors tab; currently routes assignment work through Looks & Items and Vendor directory
 - [~] Production tab; currently links to Production workspace and Item assignments
-- [~] Accessories tab; currently summarizes outstanding accessories and links to module
-- [~] Fittings tab; currently summarizes open fittings and links to module
-- [~] Payments tab; currently summarizes invoice/balance and links to invoice page
+- [x] Accessories tab embeds the shared sourcing workspace
+- [x] Fittings tab embeds the shared appointment workspace
+- [x] Payments tab embeds the shared invoice and payment workspace
 
 ### Style Direction
 

@@ -1,5 +1,6 @@
+import { RefreshWorkspace } from "@/components/app-shell/refresh-workspace";
 import { signOutAction } from "@/app/actions/auth";
-import { canManageFinance, canManageTeam } from "@/lib/domain/access-control";
+import { canRecordFinance, canManageTeam } from "@/lib/domain/access-control";
 import type { StaffSession } from "@/lib/auth/session";
 import { Navigation } from "@/components/app-shell/navigation";
 import { Button } from "@/components/ui/button";
@@ -11,7 +12,7 @@ export function AppShell({ session, children }: { session: StaffSession; childre
       <a className="skip-link" href="#main-content">Skip to main content</a>
       <Navigation
         canManageTeam={canManageTeam(session.role)}
-        canManageFinance={canManageFinance(session.role)}
+        canManageFinance={canRecordFinance(session.role)}
       />
       <header className="sticky top-0 z-20 flex h-[4.5rem] min-w-0 items-center justify-between gap-3 border-b border-white/80 bg-white/[0.82] px-4 shadow-[0_16px_45px_rgba(21,22,63,0.06)] backdrop-blur-xl sm:px-7 lg:px-10">
         <div className="min-w-0 pl-12 lg:pl-0">
@@ -21,6 +22,7 @@ export function AppShell({ session, children }: { session: StaffSession; childre
         <div className="flex min-w-0 shrink-0 items-center gap-2 sm:gap-3">
           <div className="hidden text-right sm:block"><p className="text-sm font-semibold text-kuartz-ink">{session.fullName}</p><p className="text-xs text-kuartz-secondary">{session.role === "super_admin" ? "Super Admin" : "Admin Assistant"}</p></div>
           <div className="grid h-9 w-9 place-items-center rounded-full bg-kuartz-ink text-xs font-bold text-white shadow-sm" aria-hidden="true">{initials}</div>
+          <RefreshWorkspace />
           <form action={signOutAction}><Button variant="ghost" type="submit">Sign out</Button></form>
         </div>
       </header>

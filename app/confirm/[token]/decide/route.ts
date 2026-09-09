@@ -30,6 +30,7 @@ export async function POST(request: NextRequest, { params }: RouteContext) {
   } catch (error) {
     const message = error instanceof Error ? error.message : "The decision could not be recorded.";
     confirmUrl.searchParams.set("error", message);
+    confirmUrl.searchParams.set("decision", decision);
     return NextResponse.redirect(confirmUrl, { status: 303 });
   }
 

@@ -1,0 +1,9 @@
+.scratch*
+.env*
+.git
+.DS_Store
+**/.DS_Store
+test-results
+playwright-report
+.next
+node_modules

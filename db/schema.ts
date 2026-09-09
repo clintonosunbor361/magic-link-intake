@@ -1229,10 +1229,7 @@ export const productionNotes = pgTable(
   ],
 ).enableRLS();
 
-// Grain is one rating per (Order, Vendor) — the spec creates prompts "for vendors involved" in a
-// completed Order, not per Item, and per-Item ratings would weight a Vendor's average by how many
-// garments they happened to make on one job. There is deliberately no stored `overall`: it is the
-// mean of the three criteria, computed in summarizeVendorRatings, so it cannot disagree with them.
+// New ratings belong to an assignment. Legacy Order-level ratings remain as historical evidence.
 export const vendorRatings = pgTable(
   "vendor_ratings",
   {
@@ -1246,6 +1243,7 @@ export const vendorRatings = pgTable(
     vendorId: uuid("vendor_id")
       .references(() => vendors.id)
       .notNull(),
+    assignmentId: uuid("assignment_id").references(() => vendorAssignments.id),
     quality: integer("quality").notNull(),
     timeliness: integer("timeliness").notNull(),
     communication: integer("communication").notNull(),
@@ -1257,7 +1255,7 @@ export const vendorRatings = pgTable(
     ...timestamps,
   },
   (table) => [
-    uniqueIndex("vendor_ratings_order_vendor_uidx").on(table.orderId, table.vendorId),
+    uniqueIndex("vendor_ratings_assignment_uidx").on(table.assignmentId),
     index("vendor_ratings_vendor_idx").on(table.vendorId),
     pgPolicy("staff can view organization vendor ratings", {
       for: "select",
@@ -1735,6 +1733,13 @@ export const notifications = pgTable(
     emailAttempts: integer("email_attempts").default(0).notNull(),
     emailLastError: text("email_last_error"),
     emailSentAt: timestamp("email_sent_at", { withTimezone: true }),
+    emailClaimId: uuid("email_claim_id"),
+    emailClaimedAt: timestamp("email_claimed_at", { withTimezone: true }),
+    emailFirstAttemptAt: timestamp("email_first_attempt_at", { withTimezone: true }),
+    emailRetrySafe: boolean("email_retry_safe").default(false).notNull(),
+    emailPayload: jsonb("email_payload").$type<{
+      to: string; staffName: string; title: string; body: string; url: string;
+    }>(),
     archivedAt: timestamp("archived_at", { withTimezone: true }),
     createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
   },

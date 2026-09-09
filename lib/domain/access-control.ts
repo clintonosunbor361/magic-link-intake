@@ -126,9 +126,15 @@ export function canOverrideBriefBlocker(role: StaffRole): boolean {
   return role === "super_admin";
 }
 
-// Every financial action — creating and editing Invoices, sending, voiding, and recording, editing
-// or voiding a payment on either side — is reserved for Super Admin by product decision. This is
-// stricter than reserving only edits and deletes: an Admin Assistant does no money entry at all.
+// Routine invoice creation and payment entry are operational; corrections remain privileged.
+export function canRecordFinance(role: StaffRole): boolean {
+  return canPerformOperationalWork(role);
+}
+
+export function assertCanRecordFinance(role: StaffRole): void {
+  if (!canRecordFinance(role)) throw new Error("Staff access is required for financial entry.");
+}
+
 export function canManageFinance(role: StaffRole): boolean {
   return role === "super_admin";
 }

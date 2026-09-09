@@ -115,7 +115,7 @@ export function ItemAssignmentDrawer({
 
             <form action={updateAssignmentTermsAction} className="flex flex-wrap items-end gap-3">
               <input type="hidden" name="orderId" value={orderId} />
-              <input type="hidden" name="returnTo" value={`/orders/${orderId}?tab=looks`} />
+              <input type="hidden" name="returnTo" value={`/orders/${orderId}?tab=vendors`} />
               <input type="hidden" name="assignmentId" value={assignment.id} />
               <input type="hidden" name="version" value={assignment.version} />
               <label className="form-group">
@@ -155,7 +155,7 @@ export function ItemAssignmentDrawer({
               </p>
               <form action={reassignVendorAction} className="mt-3 space-y-3">
                 <input type="hidden" name="orderId" value={orderId} />
-                <input type="hidden" name="returnTo" value={`/orders/${orderId}?tab=looks`} />
+                <input type="hidden" name="returnTo" value={`/orders/${orderId}?tab=vendors`} />
                 <input type="hidden" name="assignmentId" value={assignment.id} />
                 <input type="hidden" name="version" value={assignment.version} />
                 <label className="form-group">
@@ -202,7 +202,7 @@ export function ItemAssignmentDrawer({
           <>
             <form action={assignVendorAction} className="space-y-3">
               <input type="hidden" name="orderId" value={orderId} />
-              <input type="hidden" name="returnTo" value={`/orders/${orderId}?tab=looks`} />
+              <input type="hidden" name="returnTo" value={`/orders/${orderId}?tab=vendors`} />
               <input type="hidden" name="itemId" value={itemId} />
               <label className="form-group">
                 <span>Vendor</span>
@@ -236,7 +236,7 @@ export function ItemAssignmentDrawer({
                 Vendor not in the list? Quick-create one
               </summary>
               <form action={createVendorAction} className="mt-3 flex flex-wrap items-end gap-3">
-                <input type="hidden" name="returnTo" value={`/orders/${orderId}?tab=looks`} />
+                <input type="hidden" name="returnTo" value={`/orders/${orderId}?tab=vendors`} />
                 <label className="form-group">
                   <span>Name</span>
                   <Input name="name" required maxLength={120} aria-label={`New Vendor name for ${itemLabel}`} />
@@ -290,7 +290,7 @@ export function LookBulkAssignForm({
         </p>
         <form action={bulkAssignVendorAction} className="mt-3 space-y-3">
           <input type="hidden" name="orderId" value={orderId} />
-          <input type="hidden" name="returnTo" value={`/orders/${orderId}?tab=looks`} />
+          <input type="hidden" name="returnTo" value={`/orders/${orderId}?tab=vendors`} />
           <input type="hidden" name="lookId" value={lookId} />
           <label className="form-group">
             <span>Vendor</span>

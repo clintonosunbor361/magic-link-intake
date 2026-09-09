@@ -83,124 +83,106 @@ function buildBody(input: { trigger: NotificationTrigger; dueDate: BusinessDate;
   return input.context ? `${input.context} · ${timing}` : timing;
 }
 
+export type NotificationEmailPayload = {
+  to: string; staffName: string; title: string; body: string; url: string;
+};
 export type NotificationEmailOutcome =
   | { state: "sent" }
-  | { state: "failed"; error: string }
+  | { state: "failed"; error: string; retrySafe: boolean }
   | { state: "skipped" };
 
-/** A row this run actually created, carrying its key so email eligibility matches exactly. */
-export type CreatedNotification = {
-  id: string;
-  sourceType: NotificationSourceType;
-  sourceId: string;
-  trigger: NotificationTrigger;
-  dueDate: BusinessDate;
-  recipientStaffId: string | null;
-  title: string;
-  body: string;
-  href: string;
+export type CreatedNotification = Omit<PlannedNotification, "emailEligible"> & { id: string };
+export type EmailCandidate = CreatedNotification & {
+  emailAttempts: number;
+  emailFirstAttemptAt: Date | null;
+  emailRetrySafe: boolean;
+  emailPayload: NotificationEmailPayload | null;
 };
 
-export function notificationKey(input: {
-  sourceType: NotificationSourceType;
-  sourceId: string;
-  trigger: NotificationTrigger;
-  dueDate: BusinessDate;
-}): string {
+export const MAX_EMAIL_ATTEMPTS = 5;
+export const EMAIL_BATCH_SIZE = 25;
+// Resend retains idempotency keys for 24 hours. Leave a margin for clocks/network latency.
+export const IDEMPOTENCY_WINDOW_MS = 23 * 60 * 60 * 1000;
+
+export class NotificationDeliveryError extends Error {
+  constructor(message: string, readonly retrySafe: boolean) { super(message); }
+}
+
+export function notificationKey(input: Pick<PlannedNotification, "sourceType" | "sourceId" | "trigger" | "dueDate">): string {
   return `${input.sourceType}:${input.sourceId}:${input.trigger}:${input.dueDate}`;
 }
 
+/** Unknown outcomes must not be retried after the provider's deduplication window. */
+export function canRetryEmail(row: Pick<EmailCandidate, "emailAttempts" | "emailRetrySafe" | "emailFirstAttemptAt">, now: Date): boolean {
+  if (row.emailAttempts >= MAX_EMAIL_ATTEMPTS) return false;
+  return row.emailAttempts === 0 || row.emailRetrySafe ||
+    (row.emailFirstAttemptAt !== null && now.getTime() - row.emailFirstAttemptAt.getTime() < IDEMPOTENCY_WINDOW_MS);
+}
+
 export type NotificationRepository = {
-  /**
-   * Inserts the planned rows, ignoring any that already exist. The unique index on
-   * (source_type, source_id, trigger, due_date) is what makes this idempotent, so a retried or
-   * double-fired cron cannot produce duplicates. Returns only the rows this call actually created.
-   */
-  insertMissing(input: {
-    organizationId: string;
-    planned: readonly PlannedNotification[];
-  }): Promise<CreatedNotification[]>;
-  recordEmailOutcome(input: { notificationId: string; outcome: NotificationEmailOutcome }): Promise<void>;
+  insertMissing(input: { organizationId: string; planned: readonly PlannedNotification[] }): Promise<CreatedNotification[]>;
+  listEmailCandidates(organizationId: string): Promise<EmailCandidate[]>;
+  // A compare-and-set lease prevents concurrent cron invocations claiming the same email.
+  claimEmail(input: { organizationId: string; notificationId: string; expectedAttempts: number; payload: NotificationEmailPayload; now: Date }): Promise<{ claimId: string; payload: NotificationEmailPayload } | null>;
+  recordEmailOutcome(input: { organizationId: string; notificationId: string; claimId: string; outcome: NotificationEmailOutcome }): Promise<void>;
   getStaffEmail(organizationId: string, staffId: string): Promise<{ email: string; fullName: string } | null>;
 };
 
 export type NotificationEmailSender = {
-  sendDeadlineEmail(input: {
-    to: string;
-    staffName: string;
-    title: string;
-    body: string;
-    url: string;
-  }): Promise<void>;
+  sendDeadlineEmail(input: NotificationEmailPayload & { idempotencyKey: string }): Promise<unknown>;
 };
 
-/**
- * Creates the notifications and attempts the emails for those eligible.
- *
- * Insert and email are deliberately separate steps: the row is committed first, so an email failure
- * downgrades to a recorded `failed` state on an existing dashboard notification rather than losing
- * the notification altogether. One recipient's bounce never blocks anyone else's.
- */
+/** Durable dashboard records and separately leased email attempts; successful emails never retry. */
 export async function dispatchNotifications(
-  input: {
-    organizationId: string;
-    planned: readonly PlannedNotification[];
-    appOrigin: string;
-  },
+  input: { organizationId: string; planned: readonly PlannedNotification[]; appOrigin: string; now?: Date },
   repository: NotificationRepository,
   email: NotificationEmailSender,
 ): Promise<{ created: number; emailed: number; failed: number; skipped: number }> {
-  const created = await repository.insertMissing({
-    organizationId: input.organizationId,
-    planned: input.planned,
-  });
+  const now = input.now ?? new Date();
+  const created = await repository.insertMissing({ organizationId: input.organizationId, planned: input.planned });
+  const plans = new Map(input.planned.map((plan) => [notificationKey(plan), plan]));
+  const candidates = await repository.listEmailCandidates(input.organizationId);
+  let emailed = 0, failed = 0;
+  let skipped = created.filter((row) => !plans.get(notificationKey(row))?.emailEligible || !row.recipientStaffId).length;
 
-  // Only rows this run created are candidates: an existing row has already had its one email
-  // attempt, and re-sending on every cron tick is exactly the duplication the unique index prevents.
-  const emailEligible = new Set(
-    input.planned.filter((plan) => plan.emailEligible).map((plan) => notificationKey(plan)),
-  );
+  for (const row of candidates) {
+    const plan = plans.get(notificationKey(row));
+    const staff = row.recipientStaffId ? await repository.getStaffEmail(input.organizationId, row.recipientStaffId) : null;
+    // Stop stale/rescheduled/completed work and revoked recipients, including old failed emails.
+    const obsolete = !plan || plan.recipientStaffId !== row.recipientStaffId || !staff ||
+      (row.emailPayload !== null && row.emailPayload.to !== staff.email) ||
+      (row.emailAttempts === 0 && !row.emailRetrySafe && !plan.emailEligible);
+    if (!obsolete && !canRetryEmail(row, now)) continue;
 
-  let emailed = 0;
-  let failed = 0;
-  let skipped = 0;
-
-  for (const row of created) {
-    const eligible = emailEligible.has(notificationKey(row));
-
-    if (!eligible || !row.recipientStaffId) {
+    const payload = row.emailPayload ?? {
+      to: staff?.email ?? "", staffName: staff?.fullName ?? "",
+      title: row.title, body: row.body, url: `${input.appOrigin}${row.href}`,
+    };
+    const claim = await repository.claimEmail({
+      organizationId: input.organizationId, notificationId: row.id,
+      expectedAttempts: row.emailAttempts, payload, now,
+    });
+    if (!claim) continue;
+    const outcomeContext = { organizationId: input.organizationId, notificationId: row.id, claimId: claim.claimId };
+    if (obsolete) {
       skipped += 1;
-      await repository.recordEmailOutcome({ notificationId: row.id, outcome: { state: "skipped" } });
+      await repository.recordEmailOutcome({ ...outcomeContext, outcome: { state: "skipped" } });
       continue;
     }
 
-    const staff = await repository.getStaffEmail(input.organizationId, row.recipientStaffId);
-    if (!staff) {
-      skipped += 1;
-      await repository.recordEmailOutcome({ notificationId: row.id, outcome: { state: "skipped" } });
-      continue;
-    }
-
+    let outcome: NotificationEmailOutcome;
     try {
-      await email.sendDeadlineEmail({
-        to: staff.email,
-        staffName: staff.fullName,
-        title: row.title,
-        body: row.body,
-        url: `${input.appOrigin}${row.href}`,
-      });
+      await email.sendDeadlineEmail({ ...claim.payload, idempotencyKey: `notification/${row.id}` });
+      outcome = { state: "sent" };
       emailed += 1;
-      await repository.recordEmailOutcome({ notificationId: row.id, outcome: { state: "sent" } });
     } catch (error) {
-      // The dashboard notification survives; only its email state changes, and the error is kept so
-      // a failure is diagnosable rather than silent.
       failed += 1;
-      await repository.recordEmailOutcome({
-        notificationId: row.id,
-        outcome: { state: "failed", error: error instanceof Error ? error.message : "Unknown error" },
-      });
+      outcome = { state: "failed", error: error instanceof Error ? error.message : "Unknown delivery error",
+        retrySafe: (row.emailAttempts === 0 || row.emailRetrySafe) && error instanceof NotificationDeliveryError && error.retrySafe };
     }
+    // A failed DB acknowledgement must not be mislabeled as a provider rejection.
+    // Leave the lease in place: recovery will reuse the same provider key and payload.
+    await repository.recordEmailOutcome({ ...outcomeContext, outcome });
   }
-
   return { created: created.length, emailed, failed, skipped };
 }

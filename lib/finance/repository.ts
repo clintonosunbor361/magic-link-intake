@@ -774,15 +774,8 @@ export async function listVendorPaymentPositions(organizationId: string) {
   );
 }
 
-/** Distinct Vendors with work on this Order — the rating prompts surfaced after completion. */
+/** Outstanding assignment ratings for completion next actions. */
 export async function listVendorsAwaitingRating(organizationId: string, orderId: string) {
-  const db = getDatabase();
-  return db
-    .selectDistinctOn([vendors.id], { vendorId: vendors.id, vendorName: vendors.name })
-    .from(vendorAssignments)
-    .innerJoin(items, eq(items.id, vendorAssignments.itemId))
-    .innerJoin(looks, eq(looks.id, items.lookId))
-    .innerJoin(vendors, eq(vendors.id, vendorAssignments.vendorId))
-    .where(and(eq(vendorAssignments.organizationId, organizationId), eq(looks.orderId, orderId)))
-    .orderBy(vendors.id);
+  const { listOrderVendorsForRating } = await import("@/lib/vendors/rating-repository");
+  return (await listOrderVendorsForRating(organizationId, orderId)).filter((row) => !row.ratingId);
 }

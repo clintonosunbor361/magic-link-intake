@@ -51,7 +51,7 @@ export async function assignVendorAction(formData: FormData) {
   }
 
   revalidateProduction(orderId);
-  redirect(`/orders/${orderId}`);
+  redirect(`/orders/${orderId}?tab=vendors`);
 }
 
 export async function bulkAssignVendorAction(formData: FormData) {
@@ -78,7 +78,7 @@ export async function bulkAssignVendorAction(formData: FormData) {
   }
 
   revalidateProduction(orderId);
-  redirect(`/orders/${orderId}?notice=${encodeURIComponent(notice)}`);
+  redirect(`/orders/${orderId}?tab=vendors&notice=${encodeURIComponent(notice)}`);
 }
 
 export async function updateAssignmentTermsAction(formData: FormData) {
@@ -101,7 +101,7 @@ export async function updateAssignmentTermsAction(formData: FormData) {
   }
 
   revalidateProduction(orderId);
-  redirect(`/orders/${orderId}`);
+  redirect(`/orders/${orderId}?tab=vendors`);
 }
 
 export async function reassignVendorAction(formData: FormData) {
@@ -127,7 +127,7 @@ export async function reassignVendorAction(formData: FormData) {
 
   revalidateProduction(orderId);
   redirect(
-    `/orders/${orderId}?notice=${encodeURIComponent("Reassigned. The previous Vendor's production history and notes stay with their assignment.")}`,
+    `/orders/${orderId}?tab=vendors&notice=${encodeURIComponent("Reassigned. The previous Vendor's production history and notes stay with their assignment.")}`,
   );
 }
 
@@ -185,7 +185,7 @@ function revalidateProduction(orderId: string) {
 }
 
 function backToOrder(orderId: string, error: string): never {
-  redirect(`/orders/${orderId}?error=${encodeURIComponent(error)}`);
+  redirect(`/orders/${orderId}?tab=vendors&error=${encodeURIComponent(error)}`);
 }
 
 function backTo(path: string, error: string): never {
