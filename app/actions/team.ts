@@ -21,7 +21,7 @@ export async function inviteStaffMemberAction(formData: FormData) {
   const fullName = readFormString(formData, "fullName");
   const email = readFormString(formData, "email").toLowerCase();
   const role = roleValue(formData);
-  if (!fullName || !email) redirect("/settings/team?error=Name+and+email+are+required.");
+  if (!fullName || !email) redirect("/settings/team?error=Name+and+email+are+required.&modal=invite");
 
   const admin = createSupabaseAdminClient();
   const appUrl = await getRequestOrigin();
@@ -29,7 +29,7 @@ export async function inviteStaffMemberAction(formData: FormData) {
     data: { full_name: fullName },
     redirectTo: `${appUrl}/auth/invite`,
   });
-  if (error || !data.user) redirect("/settings/team?error=The+invitation+could+not+be+sent.");
+  if (error || !data.user) redirect("/settings/team?error=The+invitation+could+not+be+sent.&modal=invite");
 
   try {
     await addInvitedStaffMember({
@@ -42,7 +42,7 @@ export async function inviteStaffMemberAction(formData: FormData) {
     });
   } catch {
     await admin.auth.admin.deleteUser(data.user.id);
-    redirect("/settings/team?error=The+membership+could+not+be+created.");
+    redirect("/settings/team?error=The+membership+could+not+be+created.&modal=invite");
   }
   revalidatePath("/settings/team");
   redirect("/settings/team?invited=1");

@@ -27,7 +27,7 @@ describe("VendorDirectoryHeader", () => {
     await user.click(screen.getByRole("button", { name: "Add Vendor" }));
 
     const dialog = screen.getByRole("dialog", { name: "Add vendor" });
-    expect(dialog).toHaveClass("vendor-dialog-root");
+    expect(dialog).toHaveClass("form-modal-root");
     expect(dialog.parentElement).toBe(document.body);
     expect(screen.getByRole("textbox", { name: "Vendor name" })).toBeVisible();
   });

@@ -152,11 +152,11 @@ export default async function OrderDetailPage({
   searchParams,
 }: {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ error?: string; notice?: string; tab?: string }>;
+  searchParams: Promise<{ error?: string; notice?: string; tab?: string; modal?: string }>;
 }) {
   const session = await requireStaffSession();
   const { id } = await params;
-  const { error, notice, tab } = await searchParams;
+  const { error, notice, tab, modal } = await searchParams;
 
   const order = await getOrderWithLooksAndItems(session.organizationId, id);
   if (!order) notFound();
@@ -277,7 +277,7 @@ export default async function OrderDetailPage({
         </p>
       </header>
 
-      {error ? (
+      {error && !modal ? (
         <p className="form-alert mt-6" role="alert">
           {error}
         </p>
@@ -1116,20 +1116,30 @@ export default async function OrderDetailPage({
           {activeTab === "accessories" ? (
             <div>
               {accessoryTypes.length && accessoryStatuses.length ? (
-                <FormModal title="Accessories" modalTitle="Add accessory" buttonLabel="Add Accessory">
-                  <form action={createAccessoryItemAction} className="grid gap-4 sm:grid-cols-2">
+                <FormModal
+                  title="Accessories"
+                  modalTitle="Add accessory"
+                  buttonLabel="Add Accessory"
+                  eyebrow="Accessories"
+                  formId="add-order-accessory-form"
+                  submitLabel="Add Accessory"
+                  pendingLabel="Adding accessory..."
+                  size="lg"
+                  error={modal === "accessory" ? error : undefined}
+                >
+                  <form id="add-order-accessory-form" action={createAccessoryItemAction} className="grid gap-4 sm:grid-cols-2">
                     <input type="hidden" name="orderId" value={order.id} />
                     <input type="hidden" name="returnTo" value={accessoryReturnTo} />
                     <label className="form-group">
-                      <span>Type</span>
-                      <NativeSelect name="accessoryTypeId" required>
+                      <span>Type <span className="font-normal text-kuartz-secondary">(required)</span></span>
+                      <NativeSelect name="accessoryTypeId" required data-modal-autofocus>
                         {accessoryTypes.map((type) => (
                           <option key={type.id} value={type.id}>{type.name}</option>
                         ))}
                       </NativeSelect>
                     </label>
                     <label className="form-group">
-                      <span>Status</span>
+                      <span>Status <span className="font-normal text-kuartz-secondary">(required)</span></span>
                       <NativeSelect name="accessoryStatusId" required>
                         {accessoryStatuses.map((status) => (
                           <option key={status.id} value={status.id}>{status.name}</option>
@@ -1174,7 +1184,6 @@ export default async function OrderDetailPage({
                       <span>Notes <span className="font-normal text-kuartz-secondary">(optional)</span></span>
                       <textarea name="notes" className={textareaClass} />
                     </label>
-                    <Button type="submit" className="sm:col-span-2">Add Accessory</Button>
                   </form>
                 </FormModal>
               ) : (
@@ -1418,6 +1427,7 @@ export default async function OrderDetailPage({
                 invoiceEditable={invoiceEditable}
                 today={today}
                 returnTo={paymentsReturnTo}
+                error={modal === "payment" ? error : undefined}
               />
             </div>
           ) : null}
@@ -1607,6 +1617,7 @@ function EmbeddedPayments({
   invoiceEditable,
   today,
   returnTo,
+  error,
 }: {
   orderId: string;
   invoice: OrderInvoice;
@@ -1617,6 +1628,7 @@ function EmbeddedPayments({
   invoiceEditable: boolean;
   today: string;
   returnTo: string;
+  error?: string;
 }) {
   if (!invoice) {
     return canManageInvoice ? (
@@ -1729,24 +1741,33 @@ function EmbeddedPayments({
 
         {canManageInvoice ? (
           <aside className="space-y-8">
-            <FormModal title="Payments" modalTitle="Record payment" buttonLabel="Record payment">
-              <form action={recordClientPaymentAction} className="space-y-4">
+            <FormModal
+              title="Payments"
+              modalTitle="Record payment"
+              buttonLabel="Record payment"
+              eyebrow="Payments"
+              formId="record-order-payment-form"
+              submitLabel="Record payment"
+              pendingLabel="Recording payment..."
+              size="sm"
+              error={error}
+            >
+              <form id="record-order-payment-form" action={recordClientPaymentAction} className="space-y-4">
                 <input type="hidden" name="orderId" value={orderId} />
                 <input type="hidden" name="returnTo" value={returnTo} />
                 <input type="hidden" name="invoiceId" value={invoice.id} />
                 <label className="form-group">
-                  <span>Amount</span>
-                  <MoneyInput name="amount" required />
+                  <span>Amount <span className="font-normal text-kuartz-secondary">(required)</span></span>
+                  <MoneyInput name="amount" required data-modal-autofocus />
                 </label>
                 <label className="form-group">
-                  <span>Paid on</span>
+                  <span>Paid on <span className="font-normal text-kuartz-secondary">(required)</span></span>
                   <Input type="date" name="paidOn" defaultValue={today} required />
                 </label>
                 <label className="form-group">
                   <span>Reference <span className="font-normal text-kuartz-secondary">(optional)</span></span>
                   <Input name="reference" maxLength={200} />
                 </label>
-                <Button className="w-full" type="submit">Record payment</Button>
               </form>
             </FormModal>
             {invoice.lifecycle !== "void" ? (

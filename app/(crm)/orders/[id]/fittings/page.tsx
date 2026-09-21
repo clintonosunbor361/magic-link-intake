@@ -199,7 +199,7 @@ export default async function OrderFittingsPage({
                           <li key={note.id} className="py-3">
                             <p className="text-sm leading-6 text-kuartz-body">{note.note}</p>
                             <p className="mt-1 text-xs text-kuartz-muted">
-                              {note.createdByName} · {dateTimeFormatter.format(note.createdAt)}
+                              {note.createdByName} Â· {dateTimeFormatter.format(note.createdAt)}
                             </p>
                           </li>
                         ))}
@@ -261,7 +261,7 @@ export default async function OrderFittingsPage({
                                   : `Moved from ${entry.previousScheduledAt ? dateTimeFormatter.format(entry.previousScheduledAt) : "-"} to ${dateTimeFormatter.format(entry.newScheduledAt)}`}
                             </p>
                             <p className="mt-1 text-xs text-kuartz-muted">
-                              {entry.changedByName} · {dateTimeFormatter.format(entry.createdAt)}
+                              {entry.changedByName} Â· {dateTimeFormatter.format(entry.createdAt)}
                             </p>
                             {entry.note ? <p className="mt-1 text-sm text-kuartz-secondary">{entry.note}</p> : null}
                           </li>

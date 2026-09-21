@@ -37,7 +37,7 @@ export async function createVendorAction(formData: FormData) {
       createVendorRepository(),
     );
   } catch (error) {
-    redirect(`${returnTo}${returnTo.includes("?") ? "&" : "?"}error=${encodeURIComponent(messageFrom(error, "The Vendor could not be created."))}`);
+    redirect(`${returnTo}${returnTo.includes("?") ? "&" : "?"}error=${encodeURIComponent(messageFrom(error, "The Vendor could not be created."))}&modal=vendor`);
   }
 
   revalidatePath("/vendors");

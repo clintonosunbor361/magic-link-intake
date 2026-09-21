@@ -30,7 +30,7 @@ export default async function OrderAccessoriesPage({
   searchParams,
 }: {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ error?: string }>;
+  searchParams: Promise<{ error?: string; modal?: string }>;
 }) {
   const session = await requireStaffSession();
   const [{ id }, query] = await Promise.all([params, searchParams]);
@@ -64,7 +64,7 @@ export default async function OrderAccessoriesPage({
         </p>
       </header>
 
-      {query.error ? (
+      {query.error && !query.modal ? (
         <p className="form-alert mt-6" role="alert">
           {query.error}
         </p>
@@ -243,12 +243,22 @@ export default async function OrderAccessoriesPage({
 
         <aside>
           {canConfigure ? (
-            <FormModal title="Accessories" modalTitle="Add accessory" buttonLabel="Add Accessory">
-            <form action={createAccessoryItemAction} className="space-y-4">
+            <FormModal
+              title="Accessories"
+              modalTitle="Add accessory"
+              buttonLabel="Add Accessory"
+              eyebrow="Accessories"
+              formId="add-accessory-form"
+              submitLabel="Add Accessory"
+              pendingLabel="Adding accessory..."
+              size="lg"
+              error={query.modal === "accessory" ? query.error : undefined}
+            >
+            <form id="add-accessory-form" action={createAccessoryItemAction} className="space-y-4">
               <input type="hidden" name="orderId" value={id} />
               <label className="form-group">
-                <span>Type</span>
-                <NativeSelect name="accessoryTypeId" required>
+                <span>Type <span className="font-normal text-kuartz-secondary">(required)</span></span>
+                <NativeSelect name="accessoryTypeId" required data-modal-autofocus>
                   {types.map((type) => (
                     <option key={type.id} value={type.id}>
                       {type.name}
@@ -315,9 +325,6 @@ export default async function OrderAccessoriesPage({
                 </span>
                 <textarea name="notes" className={textareaClass} />
               </label>
-              <Button className="w-full" type="submit">
-                Add Accessory
-              </Button>
             </form>
             </FormModal>
           ) : null}

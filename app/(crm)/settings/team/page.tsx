@@ -15,7 +15,7 @@ import { FormModal } from "@/components/ui/form-modal";
 export default async function TeamPage({
   searchParams,
 }: {
-  searchParams: Promise<{ error?: string; invited?: string }>;
+  searchParams: Promise<{ error?: string; invited?: string; modal?: string }>;
 }) {
   const session = await requireStaffSession();
   if (!canManageTeam(session.role)) redirect("/");
@@ -41,24 +41,33 @@ export default async function TeamPage({
       <section className="mt-9">
         <div className="flex flex-wrap items-center justify-between gap-4">
           <h2 className="section-title">Active staff</h2>
-          <FormModal title="Invite staff" buttonLabel="Invite staff" error={params.error} showSectionTitle={false}>
-            <form action={inviteStaffMemberAction} className="space-y-4">
+          <FormModal
+            title="Invite staff"
+            buttonLabel="Invite staff"
+            error={params.modal === "invite" ? params.error : undefined}
+            showSectionTitle={false}
+            formId="invite-staff-form"
+            submitLabel="Send invitation"
+            pendingLabel="Sending invitation..."
+            size="sm"
+            eyebrow="Team"
+          >
+            <form id="invite-staff-form" action={inviteStaffMemberAction} className="space-y-4">
               <label className="form-group">
-                <span>Full name</span>
-                <Input name="fullName" required />
+                <span>Full name <span className="font-normal text-kuartz-secondary">(required)</span></span>
+                <Input name="fullName" required autoComplete="name" data-modal-autofocus />
               </label>
               <label className="form-group">
-                <span>Email address</span>
-                <Input name="email" type="email" required />
+                <span>Email address <span className="font-normal text-kuartz-secondary">(required)</span></span>
+                <Input name="email" type="email" required autoComplete="email" />
               </label>
               <label className="form-group">
-                <span>Role</span>
+                <span>Role <span className="font-normal text-kuartz-secondary">(required)</span></span>
                 <NativeSelect name="role" defaultValue="admin_assistant">
                   <option value="admin_assistant">Admin Assistant</option>
                   <option value="super_admin">Super Admin</option>
                 </NativeSelect>
               </label>
-              <Button className="w-full" type="submit">Send invitation</Button>
             </form>
           </FormModal>
         </div>

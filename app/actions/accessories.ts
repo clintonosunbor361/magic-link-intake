@@ -12,7 +12,7 @@ import {
 import { requireStaffSession } from "@/lib/auth/session";
 import { parseMoneyToMinorUnits } from "@/lib/forms/money";
 import { readFormString } from "@/lib/forms/read-string";
-import { safeReturnPath, withReturnError } from "@/lib/forms/return-path";
+import { safeReturnPath, withReturnError, withReturnErrorContext } from "@/lib/forms/return-path";
 
 function accessoriesPath(orderId: string): string {
   return `/orders/${orderId}/accessories`;
@@ -52,7 +52,7 @@ export async function createAccessoryItemAction(formData: FormData) {
     );
   } catch (error) {
     const message = error instanceof Error ? error.message : "The Accessory could not be added.";
-    redirect(withReturnError(returnTo, message));
+    redirect(withReturnErrorContext(returnTo, message, "accessory"));
   }
 
   revalidatePath(accessoriesPath(orderId));

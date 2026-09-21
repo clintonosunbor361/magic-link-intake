@@ -29,7 +29,7 @@ function parseSortDirection(value: string | undefined): SortDirection {
 export default async function VendorsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ q?: string; archived?: string; error?: string; sort?: string; direction?: string }>;
+  searchParams: Promise<{ q?: string; archived?: string; error?: string; sort?: string; direction?: string; modal?: string }>;
 }) {
   const session = await requireStaffSession();
   const params = await searchParams;
@@ -46,24 +46,24 @@ export default async function VendorsPage({
 
   return (
     <div>
-      <VendorDirectoryHeader error={params.error}>
+      <VendorDirectoryHeader error={params.modal === "vendor" ? params.error : undefined}>
         <form id="add-vendor-form" action={createVendorAction} className="grid gap-4 sm:grid-cols-2">
           <input type="hidden" name="returnTo" value="/vendors" />
           <label className="form-group">
-            <span>Name</span>
-            <Input name="name" required maxLength={120} />
+            <span>Name <span className="font-normal text-kuartz-secondary">(required)</span></span>
+            <Input name="name" required maxLength={120} autoComplete="name" data-modal-autofocus />
           </label>
           <label className="form-group">
             <span>Phone <span className="font-normal text-kuartz-secondary">(optional)</span></span>
-            <Input name="phone" type="tel" autoComplete="off" />
+            <Input name="phone" type="tel" autoComplete="tel" />
           </label>
           <label className="form-group">
             <span>Email <span className="font-normal text-kuartz-secondary">(optional)</span></span>
-            <Input name="email" type="email" autoComplete="off" />
+            <Input name="email" type="email" autoComplete="email" />
           </label>
           <label className="form-group">
             <span>Address <span className="font-normal text-kuartz-secondary">(optional)</span></span>
-            <Input name="address" maxLength={200} />
+            <Input name="address" maxLength={200} autoComplete="street-address" />
           </label>
 
           {specialties.length ? (

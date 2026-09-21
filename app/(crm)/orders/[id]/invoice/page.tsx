@@ -38,7 +38,7 @@ export default async function OrderInvoicePage({
   searchParams,
 }: {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ error?: string }>;
+  searchParams: Promise<{ error?: string; modal?: string }>;
 }) {
   const session = await requireStaffSession();
   if (!canManageFinance(session.role)) redirect("/");
@@ -79,7 +79,7 @@ export default async function OrderInvoicePage({
         ) : null}
       </header>
 
-      {query.error ? (
+      {query.error && !query.modal ? (
         <p className="form-alert mt-6" role="alert">
           {query.error}
         </p>
@@ -227,16 +227,26 @@ export default async function OrderInvoicePage({
             {canManage ? (
               <>
                 <div>
-                  <FormModal title="Payments" modalTitle="Record payment" buttonLabel="Record payment">
-                    <form action={recordClientPaymentAction} className="space-y-4">
+                  <FormModal
+                    title="Payments"
+                    modalTitle="Record payment"
+                    buttonLabel="Record payment"
+                    eyebrow="Payments"
+                    formId="record-invoice-payment-form"
+                    submitLabel="Record payment"
+                    pendingLabel="Recording payment..."
+                    size="sm"
+                    error={query.modal === "payment" ? query.error : undefined}
+                  >
+                    <form id="record-invoice-payment-form" action={recordClientPaymentAction} className="space-y-4">
                     <input type="hidden" name="orderId" value={id} />
                     <input type="hidden" name="invoiceId" value={invoice.id} />
                     <label className="form-group">
-                      <span>Amount (₦)</span>
-                      <MoneyInput name="amount" required />
+                      <span>Amount (₦) <span className="font-normal text-kuartz-secondary">(required)</span></span>
+                      <MoneyInput name="amount" required data-modal-autofocus />
                     </label>
                     <label className="form-group">
-                      <span>Paid on</span>
+                      <span>Paid on <span className="font-normal text-kuartz-secondary">(required)</span></span>
                       <Input type="date" name="paidOn" defaultValue={today} required />
                     </label>
                     <label className="form-group">
@@ -245,9 +255,6 @@ export default async function OrderInvoicePage({
                       </span>
                       <Input name="reference" maxLength={200} />
                     </label>
-                    <Button className="w-full" type="submit">
-                      Record payment
-                    </Button>
                   </form>
                   </FormModal>
                 </div>

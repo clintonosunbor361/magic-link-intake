@@ -17,7 +17,7 @@ import {
 } from "@/lib/finance/repository";
 import { parseMoneyToMinorUnits } from "@/lib/forms/money";
 import { readFormString } from "@/lib/forms/read-string";
-import { safeReturnPath, withReturnError } from "@/lib/forms/return-path";
+import { safeReturnPath, withReturnError, withReturnErrorContext } from "@/lib/forms/return-path";
 
 function readPayment(formData: FormData) {
   return {
@@ -52,7 +52,7 @@ export async function recordClientPaymentAction(formData: FormData) {
     );
   } catch (error) {
     const message = error instanceof Error ? error.message : "The payment could not be recorded.";
-    redirect(withReturnError(returnTo, message));
+    redirect(withReturnErrorContext(returnTo, message, "payment"));
   }
 
   revalidatePath(invoicePath(orderId));
@@ -136,7 +136,7 @@ export async function recordVendorPaymentAction(formData: FormData) {
     );
   } catch (error) {
     const message = error instanceof Error ? error.message : "The Vendor payment could not be recorded.";
-    redirect(`/production/${assignmentId}?error=${encodeURIComponent(message)}`);
+    redirect(`/production/${assignmentId}?error=${encodeURIComponent(message)}&modal=vendor-payment`);
   }
 
   revalidatePath(`/production/${assignmentId}`);

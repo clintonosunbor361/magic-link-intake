@@ -6,6 +6,7 @@ import { useEffect, useRef, useState } from "react";
 import {
   Bell,
   BriefcaseBusiness,
+  ChevronDown,
   Factory,
   House,
   Link2,
@@ -32,7 +33,7 @@ const operationalNavigation: NavItem[] = [
     href: "/clients",
     label: "Clients",
     icon: UsersRound,
-    children: [{ href: "/clients/intake-links", label: "Generated intake links", icon: Link2 }],
+    children: [{ href: "/clients/intake-links", label: "Generated Links", icon: Link2 }],
   },
   { href: "/orders", label: "Orders", icon: BriefcaseBusiness },
   // Vendors sits between Orders and Production because that is the workflow order: you assign a
@@ -45,6 +46,9 @@ const operationalNavigation: NavItem[] = [
 export function Navigation({ canManageTeam, canManageFinance }: { canManageTeam: boolean; canManageFinance: boolean }) {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
+  const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>(() => ({
+    "/clients": pathname.startsWith("/clients/intake-links"),
+  }));
   const triggerRef = useRef<HTMLButtonElement>(null);
   const closeRef = useRef<HTMLButtonElement>(null);
   const asideRef = useRef<HTMLElement>(null);
@@ -84,6 +88,11 @@ export function Navigation({ canManageTeam, canManageFinance }: { canManageTeam:
 
   useEffect(() => setOpen(false), [pathname]);
 
+  useEffect(() => {
+    if (!pathname.startsWith("/clients/intake-links")) return;
+    setExpandedGroups((current) => ({ ...current, "/clients": true }));
+  }, [pathname]);
+
   return (
     <>
       <Button ref={triggerRef} variant="ghost" className="mobile-menu-button" type="button" onClick={() => setOpen(true)} aria-label="Open navigation" aria-expanded={open}>
@@ -99,13 +108,33 @@ export function Navigation({ canManageTeam, canManageFinance }: { canManageTeam:
           {links.map(({ href, label, icon: Icon, activePrefix, children }) => {
             const childActive = children?.some((child) => pathname.startsWith(child.href)) ?? false;
             const active = href === "/" ? pathname === href : !childActive && pathname.startsWith(activePrefix ?? href);
+            const expanded = expandedGroups[href] ?? false;
             return (
               <div key={href}>
-                <Link href={href} onClick={() => setOpen(false)} className={`nav-link ${active ? "nav-link-active" : ""}`}>
-                  <Icon size={18} strokeWidth={1.8} />
-                  <span>{label}</span>
-                </Link>
-                {children?.map((child) => {
+                <div className={children ? "grid grid-cols-[minmax(0,1fr)_2.75rem] items-stretch" : undefined}>
+                  <Link href={href} onClick={() => setOpen(false)} className={`nav-link ${active ? "nav-link-active" : ""}`}>
+                    <Icon size={18} strokeWidth={1.8} />
+                    <span>{label}</span>
+                  </Link>
+                  {children ? (
+                    <button
+                      type="button"
+                      aria-label={`${expanded ? "Collapse" : "Expand"} ${label} submenu`}
+                      aria-expanded={expanded}
+                      aria-controls={`nav-children-${label.toLowerCase().replaceAll(" ", "-")}`}
+                      className="flex min-h-11 cursor-pointer items-center justify-center rounded-[0.65rem] text-white/60 transition-colors hover:bg-white/10 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-kuartz-lime"
+                      onClick={() => setExpandedGroups((current) => ({ ...current, [href]: !expanded }))}
+                    >
+                      <ChevronDown
+                        size={17}
+                        strokeWidth={1.8}
+                        aria-hidden="true"
+                        className={`transition-transform duration-200 ${expanded ? "rotate-180" : ""}`}
+                      />
+                    </button>
+                  ) : null}
+                </div>
+                {children && expanded ? <div id={`nav-children-${label.toLowerCase().replaceAll(" ", "-")}`}>{children.map((child) => {
                   const ChildIcon = child.icon;
                   const isActive = pathname.startsWith(child.href);
                   return (
@@ -124,7 +153,7 @@ export function Navigation({ canManageTeam, canManageFinance }: { canManageTeam:
                       <span>{child.label}</span>
                     </Link>
                   );
-                })}
+                })}</div> : null}
               </div>
             );
           })}
