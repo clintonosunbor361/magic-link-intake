@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Ruler, X } from "lucide-react";
+import { Search, Ruler, X } from "lucide-react";
 import { createMeasurementFieldDefinitionAction } from "@/app/actions/measurement-field-definitions";
 import { setMeasurementValuesAction } from "@/app/actions/measurement-profiles";
 import { Button } from "@/components/ui/button";
@@ -33,12 +33,17 @@ export function MeasurementDrawer({
   canAddCustomFields?: boolean;
 }) {
   const [open, setOpen] = useState(false);
+  const [searchTerm, setSearchTerm] = useState("");
   const triggerRef = useRef<HTMLButtonElement>(null);
   const closeRef = useRef<HTMLButtonElement>(null);
   const targetPath = returnTo ?? (orderId ? `/orders/${orderId}?tab=measurements` : `/clients/${clientId}`);
   const nextSortOrder = fields.length ? fields.length + 1 : 1;
   const hasRecordedMeasurements = fields.some((field) => field.value);
   const actionLabel = hasRecordedMeasurements ? "Edit measurements" : "Add measurements";
+  const normalizedSearch = searchTerm.trim().toLowerCase();
+  const visibleFieldCount = normalizedSearch
+    ? fields.filter((field) => `${field.fieldName} ${field.unit}`.toLowerCase().includes(normalizedSearch)).length
+    : fields.length;
 
   function closeDrawer() {
     setOpen(false);
@@ -48,11 +53,16 @@ export function MeasurementDrawer({
   useEffect(() => {
     if (!open) return;
     closeRef.current?.focus();
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key === "Escape") closeDrawer();
     };
     document.addEventListener("keydown", onKeyDown);
-    return () => document.removeEventListener("keydown", onKeyDown);
+    return () => {
+      document.removeEventListener("keydown", onKeyDown);
+      document.body.style.overflow = previousOverflow;
+    };
   }, [open]);
 
   return (
@@ -90,6 +100,24 @@ export function MeasurementDrawer({
             </div>
 
             <div className="min-h-0 flex-1 overflow-y-auto px-5 py-5 sm:px-6">
+              <label className="form-group mb-5">
+                <span>Search measurements</span>
+                <span className="relative block">
+                  <Search
+                    size={17}
+                    aria-hidden="true"
+                    className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-kuartz-muted"
+                  />
+                  <Input
+                    type="search"
+                    value={searchTerm}
+                    onChange={(event) => setSearchTerm(event.target.value)}
+                    placeholder="Search body part or unit"
+                    className="pl-12"
+                  />
+                </span>
+              </label>
+
               {canAddCustomFields ? (
                 <form action={createMeasurementFieldDefinitionAction} className="mb-5 rounded-[0.95rem] border border-kuartz-line bg-white/78 p-4">
                   <input type="hidden" name="returnTo" value={targetPath} />
@@ -116,9 +144,17 @@ export function MeasurementDrawer({
                 {orderId ? <input type="hidden" name="returnToOrderId" value={orderId} /> : null}
                 <input type="hidden" name="measurementProfileId" value={measurementProfileId} />
                 <input type="hidden" name="returnTo" value={targetPath} />
+                {visibleFieldCount === 0 ? (
+                  <p className="mb-4 rounded-[0.8rem] border border-kuartz-line bg-white/70 px-4 py-3 text-sm text-kuartz-muted">
+                    No measurements match your search.
+                  </p>
+                ) : null}
                 <div className="grid gap-4 sm:grid-cols-2">
-                  {fields.map((field) => (
-                    <div key={field.fieldId} className="rounded-[0.95rem] border border-kuartz-line bg-white/78 p-4">
+                  {fields.map((field) => {
+                    const isVisible =
+                      !normalizedSearch || `${field.fieldName} ${field.unit}`.toLowerCase().includes(normalizedSearch);
+                    return (
+                    <div key={field.fieldId} className={isVisible ? "rounded-[0.95rem] border border-kuartz-line bg-white/78 p-4" : "hidden"}>
                       <input type="hidden" name="fieldDefinitionId" value={field.fieldId} />
                       <input type="hidden" name={`version:${field.fieldId}`} value={field.version} />
                       <input type="hidden" name={`previousValue:${field.fieldId}`} value={field.value ?? ""} />
@@ -128,14 +164,20 @@ export function MeasurementDrawer({
                         </span>
                         <Input name={`value:${field.fieldId}`} defaultValue={field.value ?? ""} />
                       </label>
-                      <label className="form-group mt-3">
-                        <span>
-                          Note <span className="font-normal text-kuartz-secondary">(optional)</span>
-                        </span>
-                        <Input name={`note:${field.fieldId}`} />
-                      </label>
+                      <details className="mt-3">
+                        <summary className="cursor-pointer text-sm font-semibold text-kuartz-secondary underline-offset-4 hover:text-kuartz-ink hover:underline">
+                          Add note
+                        </summary>
+                        <label className="form-group mt-3">
+                          <span>
+                            Note <span className="font-normal text-kuartz-secondary">(optional)</span>
+                          </span>
+                          <Input name={`note:${field.fieldId}`} />
+                        </label>
+                      </details>
                     </div>
-                  ))}
+                    );
+                  })}
                 </div>
               </form>
             </div>

@@ -7,6 +7,7 @@ import { createOrderInvoice, updateDraftInvoice, voidInvoice } from "@/lib/finan
 import { createInvoiceRepository } from "@/lib/finance/repository";
 import { parseMoneyToMinorUnits } from "@/lib/forms/money";
 import { readFormString } from "@/lib/forms/read-string";
+import { safeReturnPath, withReturnError } from "@/lib/forms/return-path";
 import type { InvoiceLineItemInput } from "@/lib/finance/invoice";
 
 /**
@@ -37,9 +38,18 @@ function readDueDate(formData: FormData): string | null {
   return readFormString(formData, "dueDate") || null;
 }
 
+function invoicePath(orderId: string): string {
+  return `/orders/${orderId}/invoice`;
+}
+
+function readReturnTo(formData: FormData, orderId: string): string {
+  return safeReturnPath(readFormString(formData, "returnTo"), invoicePath(orderId));
+}
+
 export async function createInvoiceAction(formData: FormData) {
   const session = await requireStaffSession();
   const orderId = readFormString(formData, "orderId");
+  const returnTo = readReturnTo(formData, orderId);
 
   try {
     await createOrderInvoice(
@@ -57,18 +67,19 @@ export async function createInvoiceAction(formData: FormData) {
     );
   } catch (error) {
     const message = error instanceof Error ? error.message : "The Invoice could not be created.";
-    redirect(`/orders/${orderId}/invoice?error=${encodeURIComponent(message)}`);
+    redirect(withReturnError(returnTo, message));
   }
 
-  revalidatePath(`/orders/${orderId}/invoice`);
+  revalidatePath(invoicePath(orderId));
   revalidatePath(`/orders/${orderId}`);
-  redirect(`/orders/${orderId}/invoice`);
+  redirect(returnTo);
 }
 
 export async function updateInvoiceAction(formData: FormData) {
   const session = await requireStaffSession();
   const orderId = readFormString(formData, "orderId");
   const invoiceId = readFormString(formData, "invoiceId");
+  const returnTo = readReturnTo(formData, orderId);
 
   try {
     await updateDraftInvoice(
@@ -87,18 +98,19 @@ export async function updateInvoiceAction(formData: FormData) {
     );
   } catch (error) {
     const message = error instanceof Error ? error.message : "The Invoice could not be updated.";
-    redirect(`/orders/${orderId}/invoice?error=${encodeURIComponent(message)}`);
+    redirect(withReturnError(returnTo, message));
   }
 
-  revalidatePath(`/orders/${orderId}/invoice`);
+  revalidatePath(invoicePath(orderId));
   revalidatePath(`/orders/${orderId}`);
-  redirect(`/orders/${orderId}/invoice`);
+  redirect(returnTo);
 }
 
 export async function voidInvoiceAction(formData: FormData) {
   const session = await requireStaffSession();
   const orderId = readFormString(formData, "orderId");
   const invoiceId = readFormString(formData, "invoiceId");
+  const returnTo = readReturnTo(formData, orderId);
 
   try {
     await voidInvoice(
@@ -113,10 +125,10 @@ export async function voidInvoiceAction(formData: FormData) {
     );
   } catch (error) {
     const message = error instanceof Error ? error.message : "The Invoice could not be voided.";
-    redirect(`/orders/${orderId}/invoice?error=${encodeURIComponent(message)}`);
+    redirect(withReturnError(returnTo, message));
   }
 
-  revalidatePath(`/orders/${orderId}/invoice`);
+  revalidatePath(invoicePath(orderId));
   revalidatePath(`/orders/${orderId}`);
-  redirect(`/orders/${orderId}/invoice`);
+  redirect(returnTo);
 }

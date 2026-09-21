@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { redirect } from "next/navigation";
 import {
   archiveMeasurementRequirementAction,
@@ -11,6 +10,7 @@ import { listMeasurementFieldDefinitions } from "@/lib/measurement-field-definit
 import { listItemTypes } from "@/lib/item-types/repository";
 import { listMeasurementRequirements } from "@/lib/item-type-measurement-requirements/repository";
 import { Button } from "@/components/ui/button";
+import { SettingsNav } from "@/components/settings-nav";
 
 export default async function MeasurementRequirementsPage({
   searchParams,
@@ -41,23 +41,7 @@ export default async function MeasurementRequirementsPage({
         </p>
       </header>
 
-      <nav className="mt-6 flex gap-4 text-sm font-semibold">
-        <Link href="/settings/team" className="text-kuartz-secondary hover:text-kuartz-ink">
-          Team
-        </Link>
-        <Link href="/settings/item-types" className="text-kuartz-secondary hover:text-kuartz-ink">
-          Item types
-        </Link>
-        <Link href="/settings/consultation-note-sources" className="text-kuartz-secondary hover:text-kuartz-ink">
-          Consultation note sources
-        </Link>
-        <Link href="/settings/measurement-fields" className="text-kuartz-secondary hover:text-kuartz-ink">
-          Measurement fields
-        </Link>
-        <Link href="/settings/measurement-requirements" className="text-kuartz-ink underline">
-          Measurement requirements
-        </Link>
-      </nav>
+      <SettingsNav current="/settings/measurement-requirements" />
 
       {params.error ? (
         <p className="form-alert mt-6" role="alert">

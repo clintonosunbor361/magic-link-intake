@@ -9,7 +9,11 @@ import { TRIGGER_LABELS } from "@/lib/notifications/triggers";
 import { getOrganizationTimezone } from "@/lib/organizations/repository";
 import { computeUrgencyBand, urgencyToneClasses } from "@/lib/production/urgency";
 
-const dateTimeFormatter = new Intl.DateTimeFormat("en-NG", { dateStyle: "medium", timeStyle: "short" });
+const dateTimeFormatter = new Intl.DateTimeFormat("en-NG", {
+  dateStyle: "medium",
+  timeStyle: "short",
+  timeZone: "Africa/Lagos",
+});
 
 const SOURCE_LABELS: Record<string, string> = {
   client_task: "To-do",

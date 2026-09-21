@@ -10,7 +10,7 @@ import { InvoiceLineItemsFields } from "@/components/finance/invoice-line-items-
 import { SendInvoiceButton } from "@/components/finance/send-invoice-button";
 import { Button } from "@/components/ui/button";
 import { Breadcrumbs } from "@/components/ui/breadcrumbs";
-import { FormDisclosure } from "@/components/ui/form-disclosure";
+import { FormModal } from "@/components/ui/form-modal";
 import { MoneyInput } from "@/components/ui/money-input";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Input } from "@/components/ui/input";
@@ -31,6 +31,7 @@ import { getOrganizationTimezone } from "@/lib/organizations/repository";
 
 const textareaClass =
   "min-h-[3.5rem] w-full rounded-[0.8rem] border border-kuartz-control bg-white/70 px-3.5 py-3 text-sm text-kuartz-ink outline-none focus:border-[#88925f] focus:bg-white focus:ring-4 focus:ring-kuartz-lime/20";
+const dateFormatter = new Intl.DateTimeFormat("en-NG", { dateStyle: "medium", timeZone: "Africa/Lagos" });
 
 export default async function OrderInvoicePage({
   params,
@@ -226,8 +227,8 @@ export default async function OrderInvoicePage({
             {canManage ? (
               <>
                 <div>
-                  <FormDisclosure title="Payments" buttonLabel="Record payment">
-                  <form action={recordClientPaymentAction} className="space-y-4 border-t border-kuartz-line pt-5">
+                  <FormModal title="Payments" modalTitle="Record payment" buttonLabel="Record payment">
+                    <form action={recordClientPaymentAction} className="space-y-4">
                     <input type="hidden" name="orderId" value={id} />
                     <input type="hidden" name="invoiceId" value={invoice.id} />
                     <label className="form-group">
@@ -248,7 +249,7 @@ export default async function OrderInvoicePage({
                       Record payment
                     </Button>
                   </form>
-                  </FormDisclosure>
+                  </FormModal>
                 </div>
 
                 {invoice.lifecycle !== "void" ? (
@@ -256,7 +257,7 @@ export default async function OrderInvoicePage({
                     <h2 className="section-title">Send</h2>
                     <p className="mt-2 text-sm leading-6 text-kuartz-secondary">
                       {invoice.sentAt
-                        ? `Sent ${invoice.sentAt.toISOString().slice(0, 10)}.`
+                        ? `Sent ${dateFormatter.format(invoice.sentAt)}.`
                         : "Generate the invoice PDF and mark it as sent."}
                     </p>
                     {!invoice.sentAt ? <SendInvoiceButton invoiceId={invoice.id} /> : null}
@@ -281,7 +282,7 @@ export default async function OrderInvoicePage({
                   </div>
                 ) : (
                   <p className="rounded-[0.8rem] border border-kuartz-line bg-[#f6f6f3] px-3 py-2.5 text-sm leading-6 text-kuartz-secondary">
-                    Voided {invoice.voidedAt?.toISOString().slice(0, 10)}. Reason: {invoice.voidReason}
+                    Voided {invoice.voidedAt ? dateFormatter.format(invoice.voidedAt) : ""}. Reason: {invoice.voidReason}
                   </p>
                 )}
               </>

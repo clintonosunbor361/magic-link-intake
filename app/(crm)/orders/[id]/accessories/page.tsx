@@ -8,7 +8,7 @@ import {
 } from "@/app/actions/accessories";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
-import { FormDisclosure } from "@/components/ui/form-disclosure";
+import { FormModal } from "@/components/ui/form-modal";
 import { Input } from "@/components/ui/input";
 import { MoneyInput } from "@/components/ui/money-input";
 import { NativeSelect } from "@/components/ui/native-select";
@@ -243,8 +243,8 @@ export default async function OrderAccessoriesPage({
 
         <aside>
           {canConfigure ? (
-            <FormDisclosure title="Accessories" buttonLabel="Add Accessory">
-            <form action={createAccessoryItemAction} className="space-y-4 border-t border-kuartz-line pt-5">
+            <FormModal title="Accessories" modalTitle="Add accessory" buttonLabel="Add Accessory">
+            <form action={createAccessoryItemAction} className="space-y-4">
               <input type="hidden" name="orderId" value={id} />
               <label className="form-group">
                 <span>Type</span>
@@ -319,7 +319,7 @@ export default async function OrderAccessoriesPage({
                 Add Accessory
               </Button>
             </form>
-            </FormDisclosure>
+            </FormModal>
           ) : null}
         </aside>
       </section>

@@ -40,7 +40,7 @@ export function OrderWorkspaceNav({ tabs, activeTab }: OrderWorkspaceNavProps) {
       </details>
 
       <nav aria-label="Order workspace tabs" className="hidden border-b border-kuartz-line md:block">
-        <div className="flex flex-wrap gap-2">
+        <div className="flex flex-wrap gap-x-8 gap-y-1">
           {tabs.map((tab) => {
             const isActive = tab.id === activeTab;
             return (
@@ -50,8 +50,8 @@ export function OrderWorkspaceNav({ tabs, activeTab }: OrderWorkspaceNavProps) {
                 aria-current={isActive ? "page" : undefined}
                 className={
                   isActive
-                    ? "inline-flex min-h-11 items-center border-b-2 border-kuartz-lime px-3 text-sm font-extrabold text-kuartz-ink"
-                    : "inline-flex min-h-11 items-center border-b-2 border-transparent px-3 text-sm font-bold text-kuartz-secondary transition-colors hover:text-kuartz-ink"
+                    ? "inline-flex min-h-11 items-center border-b-2 border-kuartz-lime px-2 text-sm font-extrabold text-kuartz-ink"
+                    : "inline-flex min-h-11 items-center border-b-2 border-transparent px-2 text-sm font-medium text-kuartz-secondary transition-colors hover:text-kuartz-ink"
                 }
               >
                 {tab.label}

@@ -1,6 +1,6 @@
 import "server-only";
 
-import { and, desc, eq, isNull, or, sql } from "drizzle-orm";
+import { and, asc, desc, eq, isNull, or, sql } from "drizzle-orm";
 import { getDatabase } from "@/db";
 import { clients, orders } from "@/db/schema";
 import { normalizeEmail, normalizeName, normalizePhone } from "@/lib/clients/duplicate-match";
@@ -139,10 +139,19 @@ export function createClientRepository(): ClientRepository {
 }
 
 export const CLIENTS_PAGE_SIZE = 25;
+export type ClientSort = "client" | "contact" | "orders" | "status" | "created";
+export type SortDirection = "asc" | "desc";
 
 export async function listClients(
   organizationId: string,
-  options: { includeArchived?: boolean; search?: string; page?: number; orderState?: "all" | "without_orders" | "with_orders" } = {},
+  options: {
+    includeArchived?: boolean;
+    search?: string;
+    page?: number;
+    orderState?: "all" | "without_orders" | "with_orders";
+    sort?: ClientSort;
+    direction?: SortDirection;
+  } = {},
 ) {
   const db = getDatabase();
   const conditions = [eq(clients.organizationId, organizationId)];
@@ -171,6 +180,27 @@ export async function listClients(
   }
 
   const page = Math.max(1, options.page ?? 1);
+  const latestOrderTitle = sql<string | null>`(
+    select o.title from orders o
+    where o.client_id = ${sql.raw('"clients"."id"')} and o.archived_at is null
+    order by o.created_at desc
+    limit 1
+  )`;
+  const orderCount = sql<number>`(
+    select count(*)::int from orders o
+    where o.client_id = ${sql.raw('"clients"."id"')} and o.archived_at is null
+  )`;
+  const sortColumn =
+    options.sort === "client"
+      ? clients.fullName
+      : options.sort === "contact"
+        ? clients.primaryPhoneNormalized
+        : options.sort === "orders"
+          ? latestOrderTitle
+          : options.sort === "status"
+            ? clients.archivedAt
+            : clients.createdAt;
+  const sortExpression = options.direction === "asc" ? asc(sortColumn) : desc(sortColumn);
   const rows = await db
     .select({
       id: clients.id,
@@ -179,20 +209,12 @@ export async function listClients(
       email: clients.email,
       archivedAt: clients.archivedAt,
       createdAt: clients.createdAt,
-      latestOrderTitle: sql<string | null>`(
-        select o.title from orders o
-        where o.client_id = ${sql.raw('"clients"."id"')} and o.archived_at is null
-        order by o.created_at desc
-        limit 1
-      )`,
-      orderCount: sql<number>`(
-        select count(*)::int from orders o
-        where o.client_id = ${sql.raw('"clients"."id"')} and o.archived_at is null
-      )`,
+      latestOrderTitle,
+      orderCount,
     })
     .from(clients)
     .where(and(...conditions))
-    .orderBy(desc(clients.createdAt))
+    .orderBy(sortExpression, desc(clients.createdAt))
     .limit(CLIENTS_PAGE_SIZE + 1)
     .offset((page - 1) * CLIENTS_PAGE_SIZE);
 

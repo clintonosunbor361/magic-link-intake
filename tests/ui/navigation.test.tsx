@@ -30,6 +30,10 @@ describe("mobile staff navigation", () => {
 
   it("does not expose Settings to an Admin Assistant", () => {
     render(<Navigation canManageTeam={false} canManageFinance={false} />);
+    expect(screen.getByRole("link", { name: "Generated intake links" })).toHaveAttribute(
+      "href",
+      "/clients/intake-links",
+    );
     expect(screen.queryByRole("link", { name: /settings/i })).not.toBeInTheDocument();
     expect(screen.queryByRole("link", { name: /finance/i })).not.toBeInTheDocument();
   });

@@ -11,6 +11,8 @@ import { formatMinorUnits } from "@/lib/forms/money";
 
 export const dynamic = "force-dynamic";
 
+const dateFormatter = new Intl.DateTimeFormat("en-NG", { dateStyle: "medium", timeZone: "Africa/Lagos" });
+
 type ConfirmPageProps = {
   params: Promise<{ token: string }>;
   searchParams: Promise<{ error?: string }>;
@@ -69,7 +71,7 @@ export default async function ConfirmPage({ params, searchParams }: ConfirmPageP
             <div className="space-y-4">
               <p className="font-semibold text-kuartz-navy">{content.orderTitle}</p>
               <p className="text-sm text-kuartz-muted">
-                Fitting on {content.scheduledAt.toISOString().slice(0, 10)}
+                Fitting on {dateFormatter.format(content.scheduledAt)}
                 {content.lookName ? ` · ${content.lookName}` : ""}
               </p>
               {content.clientSummary ? (

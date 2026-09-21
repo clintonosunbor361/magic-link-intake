@@ -27,12 +27,26 @@ import {
 import { listFittingHistory, listFittingNotes, listFittingSessionsForOrder } from "@/lib/fittings/repository";
 import { getOrderWithLooksAndItems } from "@/lib/orders/repository";
 
-const dateTimeFormatter = new Intl.DateTimeFormat("en-NG", { dateStyle: "medium", timeStyle: "short" });
+const dateTimeFormatter = new Intl.DateTimeFormat("en-NG", {
+  dateStyle: "medium",
+  timeStyle: "short",
+  timeZone: "Africa/Lagos",
+});
 const textareaClass =
   "min-h-[3.5rem] w-full rounded-[0.8rem] border border-kuartz-control bg-white/70 px-3.5 py-3 text-sm text-kuartz-ink outline-none focus:border-[#88925f] focus:bg-white focus:ring-4 focus:ring-kuartz-lime/20";
 
 function toDateTimeLocalValue(date: Date): string {
-  return date.toISOString().slice(0, 16);
+  const parts = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Africa/Lagos",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+  }).formatToParts(date);
+  const value = Object.fromEntries(parts.map((part) => [part.type, part.value]));
+  return `${value.year}-${value.month}-${value.day}T${value.hour}:${value.minute}`;
 }
 
 export default async function OrderFittingsPage({
@@ -185,7 +199,7 @@ export default async function OrderFittingsPage({
                           <li key={note.id} className="py-3">
                             <p className="text-sm leading-6 text-kuartz-body">{note.note}</p>
                             <p className="mt-1 text-xs text-kuartz-muted">
-                              {note.createdByName} Â· {note.createdAt.toISOString().slice(0, 16).replace("T", " ")}
+                              {note.createdByName} · {dateTimeFormatter.format(note.createdAt)}
                             </p>
                           </li>
                         ))}
@@ -247,7 +261,7 @@ export default async function OrderFittingsPage({
                                   : `Moved from ${entry.previousScheduledAt ? dateTimeFormatter.format(entry.previousScheduledAt) : "-"} to ${dateTimeFormatter.format(entry.newScheduledAt)}`}
                             </p>
                             <p className="mt-1 text-xs text-kuartz-muted">
-                              {entry.changedByName} Â· {entry.createdAt.toISOString().slice(0, 16).replace("T", " ")}
+                              {entry.changedByName} · {dateTimeFormatter.format(entry.createdAt)}
                             </p>
                             {entry.note ? <p className="mt-1 text-sm text-kuartz-secondary">{entry.note}</p> : null}
                           </li>

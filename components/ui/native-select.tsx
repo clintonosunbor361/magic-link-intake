@@ -1,10 +1,13 @@
 "use client";
 
 import * as React from "react";
+import { createPortal } from "react-dom";
 import { ChevronDown } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-type NativeSelectProps = React.ComponentProps<"select">;
+type NativeSelectProps = React.ComponentProps<"select"> & {
+  submitOnChange?: boolean;
+};
 
 type SelectOption = {
   value: string;
@@ -19,22 +22,29 @@ export function NativeSelect({
   name,
   required,
   disabled,
+  submitOnChange = false,
   "aria-label": ariaLabel,
 }: NativeSelectProps) {
   const id = React.useId();
   const rootRef = React.useRef<HTMLDivElement>(null);
+  const triggerRef = React.useRef<HTMLButtonElement>(null);
+  const menuRef = React.useRef<HTMLDivElement>(null);
   const options = React.useMemo(() => extractOptions(children), [children]);
   const initialValue = String(defaultValue ?? options[0]?.value ?? "");
   const [selected, setSelected] = React.useState(initialValue);
   const [open, setOpen] = React.useState(false);
   const [justSelected, setJustSelected] = React.useState(false);
+  const [menuPosition, setMenuPosition] = React.useState<React.CSSProperties | null>(null);
   const selectedOption = options.find((option) => option.value === selected);
 
   React.useEffect(() => {
     if (!open) return;
 
     function closeOnOutsideClick(event: PointerEvent) {
-      if (!rootRef.current?.contains(event.target as Node)) {
+      if (
+        !rootRef.current?.contains(event.target as Node) &&
+        !menuRef.current?.contains(event.target as Node)
+      ) {
         setOpen(false);
       }
     }
@@ -48,24 +58,63 @@ export function NativeSelect({
     document.addEventListener("pointerdown", closeOnOutsideClick);
     document.addEventListener("keydown", closeOnEscape);
 
+    function positionMenu() {
+      const rect = triggerRef.current?.getBoundingClientRect();
+      if (!rect) return;
+
+      const gap = 9;
+      const viewportPadding = 12;
+      const preferredHeight = Math.min(options.length * 48 + 16, 320);
+      const spaceBelow = window.innerHeight - rect.bottom - gap - viewportPadding;
+      const spaceAbove = rect.top - gap - viewportPadding;
+      const openAbove = spaceBelow < Math.min(preferredHeight, 180) && spaceAbove > spaceBelow;
+      const availableHeight = Math.max(120, openAbove ? spaceAbove : spaceBelow);
+
+      setMenuPosition({
+        position: "fixed",
+        left: rect.left,
+        right: "auto",
+        top: openAbove ? "auto" : rect.bottom + gap,
+        bottom: openAbove ? window.innerHeight - rect.top + gap : "auto",
+        width: rect.width,
+        maxHeight: Math.min(preferredHeight, availableHeight),
+        overflowY: "auto",
+        zIndex: 100,
+      });
+    }
+
+    positionMenu();
+    window.addEventListener("resize", positionMenu);
+    window.addEventListener("scroll", positionMenu, true);
+
     return () => {
       document.removeEventListener("pointerdown", closeOnOutsideClick);
       document.removeEventListener("keydown", closeOnEscape);
+      window.removeEventListener("resize", positionMenu);
+      window.removeEventListener("scroll", positionMenu, true);
     };
-  }, [open]);
+  }, [open, options.length]);
 
   function choose(option: SelectOption) {
     if (option.disabled) return;
+    if (option.value === selected) {
+      setOpen(false);
+      return;
+    }
     setSelected(option.value);
     setOpen(false);
     setJustSelected(true);
     window.setTimeout(() => setJustSelected(false), 360);
+    if (submitOnChange) {
+      window.setTimeout(() => rootRef.current?.closest("form")?.requestSubmit(), 0);
+    }
   }
 
   return (
     <div ref={rootRef} className="relative w-full">
       {name ? <input type="hidden" name={name} value={selected} required={required} /> : null}
       <button
+        ref={triggerRef}
         id={id}
         type="button"
         disabled={disabled}
@@ -86,7 +135,13 @@ export function NativeSelect({
         <ChevronDown className={`select-chevron ${open ? "select-chevron-open" : ""}`} aria-hidden="true" />
       </button>
 
-      <div role="listbox" aria-labelledby={id} className={`select-menu ${open ? "select-menu-open" : ""}`}>
+      {open && menuPosition ? createPortal(<div
+        ref={menuRef}
+        role="listbox"
+        aria-labelledby={id}
+        className="select-menu select-menu-open"
+        style={menuPosition}
+      >
         {options.map((option) => (
           <button
             key={`${option.value}-${option.label}`}
@@ -104,7 +159,7 @@ export function NativeSelect({
             {option.label}
           </button>
         ))}
-      </div>
+      </div>, document.body) : null}
     </div>
   );
 }

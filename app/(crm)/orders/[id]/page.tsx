@@ -25,15 +25,50 @@ import {
   reviseStyleDirectionFileAction,
   uploadStyleDirectionFileAction,
 } from "@/app/actions/style-direction-files";
+import {
+  archiveAccessoryItemAction,
+  createAccessoryItemAction,
+  restoreAccessoryItemAction,
+  updateAccessoryItemAction,
+} from "@/app/actions/accessories";
+import {
+  addFittingNoteAction,
+  archiveFittingAction,
+  changeFittingStatusAction,
+  issueFittingConfirmationAction,
+  rescheduleFittingAction,
+  restoreFittingAction,
+  scheduleFittingAction,
+  updateFittingSummaryAction,
+} from "@/app/actions/fittings";
+import { createInvoiceAction, updateInvoiceAction, voidInvoiceAction } from "@/app/actions/invoices";
+import { editClientPaymentAction, recordClientPaymentAction, voidClientPaymentAction } from "@/app/actions/payments";
 import { issueOrderConfirmationAction } from "@/app/actions/client-confirmations";
 import { completeOrderAction } from "@/app/actions/order-completion";
 import { requireStaffSession } from "@/lib/auth/session";
 import { canManageFinance, canManageMeasurementFieldDefinitions, canOverrideCompletionGate } from "@/lib/domain/access-control";
 import { mayArchive, mayRestore } from "@/lib/domain/record-lifecycle";
-import { listOutstandingAccessories } from "@/lib/accessories/repository";
-import { listOpenFittingSessions } from "@/lib/fittings/repository";
+import { listAccessoryItemsForOrder, listOutstandingAccessories } from "@/lib/accessories/repository";
+import { listAccessoryStatuses } from "@/lib/accessory-statuses/repository";
+import { listAccessoryTypes } from "@/lib/accessory-types/repository";
+import {
+  FITTING_SESSION_STATUSES,
+  FITTING_STATUS_LABELS,
+  isTerminalFittingStatus,
+} from "@/lib/fittings/fitting";
+import {
+  listFittingHistory,
+  listFittingNotes,
+  listFittingSessionsForOrder,
+  listOpenFittingSessions,
+} from "@/lib/fittings/repository";
 import { blocksOrderCompletion, computeOrderBalance } from "@/lib/finance/balances";
-import { deriveInvoiceStatus, INVOICE_STATUS_LABELS } from "@/lib/finance/invoice";
+import {
+  computeLineAmountMinor,
+  deriveInvoiceStatus,
+  detectPaymentMismatches,
+  INVOICE_STATUS_LABELS,
+} from "@/lib/finance/invoice";
 import { getInvoiceForOrder, listVendorsAwaitingRating } from "@/lib/finance/repository";
 import { getOrderWithLooksAndItems } from "@/lib/orders/repository";
 import { getMissingMeasurementsForOrder } from "@/lib/item-type-measurement-requirements/repository";
@@ -53,23 +88,35 @@ import {
 } from "@/lib/style-direction-approvals/repository";
 import { listConfirmationsForSubject } from "@/lib/client-confirmations/repository";
 import { formatMinorUnits } from "@/lib/forms/money";
-import { businessToday } from "@/lib/domain/business-date";
+import { businessToday, formatBusinessDate } from "@/lib/domain/business-date";
 import { getOrganizationTimezone } from "@/lib/organizations/repository";
 import { createMeasurementProfileRepository, listMeasurementProfileSnapshot } from "@/lib/measurement-profiles/repository";
 import { getOrCreateMeasurementProfile } from "@/lib/measurement-profiles/service";
 import { getLiveAssignmentDetailForItem } from "@/lib/production/assignment-repository";
 import { listVendorsWithStats } from "@/lib/vendors/repository";
+import { listStaffMembers } from "@/lib/team/repository";
+import { InvoiceLineItemsFields } from "@/components/finance/invoice-line-items-fields";
+import { SendInvoiceButton } from "@/components/finance/send-invoice-button";
 import { MeasurementDrawer } from "@/components/clients/measurement-drawer";
 import { ItemAssignmentDrawer, LookBulkAssignForm } from "@/components/production/assignment-drawer";
 import { OrderWorkspaceNav } from "@/components/orders/order-workspace-nav";
+import { LookWorkspaceAccordion } from "@/components/orders/look-workspace-accordion";
 import { Button } from "@/components/ui/button";
 import { Breadcrumbs } from "@/components/ui/breadcrumbs";
+import { EmptyState } from "@/components/ui/empty-state";
 import { FormDisclosure } from "@/components/ui/form-disclosure";
+import { FormModal } from "@/components/ui/form-modal";
 import { MoneyInput } from "@/components/ui/money-input";
 import { Input } from "@/components/ui/input";
 import { NativeSelect } from "@/components/ui/native-select";
 
-const dateFormatter = new Intl.DateTimeFormat("en-NG", { dateStyle: "medium", timeStyle: "short" });
+const dateFormatter = new Intl.DateTimeFormat("en-NG", {
+  dateStyle: "medium",
+  timeStyle: "short",
+  timeZone: "Africa/Lagos",
+});
+const textareaClass =
+  "min-h-[3.5rem] w-full rounded-[0.8rem] border border-kuartz-control bg-white/70 px-3.5 py-3 text-sm text-kuartz-ink outline-none focus:border-[#88925f] focus:bg-white focus:ring-4 focus:ring-kuartz-lime/20";
 const ORDER_WORKSPACE_TABS = [
   { id: "overview", label: "Overview" },
   { id: "looks", label: "Looks & Items" },
@@ -86,7 +133,18 @@ type OrderWorkspaceTab = (typeof ORDER_WORKSPACE_TABS)[number]["id"];
 
 // See app/actions/consultation-notes.ts's readOccurredAt for why this round-trips as UTC digits.
 function toDateTimeLocalValue(date: Date | null): string {
-  return date ? date.toISOString().slice(0, 16) : "";
+  if (!date) return "";
+  const parts = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Africa/Lagos",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+  }).formatToParts(date);
+  const value = Object.fromEntries(parts.map((part) => [part.type, part.value]));
+  return `${value.year}-${value.month}-${value.day}T${value.hour}:${value.minute}`;
 }
 
 export default async function OrderDetailPage({
@@ -164,11 +222,29 @@ export default async function OrderDetailPage({
     listOutstandingAccessories(session.organizationId, order.id),
     listOpenFittingSessions(session.organizationId, order.id),
   ]);
+  const [accessories, accessoryTypes, accessoryStatuses, staffMembers, fittingSessions] = await Promise.all([
+    listAccessoryItemsForOrder(session.organizationId, order.id),
+    listAccessoryTypes(session.organizationId),
+    listAccessoryStatuses(session.organizationId),
+    listStaffMembers(session.organizationId),
+    listFittingSessionsForOrder(session.organizationId, order.id),
+  ]);
+  const fittingDetail = await Promise.all(
+    fittingSessions.map(async (fitting) => ({
+      fitting,
+      notes: await listFittingNotes(session.organizationId, fitting.id),
+      history: await listFittingHistory(session.organizationId, fitting.id),
+      confirmations: await listConfirmationsForSubject(session.organizationId, "fitting_session", fitting.id),
+    })),
+  );
   const balance = computeOrderBalance({
     invoicedMinor: invoice ? invoice.totalMinor : null,
     paidMinor: invoice?.paidMinor ?? 0,
   });
   const invoiceStatus = invoice ? deriveInvoiceStatus({ lifecycle: invoice.lifecycle, balance }) : null;
+  const invoiceMismatches = invoice ? detectPaymentMismatches({ lifecycle: invoice.lifecycle, balance }) : [];
+  const canManageInvoice = canManageFinance(session.role);
+  const invoiceEditable = invoice?.lifecycle === "draft";
   const isCompleted = Boolean(order.completedAt);
   const completionBlocked = blocksOrderCompletion(balance);
   const activeTab: OrderWorkspaceTab = ORDER_WORKSPACE_TABS.some((item) => item.id === tab)
@@ -176,6 +252,16 @@ export default async function OrderDetailPage({
     : "overview";
   const orderTabHref = (tabId: OrderWorkspaceTab) => `/orders/${order.id}?tab=${tabId}`;
   const workspaceTabs = ORDER_WORKSPACE_TABS.map((item) => ({ ...item, href: orderTabHref(item.id) }));
+  const liveLooks = order.looks.filter((look) => !look.archivedAt);
+  const assignedItems = liveLooks.flatMap((look) =>
+    look.items
+      .filter((item) => !item.archivedAt)
+      .map((item) => ({ look, item, assignment: assignmentByItemId.get(item.id) }))
+      .filter((entry) => entry.assignment),
+  );
+  const accessoryReturnTo = orderTabHref("accessories");
+  const fittingsReturnTo = orderTabHref("fittings");
+  const paymentsReturnTo = orderTabHref("payments");
 
   return (
     <div>
@@ -286,56 +372,64 @@ export default async function OrderDetailPage({
               </form>
             </FormDisclosure>
             <div className="mt-5 space-y-5">
-              {order.looks.map((look) => (
-                <div
+              {order.looks.map((look, lookIndex) => (
+                <LookWorkspaceAccordion
                   key={look.id}
-                  role="group"
-                  aria-label={look.name}
-                  className="rounded-[1rem] border border-kuartz-line bg-white/60 p-4 shadow-[0_14px_38px_rgba(24,24,38,0.06)] sm:p-5"
-                >
-                  <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-                    <div>
-                      <div className="flex flex-wrap items-center gap-2">
-                        <h3 className="text-lg font-extrabold text-kuartz-ink">{look.name}</h3>
-                        {look.archivedAt ? (
-                          <span className="rounded-full border border-kuartz-line px-2.5 py-1 text-xs font-bold text-kuartz-muted">
-                            Archived
-                          </span>
-                        ) : null}
-                      </div>
-                      <div className="mt-2 flex flex-wrap gap-2 text-xs font-semibold text-kuartz-secondary">
-                        <span className="rounded-full bg-[#f1f4e8] px-2.5 py-1">
-                          {look.items.length} item{look.items.length === 1 ? "" : "s"}
-                        </span>
-                        {look.lookDate ? <span className="rounded-full bg-[#f7f4ee] px-2.5 py-1">{look.lookDate}</span> : null}
-                      </div>
-                    </div>
-                    <div className="flex flex-wrap gap-2">
-                      {!look.archivedAt && mayArchive("look", session.role) ? (
+                  orderId={order.id}
+                  lookId={look.id}
+                  name={look.name}
+                  itemCount={look.items.length}
+                  lookDate={look.lookDate}
+                  archived={Boolean(look.archivedAt)}
+                  defaultOpen={lookIndex === 0}
+                  addItemForm={
+                    <form
+                      action={createItemAction}
+                      aria-label={`Add Item for ${look.name}`}
+                      className="grid items-end gap-3 sm:grid-cols-[minmax(0,1fr)_minmax(0,1.25fr)_6rem_auto]"
+                    >
+                      <input type="hidden" name="orderId" value={order.id} />
+                      <input type="hidden" name="returnTo" value={orderTabHref("looks")} />
+                      <input type="hidden" name="lookId" value={look.id} />
+                      <label className="form-group">
+                        <span>Type</span>
+                        <NativeSelect name="itemTypeId" defaultValue={itemTypes[0]?.id}>
+                          {itemTypes.map((itemType) => (
+                            <option key={itemType.id} value={itemType.id}>{itemType.name}</option>
+                          ))}
+                        </NativeSelect>
+                      </label>
+                      <label className="form-group">
+                        <span>Custom label <span className="font-normal text-kuartz-secondary">(optional)</span></span>
+                        <Input name="customLabel" placeholder="Only needed for Other" />
+                      </label>
+                      <label className="form-group">
+                        <span>Qty</span>
+                        <Input type="number" min={1} name="quantity" defaultValue={1} required />
+                      </label>
+                      <Button type="submit">Add Item</Button>
+                    </form>
+                  }
+                  lifecycleAction={
+                    !look.archivedAt && mayArchive("look", session.role) ? (
                       <form action={archiveLookAction}>
                         <input type="hidden" name="orderId" value={order.id} />
                         <input type="hidden" name="returnTo" value={orderTabHref("looks")} />
                         <input type="hidden" name="lookId" value={look.id} />
                         <input type="hidden" name="version" value={look.version} />
-                        <Button type="submit" variant="outline">
-                          Archive Look
-                        </Button>
+                        <Button type="submit" variant="ghost" className="w-full justify-start">Archive Look</Button>
                       </form>
-                    ) : null}
-                    {look.archivedAt && mayRestore("look", session.role) ? (
+                    ) : look.archivedAt && mayRestore("look", session.role) ? (
                       <form action={restoreLookAction}>
                         <input type="hidden" name="orderId" value={order.id} />
                         <input type="hidden" name="returnTo" value={orderTabHref("looks")} />
                         <input type="hidden" name="lookId" value={look.id} />
                         <input type="hidden" name="version" value={look.version} />
-                        <Button type="submit" variant="outline">
-                          Restore Look
-                        </Button>
+                        <Button type="submit" variant="ghost" className="w-full justify-start">Restore Look</Button>
                       </form>
-                    ) : null}
-                    </div>
-                  </div>
-
+                    ) : null
+                  }
+                >
                   <details className="mt-4">
                     <summary className="inline-flex min-h-11 cursor-pointer list-none items-center justify-center rounded-[0.85rem] border border-kuartz-control bg-white px-4 py-2 text-sm font-extrabold text-kuartz-ink shadow-[0_10px_24px_rgba(24,24,38,0.05)] transition hover:border-kuartz-ink/40">
                       Edit Look
@@ -373,12 +467,12 @@ export default async function OrderDetailPage({
                   </form>
                   </details>
 
-                  <div className="mt-5">
-                    <h3 className="text-xs font-semibold uppercase tracking-wide text-kuartz-secondary">Items</h3>
-                    <div className="mt-3 divide-y divide-kuartz-lineSoft">
+                  <div>
+                    <div className="space-y-3">
                       {look.items.length ? (
                         look.items.map((item) => {
                           const missingMeasurements = missingMeasurementsByItemId.get(item.id);
+                          const assignment = assignmentByItemId.get(item.id) ?? null;
                           return (
                           <div key={item.id} className="py-3">
                             {missingMeasurements?.length ? (
@@ -386,7 +480,21 @@ export default async function OrderDetailPage({
                                 Missing measurements: {missingMeasurements.map((field) => field.fieldName).join(", ")}
                               </p>
                             ) : null}
-                            <form action={updateItemAction} className="flex flex-wrap items-end gap-3">
+                            <details className="rounded-[0.75rem] border border-kuartz-line bg-white/70">
+                              <summary className="flex cursor-pointer list-none flex-col gap-2 px-4 py-3.5 marker:hidden lg:flex-row lg:items-center lg:justify-between [&::-webkit-details-marker]:hidden">
+                                <span className="min-w-0">
+                                  <span className="font-extrabold text-kuartz-ink">{item.customLabel ?? item.itemTypeName}</span>
+                                  {item.customLabel ? <span className="ml-2 text-sm text-kuartz-secondary">{item.itemTypeName}</span> : null}
+                                </span>
+                                <span className="flex flex-wrap gap-x-4 gap-y-1 text-sm text-kuartz-secondary">
+                                  <span>Qty {item.quantity}</span>
+                                  <span>{assignment?.vendorName ?? "No Vendor assigned"}</span>
+                                  {assignment ? <span>{assignment.productionStatusName}</span> : null}
+                                  {item.archivedAt ? <span>Archived</span> : null}
+                                  <span className="font-bold text-kuartz-ink">Edit</span>
+                                </span>
+                              </summary>
+                            <form action={updateItemAction} className="grid items-end gap-3 border-t border-kuartz-line p-4 sm:grid-cols-[minmax(0,1fr)_minmax(0,1.25fr)_6rem_auto]">
                               <input type="hidden" name="orderId" value={order.id} />
                               <input type="hidden" name="returnTo" value={orderTabHref("looks")} />
                               <input type="hidden" name="itemId" value={item.id} />
@@ -407,7 +515,7 @@ export default async function OrderDetailPage({
                                 </span>
                                 <Input name="customLabel" defaultValue={item.customLabel ?? ""} />
                               </label>
-                              <label className="form-group w-24">
+                              <label className="form-group">
                                 <span>Qty</span>
                                 <Input type="number" min={1} name="quantity" defaultValue={item.quantity} required />
                               </label>
@@ -416,6 +524,7 @@ export default async function OrderDetailPage({
                               </Button>
                               {item.archivedAt ? <span className="text-xs font-semibold text-kuartz-muted">Archived</span> : null}
                             </form>
+                            </details>
                             <div className="mt-2">
                               {!item.archivedAt && mayArchive("item", session.role) ? (
                                 <form action={archiveItemAction}>
@@ -445,7 +554,7 @@ export default async function OrderDetailPage({
                                 orderId={order.id}
                                 itemId={item.id}
                                 itemLabel={item.customLabel ?? item.itemTypeName}
-                                assignment={assignmentByItemId.get(item.id) ?? null}
+                                assignment={assignment}
                                 vendors={vendors}
                                 today={today}
                               />
@@ -468,42 +577,8 @@ export default async function OrderDetailPage({
                       vendors={vendors}
                     />
 
-                    <FormDisclosure title="Items" buttonLabel="Add Item">
-                      <form
-                      action={createItemAction}
-                      aria-label={`Add Item for ${look.name}`}
-                      className="flex flex-wrap items-end gap-3 border-t border-kuartz-line pt-4"
-                    >
-                      <input type="hidden" name="orderId" value={order.id} />
-                      <input type="hidden" name="returnTo" value={orderTabHref("looks")} />
-                      <input type="hidden" name="lookId" value={look.id} />
-                      <label className="form-group">
-                        <span>Type</span>
-                        <NativeSelect name="itemTypeId" defaultValue={itemTypes[0]?.id}>
-                          {itemTypes.map((itemType) => (
-                            <option key={itemType.id} value={itemType.id}>
-                              {itemType.name}
-                            </option>
-                          ))}
-                        </NativeSelect>
-                      </label>
-                      <label className="form-group">
-                        <span>
-                          Custom label <span className="font-normal text-kuartz-secondary">(optional)</span>
-                        </span>
-                        <Input name="customLabel" placeholder="Only needed for “Other”" />
-                      </label>
-                      <label className="form-group w-24">
-                        <span>Qty</span>
-                        <Input type="number" min={1} name="quantity" defaultValue={1} required />
-                      </label>
-                      <Button type="submit" variant="outline">
-                        Add Item
-                      </Button>
-                      </form>
-                    </FormDisclosure>
                   </div>
-                </div>
+                </LookWorkspaceAccordion>
               ))}
             </div>
 
@@ -969,91 +1044,381 @@ export default async function OrderDetailPage({
           {activeTab === "vendors" ? (
             <div>
               <h2 className="section-title">Vendors</h2>
-              <p className="mt-2 text-sm leading-6 text-kuartz-secondary">
-                Assign vendors from Looks & Items or open the vendor directory.
-              </p>
-              <div className="mt-4 grid gap-3 sm:grid-cols-2">
-                <Button asChild variant="outline">
-                  <Link href={orderTabHref("looks")}>Assign Vendors to Items</Link>
-                </Button>
-                <Button asChild variant="outline">
-                  <Link href="/vendors">Open Vendor directory</Link>
-                </Button>
-              </div>
+              {assignedItems.length ? (
+                <div className="mt-4 divide-y divide-kuartz-line border-y border-kuartz-line">
+                  {assignedItems.map(({ look, item, assignment }) => (
+                    <div key={item.id} className="grid gap-3 py-4 text-sm md:grid-cols-[1fr_1fr_auto] md:items-center">
+                      <div>
+                        <p className="font-semibold text-kuartz-ink">{item.customLabel ?? item.itemTypeName}</p>
+                        <p className="mt-1 text-xs text-kuartz-muted">{look.name}</p>
+                      </div>
+                      <div>
+                        <p className="font-semibold text-kuartz-ink">{assignment?.vendorName}</p>
+                        <p className="mt-1 text-xs text-kuartz-muted">
+                          Due {assignment ? formatBusinessDate(assignment.deadline) : "-"}
+                        </p>
+                      </div>
+                      <ItemAssignmentDrawer
+                        itemId={item.id}
+                        itemLabel={item.customLabel ?? item.itemTypeName}
+                        orderId={order.id}
+                        assignment={assignment ?? null}
+                        vendors={vendors}
+                        today={today}
+                        returnTo={orderTabHref("vendors")}
+                      />
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <EmptyState
+                  className="mt-4"
+                  title="No Vendors assigned"
+                  description="Assign vendors to items once the production plan is ready."
+                />
+              )}
             </div>
           ) : null}
 
           {activeTab === "production" ? (
             <div>
               <h2 className="section-title">Production</h2>
-              <p className="mt-2 text-sm leading-6 text-kuartz-secondary">
-                Production status and deadlines are tracked per vendor assignment.
-              </p>
-              <div className="mt-4 grid gap-3 sm:grid-cols-2">
-                <Button asChild variant="outline">
-                  <Link href="/production">Open Production workspace</Link>
-                </Button>
-                <Button asChild variant="outline">
-                  <Link href={orderTabHref("looks")}>Review Item assignments</Link>
-                </Button>
-              </div>
+              {assignedItems.length ? (
+                <div className="mt-4 divide-y divide-kuartz-line border-y border-kuartz-line">
+                  {assignedItems.map(({ look, item, assignment }) => (
+                    <div key={item.id} className="grid gap-3 py-4 text-sm md:grid-cols-[1fr_auto_auto] md:items-center">
+                      <div>
+                        <p className="font-semibold text-kuartz-ink">{item.customLabel ?? item.itemTypeName}</p>
+                        <p className="mt-1 text-xs text-kuartz-muted">
+                          {look.name} | {assignment?.vendorName} | Due{" "}
+                          {assignment ? formatBusinessDate(assignment.deadline) : "-"}
+                        </p>
+                      </div>
+                      <span className="w-fit rounded-full border border-kuartz-line bg-[#f6f6f3] px-2.5 py-0.5 text-xs font-semibold text-kuartz-secondary">
+                        {assignment?.productionStatusName}
+                      </span>
+                      <Button asChild variant="outline">
+                        <Link href={`/production/${assignment?.id}`}>Update</Link>
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <EmptyState
+                  className="mt-4"
+                  title="No Production items yet"
+                  description="Production starts once an item has a vendor."
+                />
+              )}
             </div>
           ) : null}
 
           {activeTab === "accessories" ? (
             <div>
-              <h2 className="section-title">Accessories</h2>
-              <p className="mt-2 text-sm leading-6 text-kuartz-secondary">
-                Track accessories for this order or a specific look.
-              </p>
-              <div className="mt-4 rounded-[1rem] border border-kuartz-line bg-white/65 p-5">
-                <p className="text-sm text-kuartz-secondary">
-                  {outstandingAccessories.length
-                    ? `${outstandingAccessories.length} accessory item${outstandingAccessories.length === 1 ? "" : "s"} still outstanding.`
-                    : "No outstanding accessory items."}
+              {accessoryTypes.length && accessoryStatuses.length ? (
+                <FormModal title="Accessories" modalTitle="Add accessory" buttonLabel="Add Accessory">
+                  <form action={createAccessoryItemAction} className="grid gap-4 sm:grid-cols-2">
+                    <input type="hidden" name="orderId" value={order.id} />
+                    <input type="hidden" name="returnTo" value={accessoryReturnTo} />
+                    <label className="form-group">
+                      <span>Type</span>
+                      <NativeSelect name="accessoryTypeId" required>
+                        {accessoryTypes.map((type) => (
+                          <option key={type.id} value={type.id}>{type.name}</option>
+                        ))}
+                      </NativeSelect>
+                    </label>
+                    <label className="form-group">
+                      <span>Status</span>
+                      <NativeSelect name="accessoryStatusId" required>
+                        {accessoryStatuses.map((status) => (
+                          <option key={status.id} value={status.id}>{status.name}</option>
+                        ))}
+                      </NativeSelect>
+                    </label>
+                    <label className="form-group">
+                      <span>Look <span className="font-normal text-kuartz-secondary">(optional)</span></span>
+                      <NativeSelect name="lookId" defaultValue="">
+                        <option value="">Whole Order</option>
+                        {liveLooks.map((look) => (
+                          <option key={look.id} value={look.id}>{look.name}</option>
+                        ))}
+                      </NativeSelect>
+                    </label>
+                    <label className="form-group">
+                      <span>Label <span className="font-normal text-kuartz-secondary">(optional)</span></span>
+                      <Input name="customLabel" maxLength={120} placeholder="e.g. Black oxfords, size 44" />
+                    </label>
+                    <label className="form-group">
+                      <span>Assigned staff <span className="font-normal text-kuartz-secondary">(optional)</span></span>
+                      <NativeSelect name="assignedToStaffId" defaultValue="">
+                        <option value="">Unassigned</option>
+                        {staffMembers.map((staff) => (
+                          <option key={staff.userId} value={staff.userId}>{staff.fullName}</option>
+                        ))}
+                      </NativeSelect>
+                    </label>
+                    <label className="form-group">
+                      <span>Supplier <span className="font-normal text-kuartz-secondary">(optional)</span></span>
+                      <Input name="supplier" maxLength={160} />
+                    </label>
+                    <label className="form-group">
+                      <span>Budget <span className="font-normal text-kuartz-secondary">(optional)</span></span>
+                      <MoneyInput name="budget" />
+                    </label>
+                    <label className="form-group">
+                      <span>Purchase date <span className="font-normal text-kuartz-secondary">(optional)</span></span>
+                      <Input name="purchaseDate" type="date" />
+                    </label>
+                    <label className="form-group sm:col-span-2">
+                      <span>Notes <span className="font-normal text-kuartz-secondary">(optional)</span></span>
+                      <textarea name="notes" className={textareaClass} />
+                    </label>
+                    <Button type="submit" className="sm:col-span-2">Add Accessory</Button>
+                  </form>
+                </FormModal>
+              ) : (
+                <h2 className="section-title">Accessories</h2>
+              )}
+              {!accessoryTypes.length || !accessoryStatuses.length ? (
+                <p className="mt-4 border-l-[3px] border-[#88925f] bg-white/70 px-4 py-3.5 text-sm leading-6 text-[#3f4a24]">
+                  A Super Admin needs to set accessory types and statuses in Settings first.
                 </p>
-                <Button asChild className="mt-4" variant="outline">
-                  <Link href={`/orders/${order.id}/accessories`}>Open Accessories</Link>
-                </Button>
-              </div>
+              ) : null}
+              {accessories.length ? (
+                <div className="mt-4 divide-y divide-kuartz-line border-y border-kuartz-line">
+                  {accessories.map((accessory) => (
+                    <form key={accessory.id} action={updateAccessoryItemAction} className="space-y-4 py-5">
+                      <input type="hidden" name="orderId" value={order.id} />
+                      <input type="hidden" name="returnTo" value={accessoryReturnTo} />
+                      <input type="hidden" name="accessoryItemId" value={accessory.id} />
+                      <input type="hidden" name="version" value={accessory.version} />
+                      <div className="flex flex-wrap items-baseline justify-between gap-2">
+                        <h3 className="font-semibold text-kuartz-ink">{accessory.label}</h3>
+                        <p className="text-xs text-kuartz-muted">
+                          {accessory.deliveryDate.state === "inherited"
+                            ? `Due ${formatBusinessDate(accessory.deliveryDate.date)}${accessory.lookName ? ` | ${accessory.lookName}` : ""}`
+                            : "No due date"}
+                        </p>
+                      </div>
+                      <div className="grid gap-4 md:grid-cols-2">
+                        <label className="form-group">
+                          <span>Type</span>
+                          <NativeSelect name="accessoryTypeId" defaultValue={accessory.accessoryTypeId}>
+                            {accessoryTypes.map((type) => (
+                              <option key={type.id} value={type.id}>{type.name}</option>
+                            ))}
+                          </NativeSelect>
+                        </label>
+                        <label className="form-group">
+                          <span>Status</span>
+                          <NativeSelect name="accessoryStatusId" defaultValue={accessory.accessoryStatusId}>
+                            {accessoryStatuses.map((status) => (
+                              <option key={status.id} value={status.id}>{status.name}</option>
+                            ))}
+                          </NativeSelect>
+                        </label>
+                        <label className="form-group">
+                          <span>Look <span className="font-normal text-kuartz-secondary">(optional)</span></span>
+                          <NativeSelect name="lookId" defaultValue={accessory.lookId ?? ""}>
+                            <option value="">Whole Order</option>
+                            {liveLooks.map((look) => (
+                              <option key={look.id} value={look.id}>{look.name}</option>
+                            ))}
+                          </NativeSelect>
+                        </label>
+                        <label className="form-group">
+                          <span>Label <span className="font-normal text-kuartz-secondary">(optional)</span></span>
+                          <Input name="customLabel" defaultValue={accessory.customLabel ?? ""} maxLength={120} />
+                        </label>
+                      </div>
+                      <div className="flex flex-wrap gap-3">
+                        {!accessory.archivedAt ? <Button type="submit" variant="outline">Save Accessory</Button> : null}
+                        {!accessory.archivedAt && mayArchive("accessory_item", session.role) ? (
+                          <Button formAction={archiveAccessoryItemAction} type="submit" variant="outline">Cancel Accessory</Button>
+                        ) : null}
+                        {accessory.archivedAt && mayRestore("accessory_item", session.role) ? (
+                          <Button formAction={restoreAccessoryItemAction} type="submit" variant="outline">Restore Accessory</Button>
+                        ) : null}
+                      </div>
+                    </form>
+                  ))}
+                </div>
+              ) : (
+                <EmptyState className="mt-4" title="No Accessories yet" description="Add accessories sourced alongside this order." />
+              )}
             </div>
           ) : null}
 
           {activeTab === "fittings" ? (
             <div>
-              <h2 className="section-title">Fittings</h2>
-              <p className="mt-2 text-sm leading-6 text-kuartz-secondary">
-                Schedule fittings, add notes, and send confirmations.
-              </p>
-              <div className="mt-4 rounded-[1rem] border border-kuartz-line bg-white/65 p-5">
-                <p className="text-sm text-kuartz-secondary">
-                  {openFittings.length
-                    ? `${openFittings.length} fitting session${openFittings.length === 1 ? "" : "s"} still open.`
-                    : "No open fitting sessions."}
-                </p>
-                <Button asChild className="mt-4" variant="outline">
-                  <Link href={`/orders/${order.id}/fittings`}>Open Fittings</Link>
-                </Button>
-              </div>
+              <FormDisclosure title="Fittings" buttonLabel="Schedule Fitting">
+                <form action={scheduleFittingAction} className="grid gap-4 border-t border-kuartz-line pt-5 sm:grid-cols-2">
+                  <input type="hidden" name="orderId" value={order.id} />
+                  <input type="hidden" name="returnTo" value={fittingsReturnTo} />
+                  <label className="form-group">
+                    <span>Date and time</span>
+                    <Input type="datetime-local" name="scheduledAt" required />
+                  </label>
+                  <label className="form-group">
+                    <span>Look <span className="font-normal text-kuartz-secondary">(optional)</span></span>
+                    <NativeSelect name="lookId" defaultValue="">
+                      <option value="">Whole Order</option>
+                      {liveLooks.map((look) => (
+                        <option key={look.id} value={look.id}>{look.name}</option>
+                      ))}
+                    </NativeSelect>
+                  </label>
+                  <label className="form-group sm:col-span-2">
+                    <span>Location <span className="font-normal text-kuartz-secondary">(optional)</span></span>
+                    <Input name="location" maxLength={160} />
+                  </label>
+                  <Button type="submit" className="sm:col-span-2">Schedule Fitting</Button>
+                </form>
+              </FormDisclosure>
+              {fittingDetail.length ? (
+                <div className="mt-4 space-y-6">
+                  {fittingDetail.map(({ fitting, notes, history, confirmations }) => {
+                    const terminal = isTerminalFittingStatus(fitting.status);
+                    return (
+                      <div key={fitting.id} className="border-y border-kuartz-line py-5">
+                        <div className="flex flex-wrap items-baseline justify-between gap-2">
+                          <div>
+                            <h3 className="font-semibold text-kuartz-ink">{dateFormatter.format(fitting.scheduledAt)}</h3>
+                            <p className="mt-1 text-xs text-kuartz-muted">
+                              {fitting.lookName ?? "Whole Order"}{fitting.location ? ` | ${fitting.location}` : ""}
+                            </p>
+                          </div>
+                          <span className="rounded-full border border-kuartz-line bg-[#f6f6f3] px-2.5 py-0.5 text-xs font-semibold text-kuartz-secondary">
+                            {FITTING_STATUS_LABELS[fitting.status]}
+                          </span>
+                        </div>
+                        {!terminal && !fitting.archivedAt ? (
+                          <div className="mt-5 grid gap-5 lg:grid-cols-2">
+                            <form action={rescheduleFittingAction} className="space-y-3">
+                              <input type="hidden" name="orderId" value={order.id} />
+                              <input type="hidden" name="returnTo" value={fittingsReturnTo} />
+                              <input type="hidden" name="sessionId" value={fitting.id} />
+                              <input type="hidden" name="version" value={fitting.version} />
+                              <label className="form-group">
+                                <span className="text-xs">New date and time</span>
+                                <Input type="datetime-local" name="scheduledAt" defaultValue={toDateTimeLocalValue(fitting.scheduledAt)} required />
+                              </label>
+                              <label className="form-group">
+                                <span className="text-xs">Location <span className="font-normal text-kuartz-secondary">(optional)</span></span>
+                                <Input name="location" defaultValue={fitting.location} maxLength={160} />
+                              </label>
+                              <input type="hidden" name="note" value="" />
+                              <Button type="submit" variant="outline">Reschedule</Button>
+                            </form>
+                            <form action={changeFittingStatusAction} className="space-y-3">
+                              <input type="hidden" name="orderId" value={order.id} />
+                              <input type="hidden" name="returnTo" value={fittingsReturnTo} />
+                              <input type="hidden" name="sessionId" value={fitting.id} />
+                              <input type="hidden" name="version" value={fitting.version} />
+                              <label className="form-group">
+                                <span className="text-xs">New status</span>
+                                <NativeSelect name="newStatus" defaultValue="completed">
+                                  {FITTING_SESSION_STATUSES.filter((status) => status !== fitting.status).map((status) => (
+                                    <option key={status} value={status}>{FITTING_STATUS_LABELS[status]}</option>
+                                  ))}
+                                </NativeSelect>
+                              </label>
+                              <label className="form-group">
+                                <span className="text-xs">Note <span className="font-normal text-kuartz-secondary">(optional)</span></span>
+                                <Input name="note" maxLength={300} />
+                              </label>
+                              <Button type="submit" variant="outline">Save status</Button>
+                            </form>
+                          </div>
+                        ) : null}
+                        <form action={updateFittingSummaryAction} className="mt-5 space-y-3">
+                          <input type="hidden" name="orderId" value={order.id} />
+                          <input type="hidden" name="returnTo" value={fittingsReturnTo} />
+                          <input type="hidden" name="sessionId" value={fitting.id} />
+                          <input type="hidden" name="version" value={fitting.version} />
+                          <label className="form-group">
+                            <span>Client-facing summary <span className="font-normal text-kuartz-secondary">(client sees this)</span></span>
+                            <textarea name="clientSummary" defaultValue={fitting.clientSummary} className={textareaClass} />
+                          </label>
+                          <Button type="submit" variant="outline">Save summary</Button>
+                        </form>
+                        <div className="mt-5">
+                          <h3 className="text-sm font-semibold text-kuartz-body">Internal notes</h3>
+                          {notes.length ? (
+                            <ol className="mt-2 divide-y divide-kuartz-lineSoft border-y border-kuartz-lineSoft">
+                              {notes.map((note) => (
+                                <li key={note.id} className="py-2 text-sm text-kuartz-body">{note.note}</li>
+                              ))}
+                            </ol>
+                          ) : <p className="mt-2 text-sm text-kuartz-muted">No notes yet.</p>}
+                          <FormDisclosure title="Fitting notes" buttonLabel="Add note">
+                            <form action={addFittingNoteAction} className="flex flex-wrap items-end gap-2 border-t border-kuartz-line pt-4">
+                              <input type="hidden" name="orderId" value={order.id} />
+                              <input type="hidden" name="returnTo" value={fittingsReturnTo} />
+                              <input type="hidden" name="sessionId" value={fitting.id} />
+                              <label className="form-group flex-1">
+                                <span className="text-xs">Note</span>
+                                <Input name="note" required maxLength={300} />
+                              </label>
+                              <Button type="submit" variant="outline">Add note</Button>
+                            </form>
+                          </FormDisclosure>
+                        </div>
+                        <div className="mt-5 flex flex-wrap gap-3">
+                          {fitting.status === "completed" && !fitting.archivedAt ? (
+                            <form action={issueFittingConfirmationAction}>
+                              <input type="hidden" name="orderId" value={order.id} />
+                              <input type="hidden" name="sessionId" value={fitting.id} />
+                              <Button type="submit" variant="outline">Send confirmation link</Button>
+                            </form>
+                          ) : null}
+                          {!fitting.archivedAt && mayArchive("fitting_session", session.role) ? (
+                            <form action={archiveFittingAction}>
+                              <input type="hidden" name="orderId" value={order.id} />
+                              <input type="hidden" name="returnTo" value={fittingsReturnTo} />
+                              <input type="hidden" name="sessionId" value={fitting.id} />
+                              <input type="hidden" name="version" value={fitting.version} />
+                              <Button type="submit" variant="outline">Archive Fitting</Button>
+                            </form>
+                          ) : null}
+                          {fitting.archivedAt && mayRestore("fitting_session", session.role) ? (
+                            <form action={restoreFittingAction}>
+                              <input type="hidden" name="orderId" value={order.id} />
+                              <input type="hidden" name="returnTo" value={fittingsReturnTo} />
+                              <input type="hidden" name="sessionId" value={fitting.id} />
+                              <input type="hidden" name="version" value={fitting.version} />
+                              <Button type="submit" variant="outline">Restore Fitting</Button>
+                            </form>
+                          ) : null}
+                        </div>
+                        <p className="mt-4 text-xs text-kuartz-muted">
+                          Confirmations: {confirmations.length} | History entries: {history.length}
+                        </p>
+                      </div>
+                    );
+                  })}
+                </div>
+              ) : (
+                <EmptyState className="mt-4" title="No Fittings yet" description="Schedule fitting sessions when the order is ready." />
+              )}
             </div>
           ) : null}
 
           {activeTab === "payments" ? (
             <div>
               <h2 className="section-title">Payments</h2>
-              <p className="mt-2 text-sm leading-6 text-kuartz-secondary">
-                Manage the invoice, client payments, and balance.
-              </p>
-              <div className="mt-4 rounded-[1rem] border border-kuartz-line bg-white/65 p-5">
-                <p className="text-sm text-kuartz-secondary">
-                  {balance.state === "not_invoiced"
-                    ? "This Order has not been invoiced yet."
-                    : `Outstanding balance: ₦${formatMinorUnits(balance.balanceMinor)}.`}
-                </p>
-                <Button asChild className="mt-4" variant="outline">
-                  <Link href={`/orders/${order.id}/invoice`}>{invoice ? "Open Invoice" : "Create Invoice"}</Link>
-                </Button>
-              </div>
+              <EmbeddedPayments
+                orderId={order.id}
+                invoice={invoice}
+                balance={balance}
+                invoiceStatus={invoiceStatus}
+                invoiceMismatches={invoiceMismatches}
+                canManageInvoice={canManageInvoice}
+                invoiceEditable={invoiceEditable}
+                today={today}
+                returnTo={paymentsReturnTo}
+              />
             </div>
           ) : null}
         </div>
@@ -1226,5 +1591,221 @@ export default async function OrderDetailPage({
         ) : null}
       </section>
     </div>
+  );
+}
+
+type OrderInvoice = Awaited<ReturnType<typeof getInvoiceForOrder>>;
+type OrderBalance = ReturnType<typeof computeOrderBalance>;
+
+function EmbeddedPayments({
+  orderId,
+  invoice,
+  balance,
+  invoiceStatus,
+  invoiceMismatches,
+  canManageInvoice,
+  invoiceEditable,
+  today,
+  returnTo,
+}: {
+  orderId: string;
+  invoice: OrderInvoice;
+  balance: OrderBalance;
+  invoiceStatus: ReturnType<typeof deriveInvoiceStatus> | null;
+  invoiceMismatches: ReturnType<typeof detectPaymentMismatches>;
+  canManageInvoice: boolean;
+  invoiceEditable: boolean;
+  today: string;
+  returnTo: string;
+}) {
+  if (!invoice) {
+    return canManageInvoice ? (
+      <form action={createInvoiceAction} className="mt-4 max-w-3xl space-y-4 border-y border-kuartz-line py-5">
+        <input type="hidden" name="orderId" value={orderId} />
+        <input type="hidden" name="returnTo" value={returnTo} />
+        <InvoiceFields issueDate={today} dueDate={null} notes="" paymentInstructions="" lines={[]} />
+        <Button type="submit">Create Invoice</Button>
+      </form>
+    ) : (
+      <EmptyState className="mt-4" title="No Invoice yet" description="Create an invoice before recording payments." />
+    );
+  }
+
+  return (
+    <>
+      {invoiceMismatches.length ? (
+        <div className="mt-4 space-y-2">
+          {invoiceMismatches.map((mismatch) => (
+            <p key={mismatch.kind} className="form-alert" role="alert">
+              {mismatch.kind === "overpaid"
+                ? `Overpaid by N${formatMinorUnits(mismatch.excessMinor)}. Check the payment records.`
+                : mismatch.kind === "paid_against_void"
+                  ? "Payments are linked to a cancelled invoice. Review the records."
+                  : "Payments were recorded before this invoice was sent. Confirm this is correct."}
+            </p>
+          ))}
+        </div>
+      ) : null}
+
+      <section className="mt-4 grid gap-8 xl:grid-cols-[minmax(0,1fr)_22rem]">
+        <div className="space-y-8">
+          <div>
+            <h3 className="font-semibold text-kuartz-ink">Invoice items</h3>
+            {invoiceEditable && canManageInvoice ? (
+              <form action={updateInvoiceAction} className="mt-4 space-y-4 border-y border-kuartz-line py-5">
+                <input type="hidden" name="orderId" value={orderId} />
+                <input type="hidden" name="returnTo" value={returnTo} />
+                <input type="hidden" name="invoiceId" value={invoice.id} />
+                <input type="hidden" name="version" value={invoice.version} />
+                <InvoiceFields
+                  issueDate={invoice.issueDate}
+                  dueDate={invoice.dueDate}
+                  notes={invoice.notes}
+                  paymentInstructions={invoice.paymentInstructions}
+                  lines={invoice.lines}
+                />
+                <Button type="submit" variant="outline">Save Invoice</Button>
+              </form>
+            ) : (
+              <div className="mt-4 border-y border-kuartz-line py-2">
+                {invoice.lines.map((line) => (
+                  <div key={line.id} className="grid grid-cols-[1fr_auto] gap-4 py-3 text-sm">
+                    <div>
+                      <p className="text-kuartz-ink">{line.description}</p>
+                      <p className="mt-1 text-xs text-kuartz-muted">
+                        {line.quantity} x N{formatMinorUnits(line.unitPriceMinor)}
+                      </p>
+                    </div>
+                    <p className="font-semibold text-kuartz-ink">N{formatMinorUnits(computeLineAmountMinor(line))}</p>
+                  </div>
+                ))}
+              </div>
+            )}
+            <dl className="mt-4 space-y-2 text-sm">
+              <div className="flex justify-between">
+                <dt className="text-kuartz-secondary">Status</dt>
+                <dd className="font-semibold text-kuartz-ink">
+                  {invoiceStatus ? INVOICE_STATUS_LABELS[invoiceStatus] : "-"}
+                </dd>
+              </div>
+              <div className="flex justify-between">
+                <dt className="text-kuartz-secondary">Total invoiced</dt>
+                <dd className="font-semibold text-kuartz-ink">N{formatMinorUnits(invoice.totalMinor)}</dd>
+              </div>
+              <div className="flex justify-between">
+                <dt className="text-kuartz-secondary">Paid</dt>
+                <dd className="text-kuartz-ink">N{formatMinorUnits(invoice.paidMinor)}</dd>
+              </div>
+              <div className="flex justify-between border-t border-kuartz-line pt-2">
+                <dt className="font-semibold text-kuartz-ink">Balance</dt>
+                <dd className="font-semibold text-kuartz-ink">
+                  N{formatMinorUnits(balance.state === "invoiced" ? balance.balanceMinor : 0)}
+                </dd>
+              </div>
+            </dl>
+          </div>
+
+          <div>
+            <h3 className="font-semibold text-kuartz-ink">Client payments</h3>
+            {invoice.payments.length ? (
+              <ol className="mt-4 divide-y divide-kuartz-line border-y border-kuartz-line">
+                {invoice.payments.map((payment) => (
+                  <li key={payment.id} className="py-4">
+                    <div className="flex flex-wrap items-baseline justify-between gap-2">
+                      <p className={`text-sm font-semibold ${payment.voidedAt ? "text-kuartz-muted line-through" : "text-kuartz-ink"}`}>
+                        N{formatMinorUnits(payment.amountMinor)}
+                      </p>
+                      <p className="text-xs text-kuartz-muted">{payment.paidOn} | {payment.recordedByName}</p>
+                    </div>
+                    {payment.reference ? <p className="mt-1 text-sm text-kuartz-secondary">{payment.reference}</p> : null}
+                  </li>
+                ))}
+              </ol>
+            ) : (
+              <EmptyState className="mt-4" title="No payments recorded" description="No client payments have been added yet." />
+            )}
+          </div>
+        </div>
+
+        {canManageInvoice ? (
+          <aside className="space-y-8">
+            <FormModal title="Payments" modalTitle="Record payment" buttonLabel="Record payment">
+              <form action={recordClientPaymentAction} className="space-y-4">
+                <input type="hidden" name="orderId" value={orderId} />
+                <input type="hidden" name="returnTo" value={returnTo} />
+                <input type="hidden" name="invoiceId" value={invoice.id} />
+                <label className="form-group">
+                  <span>Amount</span>
+                  <MoneyInput name="amount" required />
+                </label>
+                <label className="form-group">
+                  <span>Paid on</span>
+                  <Input type="date" name="paidOn" defaultValue={today} required />
+                </label>
+                <label className="form-group">
+                  <span>Reference <span className="font-normal text-kuartz-secondary">(optional)</span></span>
+                  <Input name="reference" maxLength={200} />
+                </label>
+                <Button className="w-full" type="submit">Record payment</Button>
+              </form>
+            </FormModal>
+            {invoice.lifecycle !== "void" ? (
+              <>
+                {!invoice.sentAt ? <SendInvoiceButton invoiceId={invoice.id} /> : null}
+                <form action={voidInvoiceAction} className="space-y-4 border-t border-kuartz-line pt-5">
+                  <input type="hidden" name="orderId" value={orderId} />
+                  <input type="hidden" name="returnTo" value={returnTo} />
+                  <input type="hidden" name="invoiceId" value={invoice.id} />
+                  <input type="hidden" name="version" value={invoice.version} />
+                  <label className="form-group">
+                    <span>Void reason</span>
+                    <Input name="reason" required />
+                  </label>
+                  <Button className="w-full" type="submit" variant="outline">Void Invoice</Button>
+                </form>
+              </>
+            ) : null}
+          </aside>
+        ) : null}
+      </section>
+    </>
+  );
+}
+
+function InvoiceFields({
+  issueDate,
+  dueDate,
+  notes,
+  paymentInstructions,
+  lines,
+}: {
+  issueDate: string;
+  dueDate: string | null;
+  notes: string;
+  paymentInstructions: string;
+  lines: { description: string; quantity: number; unitPriceMinor: number }[];
+}) {
+  return (
+    <>
+      <div className="grid gap-4 sm:grid-cols-2">
+        <label className="form-group">
+          <span>Issue date</span>
+          <Input type="date" name="issueDate" defaultValue={issueDate} required />
+        </label>
+        <label className="form-group">
+          <span>Due date <span className="font-normal text-kuartz-secondary">(optional)</span></span>
+          <Input type="date" name="dueDate" defaultValue={dueDate ?? ""} />
+        </label>
+      </div>
+      <InvoiceLineItemsFields lines={lines} />
+      <label className="form-group">
+        <span>Payment instructions <span className="font-normal text-kuartz-secondary">(optional)</span></span>
+        <textarea name="paymentInstructions" defaultValue={paymentInstructions} className={textareaClass} />
+      </label>
+      <label className="form-group">
+        <span>Notes <span className="font-normal text-kuartz-secondary">(optional)</span></span>
+        <textarea name="notes" defaultValue={notes} className={textareaClass} />
+      </label>
+    </>
   );
 }

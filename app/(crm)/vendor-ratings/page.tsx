@@ -3,7 +3,7 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { requireStaffSession } from "@/lib/auth/session";
 import { listPendingRatingPrompts } from "@/lib/vendors/rating-repository";
 
-const dateFormatter = new Intl.DateTimeFormat("en-NG", { dateStyle: "medium" });
+const dateFormatter = new Intl.DateTimeFormat("en-NG", { dateStyle: "medium", timeZone: "Africa/Lagos" });
 
 /**
  * Every outstanding rating prompt across all completed Orders. Nothing is stored to build this —

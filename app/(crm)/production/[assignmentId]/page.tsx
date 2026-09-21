@@ -6,6 +6,7 @@ import { UrgencyBadge } from "@/components/production/urgency-badge";
 import { Button } from "@/components/ui/button";
 import { Breadcrumbs } from "@/components/ui/breadcrumbs";
 import { FormDisclosure } from "@/components/ui/form-disclosure";
+import { FormModal } from "@/components/ui/form-modal";
 import { MoneyInput } from "@/components/ui/money-input";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Input } from "@/components/ui/input";
@@ -24,6 +25,13 @@ import { listProductionNotes, listStatusHistory } from "@/lib/production/status-
 import { describeUrgency } from "@/lib/production/urgency";
 import { computeBriefBlocker } from "@/lib/vendor-briefs/document";
 import { getVendorBriefContext } from "@/lib/vendor-briefs/repository";
+
+const dateFormatter = new Intl.DateTimeFormat("en-NG", { dateStyle: "medium", timeZone: "Africa/Lagos" });
+const dateTimeFormatter = new Intl.DateTimeFormat("en-NG", {
+  dateStyle: "medium",
+  timeStyle: "short",
+  timeZone: "Africa/Lagos",
+});
 
 export default async function AssignmentDetailPage({
   params,
@@ -134,7 +142,7 @@ export default async function AssignmentDetailPage({
                         : `Assigned at ${entry.newStatusName}`}
                     </p>
                     <p className="mt-1 text-xs text-kuartz-muted">
-                      {entry.changedByName} · {entry.createdAt.toISOString().slice(0, 16).replace("T", " ")}
+                      {entry.changedByName} · {dateTimeFormatter.format(entry.createdAt)}
                     </p>
                     {entry.note ? <p className="mt-2 text-sm leading-6 text-kuartz-secondary">{entry.note}</p> : null}
                   </li>
@@ -213,7 +221,7 @@ export default async function AssignmentDetailPage({
                   <li key={note.id} className="py-4">
                     <p className="text-sm leading-6 text-kuartz-body">{note.note}</p>
                     <p className="mt-1 text-xs text-kuartz-muted">
-                      {note.createdByName} · {note.createdAt.toISOString().slice(0, 16).replace("T", " ")}
+                      {note.createdByName} · {dateTimeFormatter.format(note.createdAt)}
                     </p>
                   </li>
                 ))}
@@ -271,10 +279,10 @@ export default async function AssignmentDetailPage({
 
           {canManage ? (
             <div>
-              <FormDisclosure title="Vendor payments" buttonLabel="Record payment">
+              <FormModal title="Vendor payments" modalTitle="Record vendor payment" buttonLabel="Record payment">
               <form
                 action={recordVendorPaymentAction}
-                className="space-y-4 border-t border-kuartz-line pt-5"
+                className="space-y-4"
               >
                 <input type="hidden" name="assignmentId" value={assignment.id} />
                 <label className="form-group">
@@ -306,7 +314,7 @@ export default async function AssignmentDetailPage({
                   Record payment
                 </Button>
               </form>
-              </FormDisclosure>
+              </FormModal>
             </div>
           ) : null}
 
@@ -314,7 +322,7 @@ export default async function AssignmentDetailPage({
             <h2 className="section-title">Vendor Brief</h2>
             <p className="mt-2 text-sm leading-6 text-kuartz-secondary">
               {assignment.briefLastExportedAt
-                ? `Last exported ${assignment.briefLastExportedAt.toISOString().slice(0, 10)}.`
+                ? `Last exported ${dateFormatter.format(assignment.briefLastExportedAt)}.`
                 : "Not exported yet."}
             </p>
             {blocker ? (

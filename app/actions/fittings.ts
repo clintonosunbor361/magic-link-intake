@@ -22,9 +22,14 @@ import {
 import { issueConfirmation } from "@/lib/client-confirmations/service";
 import { createClientConfirmationRepository } from "@/lib/client-confirmations/repository";
 import { readFormString } from "@/lib/forms/read-string";
+import { safeReturnPath, withReturnError } from "@/lib/forms/return-path";
 
 function fittingsPath(orderId: string): string {
   return `/orders/${orderId}/fittings`;
+}
+
+function readReturnTo(formData: FormData, orderId: string): string {
+  return safeReturnPath(readFormString(formData, "returnTo"), fittingsPath(orderId));
 }
 
 function readStatus(formData: FormData): FittingSessionStatus {
@@ -38,6 +43,7 @@ function readStatus(formData: FormData): FittingSessionStatus {
 export async function scheduleFittingAction(formData: FormData) {
   const session = await requireStaffSession();
   const orderId = readFormString(formData, "orderId");
+  const returnTo = readReturnTo(formData, orderId);
 
   try {
     await scheduleFittingSession(
@@ -53,17 +59,18 @@ export async function scheduleFittingAction(formData: FormData) {
     );
   } catch (error) {
     const message = error instanceof Error ? error.message : "The Fitting could not be scheduled.";
-    redirect(`${fittingsPath(orderId)}?error=${encodeURIComponent(message)}`);
+    redirect(withReturnError(returnTo, message));
   }
 
   revalidatePath(fittingsPath(orderId));
   revalidatePath(`/orders/${orderId}`);
-  redirect(fittingsPath(orderId));
+  redirect(returnTo);
 }
 
 export async function rescheduleFittingAction(formData: FormData) {
   const session = await requireStaffSession();
   const orderId = readFormString(formData, "orderId");
+  const returnTo = readReturnTo(formData, orderId);
 
   try {
     await rescheduleFittingSession(
@@ -80,17 +87,18 @@ export async function rescheduleFittingAction(formData: FormData) {
     );
   } catch (error) {
     const message = error instanceof Error ? error.message : "The Fitting could not be rescheduled.";
-    redirect(`${fittingsPath(orderId)}?error=${encodeURIComponent(message)}`);
+    redirect(withReturnError(returnTo, message));
   }
 
   revalidatePath(fittingsPath(orderId));
   revalidatePath(`/orders/${orderId}`);
-  redirect(fittingsPath(orderId));
+  redirect(returnTo);
 }
 
 export async function changeFittingStatusAction(formData: FormData) {
   const session = await requireStaffSession();
   const orderId = readFormString(formData, "orderId");
+  const returnTo = readReturnTo(formData, orderId);
 
   try {
     await changeFittingStatus(
@@ -106,17 +114,18 @@ export async function changeFittingStatusAction(formData: FormData) {
     );
   } catch (error) {
     const message = error instanceof Error ? error.message : "The Fitting could not be updated.";
-    redirect(`${fittingsPath(orderId)}?error=${encodeURIComponent(message)}`);
+    redirect(withReturnError(returnTo, message));
   }
 
   revalidatePath(fittingsPath(orderId));
   revalidatePath(`/orders/${orderId}`);
-  redirect(fittingsPath(orderId));
+  redirect(returnTo);
 }
 
 export async function updateFittingSummaryAction(formData: FormData) {
   const session = await requireStaffSession();
   const orderId = readFormString(formData, "orderId");
+  const returnTo = readReturnTo(formData, orderId);
 
   try {
     await updateFittingClientSummary(
@@ -131,16 +140,18 @@ export async function updateFittingSummaryAction(formData: FormData) {
     );
   } catch (error) {
     const message = error instanceof Error ? error.message : "The summary could not be saved.";
-    redirect(`${fittingsPath(orderId)}?error=${encodeURIComponent(message)}`);
+    redirect(withReturnError(returnTo, message));
   }
 
   revalidatePath(fittingsPath(orderId));
-  redirect(fittingsPath(orderId));
+  revalidatePath(`/orders/${orderId}`);
+  redirect(returnTo);
 }
 
 export async function addFittingNoteAction(formData: FormData) {
   const session = await requireStaffSession();
   const orderId = readFormString(formData, "orderId");
+  const returnTo = readReturnTo(formData, orderId);
 
   try {
     await addFittingNote(
@@ -154,16 +165,18 @@ export async function addFittingNoteAction(formData: FormData) {
     );
   } catch (error) {
     const message = error instanceof Error ? error.message : "The note could not be added.";
-    redirect(`${fittingsPath(orderId)}?error=${encodeURIComponent(message)}`);
+    redirect(withReturnError(returnTo, message));
   }
 
   revalidatePath(fittingsPath(orderId));
-  redirect(fittingsPath(orderId));
+  revalidatePath(`/orders/${orderId}`);
+  redirect(returnTo);
 }
 
 export async function archiveFittingAction(formData: FormData) {
   const session = await requireStaffSession();
   const orderId = readFormString(formData, "orderId");
+  const returnTo = readReturnTo(formData, orderId);
 
   try {
     await archiveFittingSession(
@@ -177,17 +190,18 @@ export async function archiveFittingAction(formData: FormData) {
     );
   } catch (error) {
     const message = error instanceof Error ? error.message : "The Fitting could not be updated.";
-    redirect(`${fittingsPath(orderId)}?error=${encodeURIComponent(message)}`);
+    redirect(withReturnError(returnTo, message));
   }
 
   revalidatePath(fittingsPath(orderId));
   revalidatePath(`/orders/${orderId}`);
-  redirect(fittingsPath(orderId));
+  redirect(returnTo);
 }
 
 export async function restoreFittingAction(formData: FormData) {
   const session = await requireStaffSession();
   const orderId = readFormString(formData, "orderId");
+  const returnTo = readReturnTo(formData, orderId);
 
   try {
     await restoreFittingSession(
@@ -201,12 +215,12 @@ export async function restoreFittingAction(formData: FormData) {
     );
   } catch (error) {
     const message = error instanceof Error ? error.message : "The Fitting could not be updated.";
-    redirect(`${fittingsPath(orderId)}?error=${encodeURIComponent(message)}`);
+    redirect(withReturnError(returnTo, message));
   }
 
   revalidatePath(fittingsPath(orderId));
   revalidatePath(`/orders/${orderId}`);
-  redirect(fittingsPath(orderId));
+  redirect(returnTo);
 }
 
 /**

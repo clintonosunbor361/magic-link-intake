@@ -1,41 +1,79 @@
 import Link from "next/link";
+import { Search } from "lucide-react";
 import { requireStaffSession } from "@/lib/auth/session";
-import { listClients } from "@/lib/clients/repository";
-import { listMagicLinks, type LinkStatus, type MagicLinkSummary } from "@/lib/magic-links";
+import { listClients, type ClientSort, type SortDirection } from "@/lib/clients/repository";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
 import { LinkGenerator } from "@/components/link-generator";
-import { NativeSelect } from "@/components/ui/native-select";
+import { SortableTableHeader } from "@/components/ui/sortable-table-header";
 
 export const dynamic = "force-dynamic";
 
-const dateFormatter = new Intl.DateTimeFormat("en-NG", { dateStyle: "medium", timeStyle: "short" });
-const linkDateFormatter = new Intl.DateTimeFormat("en-NG", { dateStyle: "medium", timeStyle: "short" });
+const dateFormatter = new Intl.DateTimeFormat("en-NG", {
+  dateStyle: "medium",
+  timeStyle: "short",
+  timeZone: "Africa/Lagos",
+});
+const CLIENT_FILTERS: { value: "all" | "without_orders" | "with_orders"; label: string }[] = [
+  { value: "all", label: "All Clients" },
+  { value: "without_orders", label: "Without Orders" },
+  { value: "with_orders", label: "With Orders" },
+];
+
+function parseClientSort(value: string | undefined): ClientSort {
+  return ["client", "contact", "orders", "status", "created"].includes(value ?? "") ? (value as ClientSort) : "created";
+}
+function parseSortDirection(value: string | undefined): SortDirection {
+  return value === "asc" ? "asc" : "desc";
+}
 
 export default async function ClientsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ search?: string; includeArchived?: string; page?: string; orderState?: "all" | "without_orders" | "with_orders" }>;
+  searchParams: Promise<{
+    search?: string;
+    includeArchived?: string;
+    page?: string;
+    orderState?: "all" | "without_orders" | "with_orders";
+    sort?: string;
+    direction?: string;
+  }>;
 }) {
   const session = await requireStaffSession();
   const params = await searchParams;
   const page = Math.max(1, Number(params.page ?? 1) || 1);
-  const [{ clients, hasNextPage }, intakeLinks] = await Promise.all([
-    listClients(session.organizationId, {
-      search: params.search,
-      includeArchived: params.includeArchived === "1",
-      orderState: params.orderState,
-      page,
-    }),
-    listMagicLinks(session.organizationId),
-  ]);
+  const sort = parseClientSort(params.sort);
+  const direction = parseSortDirection(params.direction);
+  const { clients, hasNextPage } = await listClients(session.organizationId, {
+    search: params.search,
+    includeArchived: params.includeArchived === "1",
+    orderState: params.orderState,
+    page,
+    sort,
+    direction,
+  });
+  const orderState = params.orderState ?? "all";
+  const emptyTitle = params.search
+    ? "No matching clients"
+    : orderState === "without_orders"
+      ? "No clients without orders"
+      : orderState === "with_orders"
+        ? "No clients with orders yet"
+        : "No clients yet";
+  const emptyDescription = params.search
+    ? "Try another name, phone number, or email address."
+    : orderState === "without_orders"
+      ? "Every current client has at least one order."
+      : orderState === "with_orders"
+        ? "Clients will appear here after an order is created for them."
+        : "Add a client manually or send an intake link.";
 
   return (
     <div>
-      <header className="grid min-w-0 gap-8 border-b border-kuartz-line pb-8 xl:grid-cols-[minmax(0,1fr)_auto] xl:items-end">
+      <header className="grid min-w-0 gap-8 border-b border-kuartz-line pb-8 xl:grid-cols-[minmax(0,1fr)_auto] xl:items-start">
         <div className="min-w-0">
           <p className="eyebrow">Clients</p>
-          <h1 className="page-title">Directory</h1>
+          <h1 className="page-title">Clients</h1>
           <p className="page-description">Manage all contacts and clients in one place.</p>
         </div>
         <div className="flex w-full max-w-full flex-col items-stretch gap-3 sm:w-72 xl:items-end">
@@ -46,40 +84,50 @@ export default async function ClientsPage({
         </div>
       </header>
 
-      <form method="get" className="mt-8 grid min-w-0 gap-4 rounded-[1rem] border border-kuartz-line bg-white/55 p-4 lg:grid-cols-2 xl:grid-cols-[minmax(18rem,1fr)_16rem_auto_auto] xl:items-end">
-        <label className="form-group">
-          <span>Search</span>
-          <input
-            type="search"
-            name="search"
-            defaultValue={params.search ?? ""}
-            placeholder="Name, phone, or email"
-            className="min-h-[3.1rem] w-full rounded-[0.8rem] border border-kuartz-control bg-white/70 px-3.5 py-3 text-sm text-kuartz-ink outline-none focus:border-[#88925f] focus:bg-white focus:ring-4 focus:ring-kuartz-lime/20"
-          />
-        </label>
-        <label className="form-group">
-          <span>Filter</span>
-          <NativeSelect
-            name="orderState"
-            defaultValue={params.orderState ?? "all"}
-            className="min-h-[3.1rem] rounded-[0.8rem]"
-          >
-            <option value="all">All clients</option>
-            <option value="without_orders">Without orders</option>
-            <option value="with_orders">With orders</option>
-          </NativeSelect>
-        </label>
-        <label className="flex min-h-[3.1rem] items-center gap-2 rounded-[0.8rem] border border-kuartz-line bg-white/60 px-3.5 text-sm font-semibold text-kuartz-secondary xl:self-end">
-          <input type="checkbox" name="includeArchived" value="1" defaultChecked={params.includeArchived === "1"} />
-          Archived
-        </label>
-        <Button type="submit" variant="outline" className="min-h-[3.1rem] xl:self-end">
-          Search
-        </Button>
-      </form>
-
-      <section className="mt-9">
-        {clients.length ? (
+      <section className="mt-7">
+          <nav className="mb-4 flex flex-wrap gap-x-8 gap-y-1 border-b border-kuartz-line" aria-label="Client views">
+            {CLIENT_FILTERS.map((filter) => (
+              <Link
+                key={filter.value}
+                href={clientFilterHref(params, filter.value)}
+                aria-current={(params.orderState ?? "all") === filter.value ? "page" : undefined}
+                className={`-mb-px inline-flex min-h-11 items-center border-b-2 px-2 text-sm transition-colors ${
+                  (params.orderState ?? "all") === filter.value
+                    ? "border-kuartz-lime font-extrabold text-kuartz-ink"
+                    : "border-transparent font-medium text-kuartz-secondary hover:text-kuartz-ink"
+                }`}
+              >
+                {filter.label}
+              </Link>
+            ))}
+          </nav>
+          <form method="get" className="mb-4 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+            {params.orderState && params.orderState !== "all" ? <input type="hidden" name="orderState" value={params.orderState} /> : null}
+            <input type="hidden" name="sort" value={sort} />
+            <input type="hidden" name="direction" value={direction} />
+            <label className="relative block w-full lg:max-w-md">
+              <span className="sr-only">Search</span>
+              <Search size={17} aria-hidden="true" className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-kuartz-muted" />
+              <input
+                type="search"
+                name="search"
+                defaultValue={params.search ?? ""}
+                placeholder="Search name, phone, or email"
+                className="min-h-[2.75rem] w-full rounded-[0.65rem] border border-kuartz-control bg-white px-10 py-2.5 text-sm text-kuartz-ink outline-none focus:border-[#88925f] focus:ring-4 focus:ring-kuartz-lime/20"
+              />
+            </label>
+            <div className="flex flex-wrap items-center gap-2">
+              <label className="inline-flex min-h-[2.75rem] items-center gap-2 rounded-[0.65rem] border border-kuartz-line bg-white px-3.5 text-sm font-semibold text-kuartz-secondary">
+                <input type="checkbox" name="includeArchived" value="1" defaultChecked={params.includeArchived === "1"} />
+                Archived
+              </label>
+              <Button type="submit" variant="outline" className="min-h-[2.75rem] gap-2 rounded-[0.65rem]">
+                <Search size={16} aria-hidden="true" />
+                Search
+              </Button>
+            </div>
+          </form>
+          {clients.length ? (
           <>
           <ul className="divide-y divide-kuartz-line border-y border-kuartz-line xl:hidden">
             {clients.map((client) => (
@@ -93,32 +141,46 @@ export default async function ClientsPage({
               </li>
             ))}
           </ul>
-          <div className="hidden overflow-x-auto border-y border-kuartz-line xl:block">
+          <div className="hidden overflow-x-auto rounded-[0.8rem] border border-kuartz-line xl:block">
             <table className="w-full min-w-[760px] text-left text-sm">
-              <thead className="text-xs text-kuartz-secondary">
+              <thead className="bg-[#f4f3f0] text-xs text-kuartz-secondary">
                 <tr>
-                  <th className="py-3 pr-4 font-semibold">Client</th>
-                  <th className="px-4 py-3 font-semibold">Contact</th>
-                  <th className="px-4 py-3 font-semibold">Orders</th>
-                  <th className="px-4 py-3 font-semibold">Status</th>
-                  <th className="pl-4 py-3 font-semibold">Created</th>
+                  <th className="py-3 pl-4 pr-4" aria-sort={sort === "client" ? (direction === "asc" ? "ascending" : "descending") : "none"}>
+                    <SortableTableHeader href={sortHref(params, "client")} active={sort === "client"} direction={direction}>Client</SortableTableHeader>
+                  </th>
+                  <th className="px-4 py-3" aria-sort={sort === "contact" ? (direction === "asc" ? "ascending" : "descending") : "none"}>
+                    <SortableTableHeader href={sortHref(params, "contact")} active={sort === "contact"} direction={direction}>Contact</SortableTableHeader>
+                  </th>
+                  <th className="px-4 py-3" aria-sort={sort === "orders" ? (direction === "asc" ? "ascending" : "descending") : "none"}>
+                    <SortableTableHeader href={sortHref(params, "orders")} active={sort === "orders"} direction={direction}>Orders</SortableTableHeader>
+                  </th>
+                  <th className="px-4 py-3" aria-sort={sort === "status" ? (direction === "asc" ? "ascending" : "descending") : "none"}>
+                    <SortableTableHeader href={sortHref(params, "status")} active={sort === "status"} direction={direction}>Status</SortableTableHeader>
+                  </th>
+                  <th className="pl-4 py-3" aria-sort={sort === "created" ? (direction === "asc" ? "ascending" : "descending") : "none"}>
+                    <SortableTableHeader href={sortHref(params, "created")} active={sort === "created"} direction={direction}>Created</SortableTableHeader>
+                  </th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-kuartz-line">
+              <tbody className="divide-y divide-kuartz-line bg-white/75">
                 {clients.map((client) => (
-                  <tr key={client.id}>
-                    <td className="py-4 pr-4 font-semibold text-kuartz-ink">
+                  <tr key={client.id} className="transition hover:bg-[#fbfaf7]">
+                    <td className="py-3.5 pl-4 pr-4 font-semibold text-kuartz-ink">
                       <Link href={`/clients/${client.id}`} className="hover:underline">
                         {client.fullName}
                       </Link>
                     </td>
-                    <td className="px-4 py-4 text-kuartz-secondary">
+                    <td className="px-4 py-3.5 text-kuartz-secondary">
                       {client.primaryPhone}
                       {client.email ? ` | ${client.email}` : ""}
                     </td>
-                    <td className="px-4 py-4 text-kuartz-ink">{client.orderCount ? client.latestOrderTitle : "No Orders yet"}</td>
-                    <td className="px-4 py-4 text-kuartz-secondary">{client.archivedAt ? "Archived" : "Active"}</td>
-                    <td className="pl-4 py-4 text-kuartz-secondary">{dateFormatter.format(client.createdAt)}</td>
+                    <td className="px-4 py-3.5 text-kuartz-ink">{client.orderCount ? client.latestOrderTitle : "No Orders yet"}</td>
+                    <td className="px-4 py-3.5">
+                      <span className={`rounded-full px-2.5 py-1 text-xs font-extrabold ${client.archivedAt ? "bg-[#fff4ec] text-[#9a4b21]" : "bg-[#edfbdc] text-[#286b2a]"}`}>
+                        {client.archivedAt ? "Archived" : "Active"}
+                      </span>
+                    </td>
+                    <td className="pl-4 py-3.5 text-kuartz-secondary">{dateFormatter.format(client.createdAt)}</td>
                   </tr>
                 ))}
               </tbody>
@@ -127,13 +189,13 @@ export default async function ClientsPage({
           </>
         ) : (
           <EmptyState
-            className="mt-4"
-            title="No Clients yet"
-            description="Add a client manually or send an intake link."
+            className="rounded-[0.8rem] border border-kuartz-line bg-white/55 py-12"
+            title={emptyTitle}
+            description={emptyDescription}
           />
         )}
         {clients.length && (page > 1 || hasNextPage) ? (
-          <div className="mt-6 flex items-center justify-between">
+          <div className="mt-4 flex items-center justify-between border-y border-kuartz-line px-1 py-3">
             {page > 1 ? (
               <Button asChild variant="outline">
                 <Link href={pageHref(params, page - 1)}>Previous</Link>
@@ -143,7 +205,7 @@ export default async function ClientsPage({
                 Previous
               </Button>
             )}
-            <span className="text-sm text-kuartz-secondary">Page {page}</span>
+            <span className="text-sm text-kuartz-secondary">Showing page {page}</span>
             {hasNextPage ? (
               <Button asChild variant="outline">
                 <Link href={pageHref(params, page + 1)}>Next</Link>
@@ -156,79 +218,52 @@ export default async function ClientsPage({
           </div>
         ) : null}
       </section>
-
-      <GeneratedIntakeLinks links={intakeLinks.slice(0, 8)} />
     </div>
   );
 }
 
-function pageHref(params: { search?: string; includeArchived?: string; orderState?: string }, page: number): string {
+function pageHref(
+  params: { search?: string; includeArchived?: string; orderState?: string; sort?: string; direction?: string },
+  page: number,
+): string {
   const query = new URLSearchParams();
   if (params.search) query.set("search", params.search);
   if (params.includeArchived === "1") query.set("includeArchived", "1");
   if (params.orderState && params.orderState !== "all") query.set("orderState", params.orderState);
+  query.set("sort", parseClientSort(params.sort));
+  query.set("direction", parseSortDirection(params.direction));
   if (page > 1) query.set("page", String(page));
   const queryString = query.toString();
   return queryString ? `/clients?${queryString}` : "/clients";
 }
 
-function GeneratedIntakeLinks({ links }: { links: MagicLinkSummary[] }) {
-  return (
-    <section className="mt-10 border-t border-kuartz-line pt-8">
-      <div className="flex flex-wrap items-end justify-between gap-3">
-        <div>
-          <p className="eyebrow">Intake</p>
-          <h2 className="section-title mt-2">Generated intake links</h2>
-        </div>
-        <span className="rounded-full border border-kuartz-line bg-white/70 px-3 py-1 text-xs font-extrabold text-kuartz-secondary">
-          {links.length} recent
-        </span>
-      </div>
-
-      <div className="mt-4 divide-y divide-kuartz-line border-y border-kuartz-line">
-        {links.length ? (
-          links.map((link) => (
-            <div key={link.id} className="grid gap-3 py-4 text-sm lg:grid-cols-[minmax(0,1fr)_8rem_13rem] lg:items-center">
-              <div className="min-w-0">
-                <div className="flex flex-wrap items-center gap-2">
-                  <p className="font-semibold text-kuartz-ink">Generated {linkDateFormatter.format(new Date(link.createdAt))}</p>
-                  <StatusPill status={link.status} />
-                </div>
-                <p className="mt-1 text-kuartz-secondary">
-                  {link.generatedByName ? `Created by ${link.generatedByName}` : "Creator unavailable"} - Expires{" "}
-                  {linkDateFormatter.format(new Date(link.expiresAt))}
-                </p>
-                <p className="mt-1 text-xs text-kuartz-muted">Token {link.hashPreview}</p>
-              </div>
-              <div>
-                {link.clientId && link.clientName ? (
-                  <Link href={`/clients/${link.clientId}`} className="font-semibold text-kuartz-ink underline-offset-4 hover:underline">
-                    {link.clientName}
-                  </Link>
-                ) : (
-                  <span className="text-kuartz-muted">No submission</span>
-                )}
-              </div>
-              <p className="text-kuartz-secondary lg:text-right">
-                {link.usedAt ? `Used ${linkDateFormatter.format(new Date(link.usedAt))}` : "Not used yet"}
-              </p>
-            </div>
-          ))
-        ) : (
-          <p className="py-8 text-sm text-kuartz-muted">No intake links generated yet.</p>
-        )}
-      </div>
-    </section>
-  );
+function clientFilterHref(
+  params: { search?: string; includeArchived?: string; sort?: string; direction?: string },
+  orderState: "all" | "without_orders" | "with_orders",
+): string {
+  const query = new URLSearchParams();
+  if (params.search) query.set("search", params.search);
+  if (params.includeArchived === "1") query.set("includeArchived", "1");
+  if (orderState !== "all") query.set("orderState", orderState);
+  query.set("sort", parseClientSort(params.sort));
+  query.set("direction", parseSortDirection(params.direction));
+  const queryString = query.toString();
+  return queryString ? `/clients?${queryString}` : "/clients";
 }
 
-function StatusPill({ status }: { status: LinkStatus }) {
-  const className =
-    status === "Active"
-      ? "border-[#b8ff45] bg-[#f4ffd7] text-kuartz-ink"
-      : status === "Used"
-        ? "border-kuartz-line bg-white text-kuartz-secondary"
-        : "border-[#ead4c6] bg-[#fff4ec] text-[#9a4b21]";
-
-  return <span className={`rounded-full border px-2.5 py-1 text-xs font-extrabold ${className}`}>{status}</span>;
+function sortHref(
+  params: { search?: string; includeArchived?: string; orderState?: string; sort?: string; direction?: string },
+  sort: ClientSort,
+): string {
+  const query = new URLSearchParams();
+  const currentSort = parseClientSort(params.sort);
+  const currentDirection = parseSortDirection(params.direction);
+  const nextDirection: SortDirection = currentSort === sort && currentDirection === "asc" ? "desc" : "asc";
+  if (params.search) query.set("search", params.search);
+  if (params.includeArchived === "1") query.set("includeArchived", "1");
+  if (params.orderState && params.orderState !== "all") query.set("orderState", params.orderState);
+  query.set("sort", sort);
+  query.set("direction", nextDirection);
+  return `/clients?${query.toString()}`;
 }
+
