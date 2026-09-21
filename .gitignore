@@ -11,3 +11,4 @@ pnpm-debug.log*
 test-results/
 playwright-report/
 .vercel
+__pycache__/
