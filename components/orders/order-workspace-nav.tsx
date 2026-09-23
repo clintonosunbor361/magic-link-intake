@@ -18,7 +18,7 @@ export function OrderWorkspaceNav({ tabs, activeTab }: OrderWorkspaceNavProps) {
   return (
     <div className="mt-6">
       <details className="group relative md:hidden">
-        <summary className="select-field min-h-[3.15rem] cursor-pointer list-none">
+        <summary className="select-field min-h-11 cursor-pointer list-none">
           <span className="truncate pr-10">{active?.label ?? "Overview"}</span>
           <ChevronDown
             aria-hidden="true"

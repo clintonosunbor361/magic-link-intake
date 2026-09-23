@@ -127,7 +127,7 @@ export function NativeSelect({
         onClick={() => setOpen((current) => !current)}
         className={cn(
           `select-field ${open ? "select-field-open" : ""} ${justSelected ? "select-field-selected" : ""}`,
-          "min-h-[3.15rem]",
+          "min-h-11",
           disabled ? "cursor-not-allowed opacity-60" : "",
           className,
         )}

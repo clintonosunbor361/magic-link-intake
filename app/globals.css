@@ -277,12 +277,12 @@ summary {
   }
 
   .field {
-    min-height: 3.5rem;
+    min-height: 2.75rem;
     width: 100%;
     border-radius: 1rem;
     border: 1px solid rgba(201, 212, 227, 0.96);
     background: rgba(255, 255, 255, 0.64);
-    padding: 1rem 1.25rem;
+    padding: 0.625rem 1rem;
     color: #15163f;
     font-size: 0.9375rem;
     line-height: 1.25rem;
@@ -320,7 +320,9 @@ summary {
   }
 
   textarea.field {
+    min-height: 7rem;
     border-radius: 1rem;
+    padding-block: 0.875rem;
   }
 
   .field option {
@@ -354,13 +356,13 @@ summary {
 
   .checkbox-field {
     display: flex;
-    min-height: 3.5rem;
+    min-height: 2.75rem;
     align-items: center;
     gap: 0.875rem;
     border-radius: 1rem;
     border: 1px solid rgba(201, 212, 227, 0.96);
     background: rgba(255, 255, 255, 0.64);
-    padding: 1rem 1.25rem;
+    padding: 0.625rem 1rem;
     color: #15163f;
     font-size: 0.9375rem;
     font-weight: 700;
@@ -390,14 +392,14 @@ summary {
   .select-field {
     position: relative;
     display: flex;
-    min-height: 3.5rem;
+    min-height: 2.75rem;
     width: 100%;
     align-items: center;
     justify-content: space-between;
     border-radius: 1rem;
     border: 1px solid rgba(201, 212, 227, 0.96);
     background: rgba(255, 255, 255, 0.64);
-    padding: 1rem 3rem 1rem 1.25rem;
+    padding: 0.625rem 3rem 0.625rem 1rem;
     color: #15163f;
     text-align: left;
     font-size: 0.9375rem;
@@ -519,7 +521,7 @@ summary {
     padding: 0.625rem 1rem;
     color: #15163f;
     font-size: 0.875rem;
-    font-weight: 600;
+    font-weight: 800;
     transition: background 160ms ease, box-shadow 160ms ease;
   }
 

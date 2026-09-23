@@ -118,7 +118,7 @@ export default async function ClientDetailPage({
                 </label>
               </div>
               <Button type="submit" variant="outline">
-                Save identity
+                Save changes
               </Button>
             </form>
           </div>
