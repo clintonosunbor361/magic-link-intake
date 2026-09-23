@@ -21,7 +21,7 @@ export function FormDisclosure({
     <div>
       <div className="flex items-center justify-between gap-4">
         <h2 className="section-title">{title}</h2>
-        <Button type="button" variant={open ? "default" : "outline"} onClick={() => setOpen((value) => !value)} className="gap-2">
+        <Button type="button" variant="outline" onClick={() => setOpen((value) => !value)}>
           <Plus size={16} aria-hidden="true" />
           {buttonLabel}
         </Button>

@@ -106,9 +106,9 @@ export function LookWorkspaceAccordion({
               {bulkAssignment}
               <Button
                 type="button"
-                variant={addingItem ? "default" : "outline"}
+                variant={addingItem ? "ghost" : "default"}
+                size="sm"
                 onClick={() => setAddingItem((current) => !current)}
-                className="gap-2"
               >
                 {addingItem ? <X size={16} aria-hidden="true" /> : <Plus size={16} aria-hidden="true" />}
                 {addingItem ? "Close" : "Add Item"}
@@ -169,7 +169,7 @@ export function OrderItemDisclosure({
           {warning}
         </div>
         <div className="flex shrink-0 flex-wrap items-center gap-1">
-          <Button type="button" variant="ghost" onClick={() => setEditing((current) => !current)} className="gap-2">
+          <Button type="button" variant="ghost" size="sm" onClick={() => setEditing((current) => !current)}>
             {editing ? <X size={15} aria-hidden="true" /> : <Pencil size={15} aria-hidden="true" />}
             {editing ? "Close" : "Edit"}
           </Button>

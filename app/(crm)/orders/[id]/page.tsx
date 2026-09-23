@@ -353,6 +353,8 @@ export default async function OrderDetailPage({
               submitLabel="Add Look"
               pendingLabel="Adding Look..."
               size="md"
+              triggerVariant="default"
+              triggerSize="lg"
               error={modal === "add-look" ? error : undefined}
             >
               <form id="add-look-form" action={createLookAction} aria-label="Add a Look">
@@ -384,7 +386,8 @@ export default async function OrderDetailPage({
                       size="md"
                       showSectionTitle={false}
                       triggerVariant="ghost"
-                      triggerClassName="min-h-10 w-full justify-start rounded-[0.55rem] px-3 text-left text-sm"
+                      triggerSize="sm"
+                      triggerClassName="w-full justify-start text-left"
                       triggerIcon={<Pencil size={15} aria-hidden="true" />}
                       error={modal === `edit-look-${look.id}` ? error : undefined}
                     >
@@ -449,7 +452,7 @@ export default async function OrderDetailPage({
                         <input type="hidden" name="returnTo" value={orderTabHref("looks")} />
                         <input type="hidden" name="lookId" value={look.id} />
                         <input type="hidden" name="version" value={look.version} />
-                        <Button type="submit" variant="ghost" className="w-full justify-start">Archive Look</Button>
+                        <Button type="submit" variant="danger" size="sm" className="w-full justify-start">Archive Look</Button>
                       </form>
                     ) : look.archivedAt && mayRestore("look", session.role) ? (
                       <form action={restoreLookAction}>
@@ -457,7 +460,7 @@ export default async function OrderDetailPage({
                         <input type="hidden" name="returnTo" value={orderTabHref("looks")} />
                         <input type="hidden" name="lookId" value={look.id} />
                         <input type="hidden" name="version" value={look.version} />
-                        <Button type="submit" variant="ghost" className="w-full justify-start">Restore Look</Button>
+                        <Button type="submit" variant="ghost" size="sm" className="w-full justify-start">Restore Look</Button>
                       </form>
                     ) : null
                   }
@@ -1110,6 +1113,8 @@ export default async function OrderDetailPage({
                   submitLabel="Add Accessory"
                   pendingLabel="Adding accessory..."
                   size="lg"
+                  triggerVariant="default"
+                  triggerSize="lg"
                   error={modal === "accessory" ? error : undefined}
                 >
                   <form id="add-order-accessory-form" action={createAccessoryItemAction} className="grid gap-4 sm:grid-cols-2">

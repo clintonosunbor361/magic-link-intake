@@ -23,7 +23,8 @@ export function VendorDirectoryHeader({ children, error }: { children: ReactNode
         error={error}
         showSectionTitle={false}
         triggerVariant="default"
-        triggerClassName="h-11 min-h-11 w-full self-start py-0 sm:w-auto"
+        triggerSize="lg"
+        triggerClassName="w-full self-start sm:w-auto"
       >
         {children}
       </FormModal>

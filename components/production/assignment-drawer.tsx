@@ -306,6 +306,8 @@ export function LookBulkAssignForm({
       pendingLabel="Assigning Items..."
       size="md"
       showSectionTitle={false}
+      triggerVariant="ghost"
+      triggerSize="sm"
       triggerIcon={<UsersRound size={16} aria-hidden="true" />}
       error={error}
     >

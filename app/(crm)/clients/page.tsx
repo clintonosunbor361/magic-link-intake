@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Search } from "lucide-react";
+import { Plus, Search } from "lucide-react";
 import { requireStaffSession } from "@/lib/auth/session";
 import { listClients, type ClientSort, type SortDirection } from "@/lib/clients/repository";
 import { Button } from "@/components/ui/button";
@@ -77,8 +77,8 @@ export default async function ClientsPage({
           <p className="page-description">Manage all contacts and clients in one place.</p>
         </div>
         <div className="flex w-full max-w-full flex-col items-stretch gap-3 sm:w-72 xl:items-end">
-          <Button asChild className="w-full">
-            <Link href="/clients/new">Add Client</Link>
+          <Button asChild size="lg" className="w-full">
+            <Link href="/clients/new"><Plus size={17} aria-hidden="true" /> Add Client</Link>
           </Button>
           <LinkGenerator />
         </div>

@@ -88,15 +88,16 @@ export function MeasurementDrawer({
                   {actionLabel}
                 </h2>
               </div>
-              <button
+              <Button
                 type="button"
                 ref={closeRef}
+                variant="outline"
+                size="icon"
                 aria-label="Close measurements drawer"
-                className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-kuartz-line bg-white text-kuartz-ink transition hover:border-kuartz-ink"
                 onClick={closeDrawer}
               >
                 <X size={18} aria-hidden="true" />
-              </button>
+              </Button>
             </div>
 
             <div className="min-h-0 flex-1 overflow-y-auto px-5 py-5 sm:px-6">

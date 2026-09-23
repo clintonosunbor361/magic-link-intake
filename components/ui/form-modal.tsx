@@ -7,6 +7,7 @@ import { Plus, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 type ModalSize = "sm" | "md" | "lg";
+type TriggerSize = "sm" | "md" | "lg";
 
 export function FormModal({
   title,
@@ -21,6 +22,7 @@ export function FormModal({
   pendingLabel = "Saving...",
   size = "md",
   triggerVariant = "outline",
+  triggerSize = "md",
   triggerClassName,
   triggerIcon,
 }: {
@@ -35,7 +37,8 @@ export function FormModal({
   submitLabel: string;
   pendingLabel?: string;
   size?: ModalSize;
-  triggerVariant?: "default" | "outline" | "ghost";
+  triggerVariant?: "default" | "ink" | "outline" | "ghost" | "danger";
+  triggerSize?: TriggerSize;
   triggerClassName?: string;
   triggerIcon?: ReactNode;
 }) {
@@ -156,7 +159,8 @@ export function FormModal({
           ref={triggerRef}
           type="button"
           variant={triggerVariant}
-          className={`gap-2 ${triggerClassName ?? ""}`}
+          size={triggerSize}
+          className={triggerClassName}
           aria-haspopup="dialog"
           aria-expanded={open}
           onClick={() => setOpen(true)}
@@ -179,15 +183,17 @@ export function FormModal({
                         {dialogTitle}
                       </h2>
                     </div>
-                    <button
+                    <Button
                       ref={closeRef}
                       type="button"
+                      variant="outline"
+                      size="icon"
                       aria-label={`Close ${dialogTitle}`}
-                      className="inline-flex h-11 w-11 shrink-0 cursor-pointer items-center justify-center rounded-full border border-kuartz-line bg-white text-kuartz-ink transition-colors hover:border-kuartz-ink focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-kuartz-lime/30"
+                      className="shrink-0"
                       onClick={requestClose}
                     >
                       <X size={18} aria-hidden="true" />
-                    </button>
+                    </Button>
                   </div>
                   <div
                     className="min-h-0 flex-1 overflow-y-auto px-5 py-5 sm:px-6"
@@ -217,7 +223,7 @@ export function FormModal({
                       <Button ref={keepEditingRef} type="button" variant="outline" onClick={() => setConfirmDiscard(false)}>Keep editing</Button>
                       <Button
                         type="button"
-                        className="border border-[#e2b5b2] bg-[#fff4f3] text-[#7e403d] shadow-none hover:bg-[#fbe5e3]"
+                        variant="danger"
                         onClick={finishClose}
                       >
                         Discard

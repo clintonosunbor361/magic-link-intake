@@ -3,6 +3,7 @@ import { ArrowRight } from "lucide-react";
 import { Greeting } from "@/components/greeting";
 import { WeekdayLabel } from "@/components/weekday-label";
 import { EmptyState } from "@/components/ui/empty-state";
+import { Button } from "@/components/ui/button";
 import { requireStaffSession } from "@/lib/auth/session";
 import {
   dashboardToday,
@@ -135,13 +136,12 @@ function NotificationCta({ unreadCount }: { unreadCount: number }) {
   if (!unreadCount) return null;
 
   return (
-    <Link
-      href="/notifications"
-      className="inline-flex w-fit items-center gap-2 rounded-full border border-kuartz-ink bg-kuartz-ink px-4 py-2 text-xs font-semibold text-white transition duration-200 hover:-translate-y-px hover:bg-kuartz-navy"
-    >
-      {unreadCount} unread notification{unreadCount === 1 ? "" : "s"}
-      <ArrowRight size={14} />
-    </Link>
+    <Button asChild variant="ink" size="sm" className="w-fit">
+      <Link href="/notifications">
+        {unreadCount} unread notification{unreadCount === 1 ? "" : "s"}
+        <ArrowRight size={14} />
+      </Link>
+    </Button>
   );
 }
 
@@ -337,12 +337,12 @@ function NextLookCard({ look, fittings }: { look?: UpcomingLook; fittings: Upcom
         <p className="mt-4 text-sm text-kuartz-muted">{detail}</p>
       </div>
       <div className="flex flex-col gap-3 p-5 sm:p-6 md:min-w-52 md:justify-center">
-        <Link href={href} className="inline-flex min-h-11 items-center justify-center rounded-full bg-kuartz-ink px-5 text-sm font-extrabold text-white transition hover:-translate-y-px hover:bg-kuartz-navy">
-          Open work
-        </Link>
-        <Link href="/orders" className="inline-flex min-h-11 items-center justify-center rounded-full border border-kuartz-line bg-white px-5 text-sm font-extrabold text-kuartz-ink transition hover:border-kuartz-ink">
-          View orders
-        </Link>
+        <Button asChild variant="ink">
+          <Link href={href}>Open work</Link>
+        </Button>
+        <Button asChild variant="outline">
+          <Link href="/orders">View orders</Link>
+        </Button>
       </div>
     </section>
   );

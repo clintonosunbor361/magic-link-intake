@@ -76,10 +76,11 @@ export function LinkGenerator() {
               <Link2 className="h-4 w-4 shrink-0 text-kuartz-graphite" aria-hidden="true" />
               <span className="truncate">{generatedUrl}</span>
             </div>
-            <button
+            <Button
               type="button"
+              variant="outline"
               onClick={copyLink}
-              className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-[0.8rem] border border-kuartz-line bg-white/70 px-4 py-2 text-sm font-semibold text-kuartz-graphite shadow-sm backdrop-blur-xl transition hover:bg-white focus:outline-none focus:ring-4 focus:ring-slate-300/25"
+              className="w-full"
             >
               {copied ? (
                 <Check className="h-4 w-4" aria-hidden="true" />
@@ -87,7 +88,7 @@ export function LinkGenerator() {
                 <Copy className="h-4 w-4" aria-hidden="true" />
               )}
               {copied ? "Copied" : "Copy link"}
-            </button>
+            </Button>
           </div>
         </div>
       ) : null}

@@ -213,9 +213,9 @@ export function NewClientForm({
                   <p className="mt-2 text-sm leading-6 text-kuartz-secondary">Review these matches before creating a new Client.</p>
                 </div>
               </div>
-              <button type="button" onClick={() => setModalMatches([])} className="rounded-full p-2 text-kuartz-secondary hover:bg-white hover:text-kuartz-ink" aria-label="Close duplicate check">
+              <Button type="button" variant="ghost" size="icon" onClick={() => setModalMatches([])} aria-label="Close duplicate check">
                 <X size={18} aria-hidden="true" />
-              </button>
+              </Button>
             </div>
 
             <div className="mt-5 min-h-0 space-y-2 overflow-y-auto pr-1">

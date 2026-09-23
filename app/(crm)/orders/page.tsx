@@ -99,7 +99,7 @@ export default async function OrdersPage({
               : "Manage confirmed client orders."}
           </p>
         </div>
-        <Button asChild className="h-11 min-h-11 w-full self-start gap-2 py-0 sm:w-auto">
+        <Button asChild size="lg" className="w-full self-start sm:w-auto">
           <Link href="/orders/new"><Plus size={17} aria-hidden="true" /> Add Order</Link>
         </Button>
       </header>
