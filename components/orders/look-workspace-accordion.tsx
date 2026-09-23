@@ -12,7 +12,7 @@ export function LookWorkspaceAccordion({
   lookDate,
   archived,
   defaultOpen,
-  editForm,
+  editAction,
   lifecycleAction,
   addItemForm,
   bulkAssignment,
@@ -25,7 +25,7 @@ export function LookWorkspaceAccordion({
   lookDate: string | null;
   archived: boolean;
   defaultOpen: boolean;
-  editForm?: ReactNode;
+  editAction?: ReactNode;
   lifecycleAction: ReactNode;
   addItemForm?: ReactNode;
   bulkAssignment?: ReactNode;
@@ -34,7 +34,6 @@ export function LookWorkspaceAccordion({
   const storageKey = `kuartz-order-${orderId}-look-${lookId}`;
   const actionsMenuRef = useRef<HTMLDetailsElement>(null);
   const [open, setOpen] = useState(defaultOpen);
-  const [editing, setEditing] = useState(false);
   const [addingItem, setAddingItem] = useState(false);
 
   useEffect(() => {
@@ -84,7 +83,7 @@ export function LookWorkspaceAccordion({
           </span>
         </button>
 
-        {editForm || lifecycleAction ? <details ref={actionsMenuRef} className="relative flex shrink-0 items-center border-l border-kuartz-line">
+        {editAction || lifecycleAction ? <details ref={actionsMenuRef} className="relative flex shrink-0 items-center border-l border-kuartz-line">
           <summary
             className="flex min-h-full cursor-pointer list-none items-center px-4 text-kuartz-secondary hover:bg-white hover:text-kuartz-ink [&::-webkit-details-marker]:hidden"
             title="Look actions"
@@ -92,24 +91,8 @@ export function LookWorkspaceAccordion({
           >
             <Ellipsis size={20} aria-hidden="true" />
           </summary>
-          <div
-            className="absolute right-2 top-[calc(100%-0.35rem)] z-20 min-w-40 rounded-[0.7rem] border border-kuartz-line bg-white p-1.5 shadow-[0_16px_40px_rgba(24,24,38,0.16)]"
-            onClick={() => {
-              if (actionsMenuRef.current) actionsMenuRef.current.open = false;
-            }}
-          >
-            {editForm ? <button
-              type="button"
-              className="flex min-h-10 w-full items-center gap-2 rounded-[0.55rem] px-3 text-left text-sm font-bold text-kuartz-ink hover:bg-[#f6f6f3]"
-              onClick={() => {
-                setOpen(true);
-                setEditing(true);
-                window.sessionStorage.setItem(storageKey, "open");
-              }}
-            >
-              <Pencil size={15} aria-hidden="true" />
-              Edit Look
-            </button> : null}
+          <div className="absolute right-2 top-[calc(100%-0.35rem)] z-20 min-w-40 rounded-[0.7rem] border border-kuartz-line bg-white p-1.5 shadow-[0_16px_40px_rgba(24,24,38,0.16)]">
+            {editAction}
             {lifecycleAction}
           </div>
         </details> : null}
@@ -117,35 +100,20 @@ export function LookWorkspaceAccordion({
 
       {open ? (
         <div id={contentId} className="border-t border-kuartz-line px-4 py-4 sm:px-5">
-          {editing && editForm ? (
-            <div className="mb-5 rounded-[0.8rem] border border-kuartz-line bg-[#fbfaf7] p-4">
-              <div className="mb-4 flex items-center justify-between gap-3">
-                <h3 className="text-sm font-extrabold text-kuartz-ink">Edit Look</h3>
-                <button
-                  type="button"
-                  onClick={() => setEditing(false)}
-                  className="flex size-9 items-center justify-center rounded-full text-kuartz-secondary hover:bg-white hover:text-kuartz-ink"
-                  title="Close edit form"
-                  aria-label="Close edit form"
-                >
-                  <X size={17} aria-hidden="true" />
-                </button>
-              </div>
-              {editForm}
-            </div>
-          ) : null}
-
           {addItemForm ? <div className="flex flex-wrap items-center justify-between gap-3">
             <h3 className="text-sm font-extrabold text-kuartz-ink">Items</h3>
-            <Button
-              type="button"
-              variant={addingItem ? "default" : "outline"}
-              onClick={() => setAddingItem((current) => !current)}
-              className="gap-2"
-            >
-              {addingItem ? <X size={16} aria-hidden="true" /> : <Plus size={16} aria-hidden="true" />}
-              {addingItem ? "Close" : "Add Item"}
-            </Button>
+            <div className="flex flex-wrap items-center gap-2">
+              {bulkAssignment}
+              <Button
+                type="button"
+                variant={addingItem ? "default" : "outline"}
+                onClick={() => setAddingItem((current) => !current)}
+                className="gap-2"
+              >
+                {addingItem ? <X size={16} aria-hidden="true" /> : <Plus size={16} aria-hidden="true" />}
+                {addingItem ? "Close" : "Add Item"}
+              </Button>
+            </div>
           </div> : null}
 
           {addingItem && addItemForm ? (
@@ -153,7 +121,6 @@ export function LookWorkspaceAccordion({
           ) : null}
 
           <div className={addItemForm ? "mt-4 space-y-3" : "space-y-3"}>{children}</div>
-          {bulkAssignment ? <div className="mt-4">{bulkAssignment}</div> : null}
         </div>
       ) : null}
     </section>

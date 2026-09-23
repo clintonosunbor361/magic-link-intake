@@ -22,6 +22,7 @@ export function FormModal({
   size = "md",
   triggerVariant = "outline",
   triggerClassName,
+  triggerIcon,
 }: {
   title: string;
   modalTitle?: string;
@@ -36,6 +37,7 @@ export function FormModal({
   size?: ModalSize;
   triggerVariant?: "default" | "outline" | "ghost";
   triggerClassName?: string;
+  triggerIcon?: ReactNode;
 }) {
   const dialogTitle = modalTitle ?? title;
   const id = useId();
@@ -159,7 +161,7 @@ export function FormModal({
           aria-expanded={open}
           onClick={() => setOpen(true)}
         >
-          <Plus size={16} aria-hidden="true" />
+          {triggerIcon === undefined ? <Plus size={16} aria-hidden="true" /> : triggerIcon}
           {buttonLabel}
         </Button>
       </div>

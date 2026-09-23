@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { requireStaffSession } from "@/lib/auth/session";
 import { readFormString } from "@/lib/forms/read-string";
-import { safeReturnPath, withReturnError } from "@/lib/forms/return-path";
+import { safeReturnPath, withReturnError, withReturnErrorContext } from "@/lib/forms/return-path";
 import { parseMoneyToMinorUnits } from "@/lib/forms/money";
 import { createActiveOrderRepository, createItemRepository, createLookRepository, createOrderRepository } from "@/lib/orders/repository";
 import { archiveOrder, createActiveOrder, restoreOrder, updateOrderDetails } from "@/lib/orders/order-service";
@@ -140,7 +140,7 @@ export async function createLookAction(formData: FormData) {
     );
   } catch (error) {
     const message = error instanceof Error ? error.message : "The Look could not be created.";
-    redirect(withReturnError(returnTo, message));
+    redirect(withReturnErrorContext(returnTo, message, "add-look"));
   }
 
   revalidatePath("/orders");
@@ -171,7 +171,7 @@ export async function updateLookAction(formData: FormData) {
     );
   } catch (error) {
     const message = error instanceof Error ? error.message : "The Look could not be updated.";
-    redirect(withReturnError(returnTo, message));
+    redirect(withReturnErrorContext(returnTo, message, `edit-look-${lookId}`));
   }
 
   revalidatePath("/orders");

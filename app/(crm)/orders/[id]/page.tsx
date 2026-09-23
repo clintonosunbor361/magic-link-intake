@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { Pencil } from "lucide-react";
 import {
   archiveItemAction,
   archiveLookAction,
@@ -102,6 +103,7 @@ import { MeasurementDrawer } from "@/components/clients/measurement-drawer";
 import { ItemAssignmentDrawer, LookBulkAssignForm } from "@/components/production/assignment-drawer";
 import { OrderWorkspaceNav } from "@/components/orders/order-workspace-nav";
 import { LookWorkspaceAccordion } from "@/components/orders/look-workspace-accordion";
+import { LookFormFields } from "@/components/orders/look-form-fields";
 import { Button } from "@/components/ui/button";
 import { Breadcrumbs } from "@/components/ui/breadcrumbs";
 import { EmptyState } from "@/components/ui/empty-state";
@@ -342,36 +344,23 @@ export default async function OrderDetailPage({
 
           {activeTab === "looks" ? (
           <div className="scroll-mt-8">
-            <FormDisclosure title="Looks" buttonLabel="Add Look">
-              <form action={createLookAction} aria-label="Add a Look" className="space-y-3 rounded-[0.95rem] border border-kuartz-line bg-[#fbfaf7] p-4 shadow-[0_18px_48px_rgba(24,24,38,0.08)]">
+            <FormModal
+              title="Looks"
+              modalTitle="Add Look"
+              buttonLabel="Add Look"
+              eyebrow="Looks & Items"
+              formId="add-look-form"
+              submitLabel="Add Look"
+              pendingLabel="Adding Look..."
+              size="md"
+              error={modal === "add-look" ? error : undefined}
+            >
+              <form id="add-look-form" action={createLookAction} aria-label="Add a Look">
                 <input type="hidden" name="orderId" value={order.id} />
                 <input type="hidden" name="returnTo" value={orderTabHref("looks")} />
-                <div className="grid gap-4 sm:grid-cols-2">
-                  <label className="form-group">
-                    <span>Name</span>
-                    <Input name="name" required />
-                  </label>
-                  <label className="form-group">
-                    <span>
-                      Look date <span className="font-normal text-kuartz-secondary">(optional)</span>
-                    </span>
-                    <Input type="date" name="lookDate" />
-                  </label>
-                </div>
-                <label className="form-group">
-                  <span>
-                    Notes <span className="font-normal text-kuartz-secondary">(optional)</span>
-                  </span>
-                  <textarea
-                    name="notes"
-                    className="min-h-[3.5rem] w-full rounded-[0.8rem] border border-kuartz-control bg-white/70 px-3.5 py-3 text-sm text-kuartz-ink outline-none focus:border-[#88925f] focus:bg-white focus:ring-4 focus:ring-kuartz-lime/20"
-                  />
-                </label>
-                <Button type="submit" variant="outline">
-                  Add Look
-                </Button>
+                <LookFormFields />
               </form>
-            </FormDisclosure>
+            </FormModal>
             <div className="mt-5 space-y-5">
               {order.looks.map((look, lookIndex) => (
                 <LookWorkspaceAccordion
@@ -383,6 +372,48 @@ export default async function OrderDetailPage({
                   lookDate={look.lookDate}
                   archived={Boolean(look.archivedAt)}
                   defaultOpen={lookIndex === 0}
+                  editAction={
+                    <FormModal
+                      title="Looks"
+                      modalTitle={`Edit ${look.name}`}
+                      buttonLabel="Edit Look"
+                      eyebrow="Looks & Items"
+                      formId={`edit-look-${look.id}-form`}
+                      submitLabel="Save Look"
+                      pendingLabel="Saving Look..."
+                      size="md"
+                      showSectionTitle={false}
+                      triggerVariant="ghost"
+                      triggerClassName="min-h-10 w-full justify-start rounded-[0.55rem] px-3 text-left text-sm"
+                      triggerIcon={<Pencil size={15} aria-hidden="true" />}
+                      error={modal === `edit-look-${look.id}` ? error : undefined}
+                    >
+                      <form id={`edit-look-${look.id}-form`} action={updateLookAction}>
+                        <input type="hidden" name="orderId" value={order.id} />
+                        <input type="hidden" name="returnTo" value={orderTabHref("looks")} />
+                        <input type="hidden" name="lookId" value={look.id} />
+                        <input type="hidden" name="version" value={look.version} />
+                        <LookFormFields
+                          name={look.name}
+                          lookDate={look.lookDate ?? ""}
+                          notes={look.notes}
+                        />
+                      </form>
+                    </FormModal>
+                  }
+                  bulkAssignment={
+                    <LookBulkAssignForm
+                      orderId={order.id}
+                      lookId={look.id}
+                      lookName={look.name}
+                      itemCount={look.items.filter((item) => !item.archivedAt).length}
+                      unassignedCount={
+                        look.items.filter((item) => !item.archivedAt && !assignmentByItemId.get(item.id)).length
+                      }
+                      vendors={vendors}
+                      error={modal === `assign-look-${look.id}` ? error : undefined}
+                    />
+                  }
                   addItemForm={
                     <form
                       action={createItemAction}
@@ -431,43 +462,6 @@ export default async function OrderDetailPage({
                     ) : null
                   }
                 >
-                  <details className="mt-4">
-                    <summary className="inline-flex min-h-11 cursor-pointer list-none items-center justify-center rounded-[0.85rem] border border-kuartz-control bg-white px-4 py-2 text-sm font-extrabold text-kuartz-ink shadow-[0_10px_24px_rgba(24,24,38,0.05)] transition hover:border-kuartz-ink/40">
-                      Edit Look
-                    </summary>
-                  <form action={updateLookAction} className="mt-4 space-y-3 rounded-[0.95rem] border border-kuartz-line bg-[#fbfaf7] p-4">
-                    <input type="hidden" name="orderId" value={order.id} />
-                    <input type="hidden" name="returnTo" value={orderTabHref("looks")} />
-                    <input type="hidden" name="lookId" value={look.id} />
-                    <input type="hidden" name="version" value={look.version} />
-                    <div className="grid gap-4 sm:grid-cols-2">
-                      <label className="form-group">
-                        <span>Name</span>
-                        <Input name="name" defaultValue={look.name} required />
-                      </label>
-                      <label className="form-group">
-                        <span>
-                          Look date <span className="font-normal text-kuartz-secondary">(optional)</span>
-                        </span>
-                        <Input type="date" name="lookDate" defaultValue={look.lookDate ?? ""} />
-                      </label>
-                    </div>
-                    <label className="form-group">
-                      <span>
-                        Notes <span className="font-normal text-kuartz-secondary">(optional)</span>
-                      </span>
-                      <textarea
-                        name="notes"
-                        defaultValue={look.notes}
-                        className="min-h-[3.5rem] w-full rounded-[0.8rem] border border-kuartz-control bg-white/70 px-3.5 py-3 text-sm text-kuartz-ink outline-none focus:border-[#88925f] focus:bg-white focus:ring-4 focus:ring-kuartz-lime/20"
-                      />
-                    </label>
-                    <Button type="submit" variant="outline">
-                      Save Look
-                    </Button>
-                  </form>
-                  </details>
-
                   <div>
                     <div className="space-y-3">
                       {look.items.length ? (
@@ -567,16 +561,6 @@ export default async function OrderDetailPage({
                         <p className="py-3 text-sm text-kuartz-muted">No Items yet on this Look.</p>
                       )}
                     </div>
-
-                    <LookBulkAssignForm
-                      orderId={order.id}
-                      lookId={look.id}
-                      lookName={look.name}
-                      unassignedCount={
-                        look.items.filter((item) => !item.archivedAt && !assignmentByItemId.get(item.id)).length
-                      }
-                      vendors={vendors}
-                    />
 
                   </div>
                 </LookWorkspaceAccordion>

@@ -86,4 +86,33 @@ describe("Look workspace accordion", () => {
     await user.click(accordionTrigger);
     expect(actionsMenu).not.toHaveAttribute("open");
   });
+
+  it("places edit in the Look actions menu and bulk assignment beside Add Item", async () => {
+    const user = userEvent.setup();
+    render(
+      <LookWorkspaceAccordion
+        orderId="order-4"
+        lookId="look-4"
+        name="Evening Look"
+        itemCount={2}
+        lookDate={null}
+        archived={false}
+        defaultOpen
+        editAction={<button type="button">Edit Look</button>}
+        lifecycleAction={null}
+        bulkAssignment={<button type="button">Assign Vendor</button>}
+        addItemForm={<p>New Item form</p>}
+      >
+        <p>Look Items</p>
+      </LookWorkspaceAccordion>,
+    );
+
+    const assignVendor = screen.getByRole("button", { name: "Assign Vendor" });
+    const addItem = screen.getByRole("button", { name: "Add Item" });
+    expect(assignVendor.parentElement).toBe(addItem.parentElement);
+
+    expect(screen.queryByRole("button", { name: "Edit Look" })).not.toBeVisible();
+    await user.click(screen.getByLabelText("Actions for Evening Look"));
+    expect(screen.getByRole("button", { name: "Edit Look" })).toBeVisible();
+  });
 });

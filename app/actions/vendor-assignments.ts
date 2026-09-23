@@ -5,7 +5,7 @@ import { redirect } from "next/navigation";
 import { requireStaffSession } from "@/lib/auth/session";
 import { readFormString } from "@/lib/forms/read-string";
 import { parseMoneyToMinorUnits } from "@/lib/forms/money";
-import { safeReturnPath, withReturnError } from "@/lib/forms/return-path";
+import { safeReturnPath, withReturnError, withReturnErrorContext } from "@/lib/forms/return-path";
 import { createAssignmentRepository } from "@/lib/production/assignment-repository";
 import {
   assignVendorToItem,
@@ -59,6 +59,7 @@ export async function assignVendorAction(formData: FormData) {
 export async function bulkAssignVendorAction(formData: FormData) {
   const session = await requireStaffSession();
   const orderId = readFormString(formData, "orderId");
+  const lookId = readFormString(formData, "lookId");
   const returnTo = safeReturnPath(readFormString(formData, "returnTo"), `/orders/${orderId}?tab=looks`);
   let notice: string;
 
@@ -67,7 +68,7 @@ export async function bulkAssignVendorAction(formData: FormData) {
       {
         actor: actorFrom(session),
         organizationId: session.organizationId,
-        lookId: readFormString(formData, "lookId"),
+        lookId,
         vendorId: readFormString(formData, "vendorId"),
         ...termsFrom(formData),
       },
@@ -77,7 +78,7 @@ export async function bulkAssignVendorAction(formData: FormData) {
     // exactly what this design avoids.
     notice = result.message;
   } catch (error) {
-    return backTo(returnTo, message(error, "The Items could not be assigned."));
+    redirect(withReturnErrorContext(returnTo, message(error, "The Items could not be assigned."), `assign-look-${lookId}`));
   }
 
   revalidateProduction(orderId);

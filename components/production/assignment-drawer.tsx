@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { UsersRound } from "lucide-react";
 import {
   assignVendorAction,
   bulkAssignVendorAction,
@@ -12,6 +13,7 @@ import { Input } from "@/components/ui/input";
 import { NativeSelect } from "@/components/ui/native-select";
 import { formatMinorUnits } from "@/lib/forms/money";
 import { MoneyInput } from "@/components/ui/money-input";
+import { FormModal } from "@/components/ui/form-modal";
 import type { AssignmentDetail } from "@/lib/production/assignment-repository";
 import { describeUrgency } from "@/lib/production/urgency";
 import type { VendorListRow } from "@/lib/vendors/repository";
@@ -266,67 +268,86 @@ export function LookBulkAssignForm({
   orderId,
   lookId,
   lookName,
+  itemCount,
   unassignedCount,
   vendors,
+  error,
 }: {
   orderId: string;
   lookId: string;
   lookName: string;
+  itemCount: number;
   unassignedCount: number;
   vendors: VendorOption[];
+  error?: string;
 }) {
-  if (!vendors.length) return null;
+  if (!itemCount) {
+    return <span className="text-xs font-semibold text-kuartz-muted">No items to assign</span>;
+  }
+
+  if (!unassignedCount) {
+    return <span className="text-xs font-semibold text-kuartz-muted">All items assigned</span>;
+  }
+
+  if (!vendors.length) {
+    return <span className="text-xs font-semibold text-kuartz-muted">Add a vendor before assigning items</span>;
+  }
+
+  const formId = `assign-look-${lookId}-form`;
 
   return (
-    <details
-      className="mt-4 rounded-[0.8rem] border border-[#e6e5df] bg-white/50"
-      aria-label={`Bulk assign a Vendor to ${lookName}`}
+    <FormModal
+      title="Assign Vendor"
+      modalTitle={`Assign Vendor to ${lookName}`}
+      buttonLabel="Assign Vendor"
+      eyebrow="Looks & Items"
+      formId={formId}
+      submitLabel="Assign Items"
+      pendingLabel="Assigning Items..."
+      size="md"
+      showSectionTitle={false}
+      triggerIcon={<UsersRound size={16} aria-hidden="true" />}
+      error={error}
     >
-      <summary className="cursor-pointer px-3.5 py-2.5 text-sm font-semibold text-kuartz-ink">
-        Assign a Vendor to this whole Look
-      </summary>
-      <div className="border-t border-[#e6e5df] px-3.5 py-4">
-        <p className="text-sm leading-6 text-kuartz-secondary">
-          {unassignedCount
-            ? `Assigns the ${unassignedCount} unassigned ${unassignedCount === 1 ? "Item" : "Items"} in ${lookName}. Items that already have a Vendor are skipped. Reassign those individually.`
-            : `Every Item in ${lookName} already has a Vendor. Reassign individually from each Item.`}
+      <form id={formId} action={bulkAssignVendorAction} className="space-y-4">
+        <input type="hidden" name="orderId" value={orderId} />
+        <input type="hidden" name="returnTo" value={`/orders/${orderId}?tab=looks`} />
+        <input type="hidden" name="lookId" value={lookId} />
+        <p className="rounded-[0.8rem] border border-kuartz-line bg-white/65 px-4 py-3 text-sm leading-6 text-kuartz-secondary">
+          {unassignedCount} unassigned {unassignedCount === 1 ? "item" : "items"} will receive this Vendor, deadline, and agreed cost. Items that already have a Vendor will not change.
         </p>
-        <form action={bulkAssignVendorAction} className="mt-3 space-y-3">
-          <input type="hidden" name="orderId" value={orderId} />
-          <input type="hidden" name="returnTo" value={`/orders/${orderId}?tab=looks`} />
-          <input type="hidden" name="lookId" value={lookId} />
+        <label className="form-group">
+          <span>
+            Vendor <span className="font-normal text-kuartz-secondary">(required)</span>
+          </span>
+          <NativeSelect
+            name="vendorId"
+            required
+            defaultValue=""
+            data-modal-autofocus
+            aria-label={`Vendor for every unassigned Item in ${lookName}`}
+          >
+            <option value="" disabled>
+              Choose a Vendor
+            </option>
+            <VendorOptions vendors={vendors} />
+          </NativeSelect>
+        </label>
+        <div className="grid gap-4 sm:grid-cols-2">
           <label className="form-group">
-            <span>Vendor</span>
-            <NativeSelect
-              name="vendorId"
-              required
-              defaultValue=""
-              disabled={!unassignedCount}
-              aria-label={`Vendor for every unassigned Item in ${lookName}`}
-            >
-              <option value="" disabled>
-                Choose a Vendor
-              </option>
-              <VendorOptions vendors={vendors} />
-            </NativeSelect>
+            <span>
+              Deadline <span className="font-normal text-kuartz-secondary">(required)</span>
+            </span>
+            <Input type="date" name="deadline" required />
           </label>
-          <div className="flex flex-wrap items-end gap-3">
-            <label className="form-group">
-              <span>Deadline</span>
-              <Input type="date" name="deadline" required disabled={!unassignedCount} />
-            </label>
-            <label className="form-group w-36">
-              <span>
-                Agreed cost (₦) <span className="font-normal text-kuartz-secondary">(optional)</span>
-              </span>
-              <MoneyInput name="agreedVendorCostMinor" disabled={!unassignedCount} />
-            </label>
-            <Button type="submit" variant="outline" disabled={!unassignedCount}>
-              Assign Look
-            </Button>
-          </div>
-        </form>
-      </div>
-    </details>
+          <label className="form-group">
+            <span>
+              Agreed cost per item (₦) <span className="font-normal text-kuartz-secondary">(optional)</span>
+            </span>
+            <MoneyInput name="agreedVendorCostMinor" />
+          </label>
+        </div>
+      </form>
+    </FormModal>
   );
 }
