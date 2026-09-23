@@ -34,7 +34,9 @@ async function createClient(page: Page, name: string) {
   await chooseField(page, "budgetRange", "500k to 1M");
   await page.getByRole("button", { name: "Create Client", exact: true }).click();
   await expect.poll(async () => /\/clients\/[0-9a-f-]{36}$/.test(page.url()) || await page.getByRole("button", { name: "Create anyway", exact: true }).isVisible()).toBe(true);
-  if (await page.getByRole("button", { name: "Create anyway", exact: true }).isVisible()) await page.getByRole("button", { name: "Create anyway", exact: true }).click();
+  if (await page.getByRole("button", { name: "Create anyway", exact: true }).isVisible()) {
+    await page.getByRole("button", { name: "Create anyway", exact: true }).click();
+  }
   await expect(page).toHaveURL(/\/clients\/[0-9a-f-]{36}$/);
   return page.url().split("/").at(-1)!;
 }
@@ -88,6 +90,8 @@ test("Client to Order, workspace, confirmation, invoice PDF and payment-gated co
   await clientPage.locator('[name="comment"]').fill("Please review the Look name.");
   await clientPage.locator('button[type="submit"]').click();
   await expect(clientPage.getByText(/recorded|thank|correction requested/i).first()).toBeVisible();
+  await clientPage.goto(`http://127.0.0.1:3210/confirm/${token}`);
+  await expect(clientPage.getByText(/no longer active|inactive|expired/i).first()).toBeVisible();
   await clientContext.close();
 
   await page.goto(`/orders/${orderId}/invoice`);
@@ -197,8 +201,10 @@ test("Style Direction approval and Vendor Brief export preserve scope and blocke
   await expect(external.getByText(/^A comment is required/i)).toBeVisible();
   await external.locator('[name="decision"]').selectOption("approved");
   await external.getByRole("button", { name: "Submit", exact: true }).click();
-  await expect(external.getByText("Decision: Approved", { exact: true })).toBeVisible();
+  await expect(external.getByText(/decisions were recorded|thank/i).first()).toBeVisible();
   await expect(external.getByRole("button", { name: "Submit", exact: true })).toHaveCount(0);
+  await external.goto(`http://127.0.0.1:3210/approve/${token}`);
+  await expect(external.getByText(/no longer active|inactive|expired/i).first()).toBeVisible();
   await context.close();
   await page.goto(`/orders/${orderId}?tab=style`);
   await expect(page.getByRole("group", { name: "Moodboard for Whole Order" })).toContainText("Revision 1: Approved");

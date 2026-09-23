@@ -773,9 +773,3 @@ export async function listVendorPaymentPositions(organizationId: string) {
     })),
   );
 }
-
-/** Outstanding assignment ratings for completion next actions. */
-export async function listVendorsAwaitingRating(organizationId: string, orderId: string) {
-  const { listOrderVendorsForRating } = await import("@/lib/vendors/rating-repository");
-  return (await listOrderVendorsForRating(organizationId, orderId)).filter((row) => !row.ratingId);
-}

@@ -34,5 +34,5 @@ export async function POST(request: NextRequest, { params }: RouteContext) {
     return NextResponse.redirect(confirmUrl, { status: 303 });
   }
 
-  return NextResponse.redirect(confirmUrl, { status: 303 });
+  return NextResponse.redirect(new URL("/confirm/completed", request.url), { status: 303 });
 }

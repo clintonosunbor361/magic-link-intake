@@ -1,13 +1,15 @@
 import { resolveVersionedTransition } from "@/lib/domain/concurrency";
 import { mayArchive, mayRestore } from "@/lib/domain/record-lifecycle";
 import type { StaffRole } from "@/lib/domain/access-control";
+import { normalizeConsultationNoteDetails, type ConsultationNoteDetails } from "@/lib/consultation-notes/templates";
 
-export type ConsultationNoteFields = { sourceId: string; body: string; occurredAt: Date | null };
+export type ConsultationNoteFields = { sourceId: string; body: string; details?: ConsultationNoteDetails; occurredAt: Date | null };
 
 export type ConsultationNoteEditRecord = {
   id: string;
   version: number;
   body: string;
+  details: ConsultationNoteDetails;
   sourceId: string;
   occurredAt: Date | null;
   createdByStaffId: string;
@@ -40,6 +42,7 @@ export type ConsultationNoteRepository = {
     editedByStaffId: string;
     priorSnapshot: {
       body: string;
+      details: ConsultationNoteDetails;
       sourceId: string;
       occurredAt: Date | null;
       authorStaffId: string;
@@ -67,6 +70,7 @@ export async function createConsultationNote(
   repository: ConsultationNoteRepository,
 ) {
   if (!input.fields.body.trim()) throw new Error("Note body is required.");
+  const details = normalizeConsultationNoteDetails(input.fields.details ?? {});
 
   const orderOk = await repository.orderBelongsToOrganization(input.organizationId, input.orderId);
   if (!orderOk) throw new Error("Order was not found.");
@@ -85,6 +89,7 @@ export async function createConsultationNote(
     lookId: input.lookId,
     createdByStaffId: input.createdByStaffId,
     ...input.fields,
+    details,
   });
 }
 
@@ -99,6 +104,7 @@ export async function updateConsultationNoteWithHistory(
   repository: ConsultationNoteRepository,
 ) {
   if (!input.fields.body.trim()) throw new Error("Note body is required.");
+  const fields = { ...input.fields, details: normalizeConsultationNoteDetails(input.fields.details ?? {}) };
 
   const sourceOk = await repository.sourceBelongsToOrganization(input.organizationId, input.fields.sourceId);
   if (!sourceOk) throw new Error("Source was not found.");
@@ -120,10 +126,11 @@ export async function updateConsultationNoteWithHistory(
         noteId: input.noteId,
         expectedVersion: input.expectedVersion,
         nextVersion,
-        fields: input.fields,
+        fields,
         editedByStaffId: input.editedByStaffId,
         priorSnapshot: {
           body: current.body,
+          details: current.details ?? {},
           sourceId: current.sourceId,
           occurredAt: current.occurredAt,
           authorStaffId: current.lastEditedByStaffId ?? current.createdByStaffId,

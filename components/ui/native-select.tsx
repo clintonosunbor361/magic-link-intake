@@ -4,7 +4,7 @@ import * as React from "react";
 import { ChevronDown } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-type NativeSelectProps = React.ComponentProps<"select">;
+type NativeSelectProps = React.ComponentProps<"select"> & { onValueChange?: (value: string) => void };
 
 type SelectOption = {
   value: string;
@@ -19,6 +19,7 @@ export function NativeSelect({
   name,
   required,
   disabled,
+  onValueChange,
   "aria-label": ariaLabel,
 }: NativeSelectProps) {
   const id = React.useId();
@@ -57,6 +58,7 @@ export function NativeSelect({
   function choose(option: SelectOption) {
     if (option.disabled) return;
     setSelected(option.value);
+    onValueChange?.(option.value);
     setOpen(false);
     setJustSelected(true);
     window.setTimeout(() => setJustSelected(false), 360);
@@ -122,4 +124,3 @@ function extractOptions(children: React.ReactNode): SelectOption[] {
       };
     });
 }
-

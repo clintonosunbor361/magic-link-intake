@@ -20,13 +20,13 @@ import {
 
 const DEFAULT_ITEM_TYPES = ["Suit", "Agbada", "Shirt", "Trouser", "Cap", "Shoes", "Other"];
 const DEFAULT_CONSULTATION_NOTE_SOURCES = [
-  "In-person consultation",
-  "Phone call",
-  "WhatsApp",
-  "Email",
-  "Sketch reference",
-  "Colour reference",
-  "Other",
+  { name: "In-person consultation", template: "generic" as const },
+  { name: "Phone call", template: "generic" as const },
+  { name: "WhatsApp", template: "reference" as const },
+  { name: "Email", template: "email" as const },
+  { name: "Sketch reference", template: "reference" as const },
+  { name: "Colour reference", template: "colour" as const },
+  { name: "Other", template: "generic" as const },
 ];
 
 const DEFAULT_LEAD_SOURCES = [
@@ -154,9 +154,10 @@ try {
       )
       .returning({ id: itemTypes.id, name: itemTypes.name });
     await db.insert(consultationNoteSources).values(
-      DEFAULT_CONSULTATION_NOTE_SOURCES.map((name, index) => ({
+      DEFAULT_CONSULTATION_NOTE_SOURCES.map((source, index) => ({
         organizationId: organization.id,
-        name,
+        name: source.name,
+        template: source.template,
         sortOrder: index,
       })),
     );

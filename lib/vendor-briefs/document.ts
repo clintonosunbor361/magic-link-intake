@@ -1,4 +1,5 @@
 import { computeMissingFieldIds } from "@/lib/item-type-measurement-requirements/rules";
+import { consultationNoteDetailLines, type ConsultationNoteDetails } from "@/lib/consultation-notes/templates";
 
 // One typed payload, two renderers. The HTML preview and the PDF are laid out differently but are
 // built from the same VendorBriefDocument, so what a person reviews on screen is what leaves the
@@ -25,6 +26,7 @@ export type BriefNote = {
   id: string;
   sourceLabel: string;
   body: string;
+  details?: ConsultationNoteDetails;
   recordedOn: string;
 };
 
@@ -81,7 +83,7 @@ export type VendorBriefDocument = {
   quantity: number | null;
   deadline: string | null;
   measurements: { label: string; unit: string; value: string; required: boolean }[];
-  notes: { sourceLabel: string; recordedOn: string; body: string }[];
+  notes: { sourceLabel: string; recordedOn: string; body: string; detailLines: string[] }[];
   images: BriefImage[];
   additionalInstructions: string | null;
 };
@@ -133,6 +135,7 @@ export function buildVendorBriefDocument(input: {
       sourceLabel: note.sourceLabel,
       recordedOn: note.recordedOn,
       body: (edits.noteBodies[note.id] ?? note.body).trim(),
+      detailLines: consultationNoteDetailLines(note.details ?? {}),
     }))
     .filter((note) => note.body.length > 0);
 

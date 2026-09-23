@@ -1,10 +1,11 @@
 import { assertCanManageConsultationNoteSources, type StaffRole } from "@/lib/domain/access-control";
 import { resolveVersionedTransition } from "@/lib/domain/concurrency";
+import { isConsultationNoteTemplate, type ConsultationNoteTemplate } from "@/lib/consultation-notes/templates";
 
 export type ConsultationNoteSourceLifecycleRecord = { id: string; version: number };
 
 export type ConsultationNoteSourceRepository = {
-  createConsultationNoteSource(input: { organizationId: string; name: string; sortOrder: number }): Promise<{ id: string }>;
+  createConsultationNoteSource(input: { organizationId: string; name: string; template: ConsultationNoteTemplate; sortOrder: number }): Promise<{ id: string }>;
   getConsultationNoteSource(organizationId: string, sourceId: string): Promise<ConsultationNoteSourceLifecycleRecord | null>;
   setArchivedState(input: {
     organizationId: string;
@@ -16,15 +17,18 @@ export type ConsultationNoteSourceRepository = {
 };
 
 export async function createConsultationNoteSource(
-  input: { actor: { role: StaffRole }; organizationId: string; name: string; sortOrder: number },
+  input: { actor: { role: StaffRole }; organizationId: string; name: string; template?: string; sortOrder: number },
   repository: ConsultationNoteSourceRepository,
 ) {
   assertCanManageConsultationNoteSources(input.actor.role);
   if (!input.name.trim()) throw new Error("Source name is required.");
+  const template = input.template ?? "generic";
+  if (!isConsultationNoteTemplate(template)) throw new Error("Source template is invalid.");
 
   const created = await repository.createConsultationNoteSource({
     organizationId: input.organizationId,
     name: input.name.trim(),
+    template,
     sortOrder: input.sortOrder,
   });
   return { id: created.id };

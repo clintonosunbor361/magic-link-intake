@@ -14,11 +14,12 @@ import { readFormString } from "@/lib/forms/read-string";
 export async function createConsultationNoteSourceAction(formData: FormData) {
   const session = await requireStaffSession();
   const name = readFormString(formData, "name");
+  const template = readFormString(formData, "template");
   const sortOrder = Number(readFormString(formData, "sortOrder"));
 
   try {
     await createConsultationNoteSource(
-      { actor: { role: session.role }, organizationId: session.organizationId, name, sortOrder },
+      { actor: { role: session.role }, organizationId: session.organizationId, name, template, sortOrder },
       createConsultationNoteSourceRepository(),
     );
   } catch (error) {

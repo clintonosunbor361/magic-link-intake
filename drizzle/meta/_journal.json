@@ -253,6 +253,13 @@
       "when": 1788852601725,
       "tag": "0035_notification_delivery_retries",
       "breakpoints": true
+    },
+    {
+      "idx": 36,
+      "version": "7",
+      "when": 1788936169835,
+      "tag": "0036_consultation_note_templates",
+      "breakpoints": true
     }
   ]
 }

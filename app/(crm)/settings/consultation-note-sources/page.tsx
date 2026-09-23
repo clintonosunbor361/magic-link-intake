@@ -11,6 +11,8 @@ import { listConsultationNoteSources } from "@/lib/consultation-note-sources/rep
 import { Button } from "@/components/ui/button";
 import { FormDisclosure } from "@/components/ui/form-disclosure";
 import { Input } from "@/components/ui/input";
+import { NativeSelect } from "@/components/ui/native-select";
+import { CONSULTATION_NOTE_TEMPLATES, CONSULTATION_NOTE_TEMPLATE_LABELS } from "@/lib/consultation-notes/templates";
 
 export default async function ConsultationNoteSourcesPage({
   searchParams,
@@ -72,6 +74,7 @@ export default async function ConsultationNoteSourcesPage({
               >
                 <div>
                   <p className="font-semibold text-kuartz-ink">{source.name}</p>
+                  <p className="mt-1 text-sm text-kuartz-secondary">{CONSULTATION_NOTE_TEMPLATE_LABELS[source.template]}</p>
                   {source.archivedAt ? <p className="mt-1 text-sm text-kuartz-muted">Archived</p> : null}
                 </div>
                 <form action={source.archivedAt ? restoreConsultationNoteSourceAction : archiveConsultationNoteSourceAction}>
@@ -96,6 +99,14 @@ export default async function ConsultationNoteSourcesPage({
             <label className="form-group">
               <span>Name</span>
               <Input name="name" required />
+            </label>
+            <label className="form-group">
+              <span>Input template</span>
+              <NativeSelect name="template" defaultValue="generic">
+                {CONSULTATION_NOTE_TEMPLATES.map((template) => (
+                  <option key={template} value={template}>{CONSULTATION_NOTE_TEMPLATE_LABELS[template]}</option>
+                ))}
+              </NativeSelect>
             </label>
             <Button className="w-full" type="submit">
               Add source

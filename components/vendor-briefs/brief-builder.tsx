@@ -12,6 +12,7 @@ import {
   type VendorBriefSelection,
   type VendorBriefSources,
 } from "@/lib/vendor-briefs/document";
+import { consultationNoteDetailLines } from "@/lib/consultation-notes/templates";
 
 // The HTML half of the two renderers. It builds the very same VendorBriefDocument the PDF is made
 // from, so the preview is not an approximation — the content is identical and only the layout
@@ -136,7 +137,7 @@ export function BriefBuilder({
                 <Checkbox
                   key={note.id}
                   label={`${note.sourceLabel} · ${note.recordedOn}`}
-                  description={note.body}
+                  description={[...consultationNoteDetailLines(note.details ?? {}), note.body].join(" · ")}
                   checked={selection.noteIds.includes(note.id)}
                   onChange={() => setSelection({ ...selection, noteIds: toggle(selection.noteIds, note.id) })}
                 />
@@ -256,6 +257,9 @@ export function BriefBuilder({
                         <p className="text-xs text-kuartz-muted">
                           {note.sourceLabel} · {note.recordedOn}
                         </p>
+                        {consultationNoteDetailLines(note.details ?? {}).map((line) => (
+                          <p key={line} className="mt-1 text-xs text-kuartz-secondary">{line}</p>
+                        ))}
                         <textarea
                           className="mt-1 min-h-[4.5rem] w-full rounded-[0.8rem] border border-kuartz-control bg-white/70 px-3.5 py-2.5 text-sm leading-6 text-kuartz-ink outline-none transition-[border-color,box-shadow,background] focus:border-[#88925f] focus:bg-white focus:ring-4 focus:ring-kuartz-lime/20"
                           defaultValue={note.body}

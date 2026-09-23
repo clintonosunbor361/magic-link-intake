@@ -200,8 +200,8 @@ export function NewClientForm({
       </form>
 
       {modalMatches.length ? (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-kuartz-ink/30 px-4 py-8 backdrop-blur-sm" role="dialog" aria-modal="true" aria-labelledby="duplicate-dialog-title">
-          <div className="w-full max-w-xl rounded-[1.2rem] border border-kuartz-line bg-[#fbfaf7] p-6 shadow-[0_28px_80px_rgba(24,24,38,0.2)]">
+        <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-kuartz-ink/30 px-4 py-8 backdrop-blur-sm sm:items-center" role="dialog" aria-modal="true" aria-labelledby="duplicate-dialog-title">
+          <div className="flex max-h-[calc(100dvh-4rem)] w-full max-w-xl flex-col rounded-[1.2rem] border border-kuartz-line bg-[#fbfaf7] p-6 shadow-[0_28px_80px_rgba(24,24,38,0.2)]">
             <div className="flex items-start justify-between gap-4">
               <div className="flex gap-3">
                 <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[#f7e5e3] text-kuartz-danger">
@@ -218,7 +218,7 @@ export function NewClientForm({
               </button>
             </div>
 
-            <div className="mt-5 space-y-2">
+            <div className="mt-5 min-h-0 space-y-2 overflow-y-auto pr-1">
               {modalMatches.map((match) => (
                 <div key={match.candidate.id} className="rounded-[0.8rem] border border-kuartz-line bg-white/80 p-3">
                   <p className="font-semibold text-kuartz-ink">{match.candidate.fullName}</p>

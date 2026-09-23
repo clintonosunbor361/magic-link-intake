@@ -18,7 +18,7 @@ export default async function ApprovalPage({ params, searchParams }: ApprovalPag
   const selectedDecision = APPROVAL_DECISIONS.find((value) => value === decision) ?? "approved";
 
   const batch = await getApprovalBatchForToken(token);
-  if (!batch || batch.status === "Superseded" || batch.status === "Expired") {
+  if (!batch || batch.status !== "Active") {
     return (
       <InactiveLink
         title="This approval link is no longer active"
@@ -27,7 +27,6 @@ export default async function ApprovalPage({ params, searchParams }: ApprovalPag
     );
   }
 
-  const isCompleted = batch.status === "Completed";
   const signedUrlEntries = await Promise.all(
     batch.items.map(async (item) => [item.id, await getSignedPrivateViewUrl(item.r2ObjectKey)] as const),
   );
@@ -51,7 +50,7 @@ export default async function ApprovalPage({ params, searchParams }: ApprovalPag
       <section className="glass-panel w-full max-w-5xl rounded-[2rem] px-6 py-8 sm:px-10 sm:py-10 lg:px-12 lg:py-12">
         <Wordmark />
         <h1 className="mt-10 text-3xl font-extrabold leading-tight tracking-tight text-kuartz-navy sm:text-4xl">
-          {isCompleted ? "Your decisions" : "Style direction for your review"}
+          Style direction for your review
         </h1>
         <p className="mt-2 text-sm text-kuartz-muted">
           {batch.orderTitle} | {batch.clientFullName}
@@ -88,7 +87,7 @@ export default async function ApprovalPage({ params, searchParams }: ApprovalPag
                           />
                         ) : null}
 
-                        {isCompleted || item.decisionStatus !== "pending" ? (
+                        {item.decisionStatus !== "pending" ? (
                           <p className="mt-3 text-sm text-kuartz-muted">
                             Decision: {formatStyleDirectionLabel(item.decisionStatus)}
                             {item.decisionComment ? `. Comment: "${item.decisionComment}"` : ""}

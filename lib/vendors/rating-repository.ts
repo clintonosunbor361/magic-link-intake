@@ -181,6 +181,11 @@ export async function listOrderVendorsForRating(organizationId: string, orderId:
     .orderBy(vendors.id);
 }
 
+/** Outstanding assignment ratings for Order completion actions. */
+export async function listVendorsAwaitingRating(organizationId: string, orderId: string) {
+  return (await listOrderVendorsForRating(organizationId, orderId)).filter((row) => !row.ratingId);
+}
+
 /** Outstanding assignment ratings, derived idempotently from completed work or completed Orders. */
 export async function listPendingRatingPrompts(organizationId: string) {
   const db = getDatabase();

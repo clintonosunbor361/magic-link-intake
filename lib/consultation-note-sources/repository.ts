@@ -14,6 +14,7 @@ export function createConsultationNoteSourceRepository(): ConsultationNoteSource
         .values({
           organizationId: input.organizationId,
           name: input.name,
+          template: input.template,
           sortOrder: input.sortOrder,
         })
         .returning({ id: consultationNoteSources.id });
@@ -57,6 +58,7 @@ export async function listConsultationNoteSources(organizationId: string, option
     .select({
       id: consultationNoteSources.id,
       name: consultationNoteSources.name,
+      template: consultationNoteSources.template,
       sortOrder: consultationNoteSources.sortOrder,
       version: consultationNoteSources.version,
       archivedAt: consultationNoteSources.archivedAt,

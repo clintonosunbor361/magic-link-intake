@@ -130,7 +130,7 @@ describe("updateConsultationNoteWithHistory", () => {
         noteId: "note-1",
         expectedVersion: 1,
         editedByStaffId: "staff-editor",
-        fields: { sourceId: "source-2", body: "Edited body", occurredAt: null },
+        fields: { sourceId: "source-2", body: "Edited body", details: {}, occurredAt: null },
       },
       repository,
     );
@@ -139,7 +139,7 @@ describe("updateConsultationNoteWithHistory", () => {
     expect(repository.updateConsultationNoteWithHistory).toHaveBeenCalledWith(
       expect.objectContaining({
         nextVersion: 2,
-        fields: { sourceId: "source-2", body: "Edited body", occurredAt: null },
+        fields: { sourceId: "source-2", body: "Edited body", details: {}, occurredAt: null },
         priorSnapshot: expect.objectContaining({
           body: "Original body",
           sourceId: "source-1",
@@ -197,6 +197,51 @@ describe("updateConsultationNoteWithHistory", () => {
       ),
     ).rejects.toThrow("Note body is required.");
     expect(repository.getConsultationNoteForEdit).not.toHaveBeenCalled();
+  });
+
+  it("normalizes structured details and accepts HTTP references", async () => {
+    const repository = baseRepository();
+
+    await createConsultationNote(
+      {
+        organizationId: "org-1",
+        orderId: "order-1",
+        lookId: null,
+        createdByStaffId: "staff-1",
+        fields: {
+          sourceId: "source-1",
+          body: "Client shared a reference.",
+          details: { referenceUrl: " https://example.com/look ", subject: "  Direction  " },
+          occurredAt: null,
+        },
+      },
+      repository,
+    );
+
+    expect(repository.createConsultationNote).toHaveBeenCalledWith(
+      expect.objectContaining({ details: { referenceUrl: "https://example.com/look", subject: "Direction" } }),
+    );
+  });
+
+  it("rejects non-HTTP reference URLs on the server", async () => {
+    const repository = baseRepository();
+
+    await expect(createConsultationNote(
+      {
+        organizationId: "org-1",
+        orderId: "order-1",
+        lookId: null,
+        createdByStaffId: "staff-1",
+        fields: {
+          sourceId: "source-1",
+          body: "Unsafe reference.",
+          details: { referenceUrl: "javascript:alert(1)" },
+          occurredAt: null,
+        },
+      },
+      repository,
+    )).rejects.toThrow("Reference URL must be a valid HTTP or HTTPS URL.");
+    expect(repository.createConsultationNote).not.toHaveBeenCalled();
   });
 
   it("rejects a stale version", async () => {

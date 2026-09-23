@@ -14,6 +14,7 @@ import { FormDisclosure } from "@/components/ui/form-disclosure";
 import { MoneyInput } from "@/components/ui/money-input";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { requireStaffSession } from "@/lib/auth/session";
 import { businessToday } from "@/lib/domain/business-date";
 import { canManageFinance, canRecordFinance } from "@/lib/domain/access-control";
@@ -28,9 +29,6 @@ import { getInvoiceForOrder } from "@/lib/finance/repository";
 import { formatMinorUnits } from "@/lib/forms/money";
 import { getOrderWithLooksAndItems } from "@/lib/orders/repository";
 import { getOrganizationTimezone } from "@/lib/organizations/repository";
-
-const textareaClass =
-  "min-h-[3.5rem] w-full rounded-[0.8rem] border border-kuartz-control bg-white/70 px-3.5 py-3 text-sm text-kuartz-ink outline-none focus:border-[#88925f] focus:bg-white focus:ring-4 focus:ring-kuartz-lime/20";
 
 export async function OrderPaymentsWorkspace({ orderId: id, error, embedded = false }: { orderId: string; error?: string; embedded?: boolean }) {
   const Heading = embedded ? "h2" : "h1";
@@ -337,13 +335,13 @@ function InvoiceFields({
         <span>
           Payment instructions <span className="font-normal text-kuartz-secondary">(optional)</span>
         </span>
-        <textarea name="paymentInstructions" defaultValue={paymentInstructions} className={textareaClass} />
+        <Textarea name="paymentInstructions" defaultValue={paymentInstructions} />
       </label>
       <label className="form-group">
         <span>
           Notes <span className="font-normal text-kuartz-secondary">(optional)</span>
         </span>
-        <textarea name="notes" defaultValue={notes} className={textareaClass} />
+        <Textarea name="notes" defaultValue={notes} />
       </label>
     </>
   );

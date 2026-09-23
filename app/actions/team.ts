@@ -9,6 +9,7 @@ import { changeStaffRole } from "@/lib/team/service";
 import { addInvitedStaffMember, createStaffRepository } from "@/lib/team/repository";
 import { readFormString } from "@/lib/forms/read-string";
 import { getRequestOrigin } from "@/lib/request-origin";
+import { sendStaffInviteEmail } from "@/lib/email/resend";
 
 function roleValue(formData: FormData): StaffRole {
   const candidate = readFormString(formData, "role");
@@ -25,11 +26,30 @@ export async function inviteStaffMemberAction(formData: FormData) {
 
   const admin = createSupabaseAdminClient();
   const appUrl = await getRequestOrigin();
-  const { data, error } = await admin.auth.admin.inviteUserByEmail(email, {
-    data: { full_name: fullName },
-    redirectTo: `${appUrl}/auth/invite`,
+  const { data, error } = await admin.auth.admin.generateLink({
+    type: "invite",
+    email,
+    options: { data: { full_name: fullName } },
   });
-  if (error || !data.user) redirect("/settings/team?error=The+invitation+could+not+be+sent.");
+  const tokenHash = data?.properties?.hashed_token;
+  if (error || !data?.user || !tokenHash) redirect("/settings/team?error=The+invitation+could+not+be+sent.");
+
+  const inviteUrl = new URL("/auth/callback", appUrl);
+  inviteUrl.searchParams.set("token_hash", tokenHash);
+  inviteUrl.searchParams.set("type", "invite");
+  inviteUrl.searchParams.set("next", "/auth/update-password?context=invite");
+
+  try {
+    await sendStaffInviteEmail({
+      to: email,
+      staffName: fullName,
+      inviteUrl: inviteUrl.toString(),
+      idempotencyKey: `auth/invite/${data.user.id}`,
+    });
+  } catch {
+    await admin.auth.admin.deleteUser(data.user.id);
+    redirect("/settings/team?error=The+invitation+email+could+not+be+sent.");
+  }
 
   try {
     await addInvitedStaffMember({

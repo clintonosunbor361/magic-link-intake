@@ -23,7 +23,7 @@ export async function POST(request: NextRequest, context: { params: Promise<{ in
   const { invoiceId } = await context.params;
 
   if (!canRecordFinance(session.role)) {
-    return NextResponse.json({ error: "Super Admin access is required for financial records." }, { status: 403 });
+    return NextResponse.json({ error: "You do not have permission to generate this Invoice." }, { status: 403 });
   }
 
   const orderId = await resolveOrderId(session.organizationId, invoiceId);

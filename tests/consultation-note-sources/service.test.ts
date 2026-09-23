@@ -18,6 +18,7 @@ describe("createConsultationNoteSource", () => {
     expect(repository.createConsultationNoteSource).toHaveBeenCalledWith({
       organizationId: "org-1",
       name: "Phone call",
+      template: "generic",
       sortOrder: 0,
     });
   });
@@ -51,6 +52,20 @@ describe("createConsultationNoteSource", () => {
         repository,
       ),
     ).rejects.toThrow("Source name is required.");
+  });
+
+  it("rejects an unknown input template", async () => {
+    const repository = {
+      createConsultationNoteSource: vi.fn(),
+      getConsultationNoteSource: vi.fn(),
+      setArchivedState: vi.fn(),
+    };
+
+    await expect(createConsultationNoteSource(
+      { actor: { role: "super_admin" }, organizationId: "org-1", name: "New source", template: "arbitrary", sortOrder: 0 },
+      repository,
+    )).rejects.toThrow("Source template is invalid.");
+    expect(repository.createConsultationNoteSource).not.toHaveBeenCalled();
   });
 });
 

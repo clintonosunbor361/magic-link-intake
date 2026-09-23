@@ -21,6 +21,15 @@ function readOccurredAt(formData: FormData): Date | null {
   return raw ? new Date(`${raw}:00Z`) : null;
 }
 
+function readDetails(formData: FormData) {
+  return {
+    subject: readFormString(formData, "subject"),
+    referenceUrl: readFormString(formData, "referenceUrl"),
+    colourName: readFormString(formData, "colourName"),
+    colourCode: readFormString(formData, "colourCode"),
+  };
+}
+
 export async function createConsultationNoteAction(formData: FormData) {
   const session = await requireStaffSession();
   const orderId = readFormString(formData, "orderId");
@@ -37,6 +46,7 @@ export async function createConsultationNoteAction(formData: FormData) {
         fields: {
           sourceId: readFormString(formData, "sourceId"),
           body: readFormString(formData, "body"),
+          details: readDetails(formData),
           occurredAt: readOccurredAt(formData),
         },
       },
@@ -68,6 +78,7 @@ export async function updateConsultationNoteAction(formData: FormData) {
         fields: {
           sourceId: readFormString(formData, "sourceId"),
           body: readFormString(formData, "body"),
+          details: readDetails(formData),
           occurredAt: readOccurredAt(formData),
         },
       },

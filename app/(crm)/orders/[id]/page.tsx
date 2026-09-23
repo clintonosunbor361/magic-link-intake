@@ -39,7 +39,8 @@ import { listOutstandingAccessories } from "@/lib/accessories/repository";
 import { listOpenFittingSessions } from "@/lib/fittings/repository";
 import { blocksOrderCompletion, computeOrderBalance } from "@/lib/finance/balances";
 import { deriveInvoiceStatus, INVOICE_STATUS_LABELS } from "@/lib/finance/invoice";
-import { getInvoiceForOrder, listVendorsAwaitingRating } from "@/lib/finance/repository";
+import { getInvoiceForOrder } from "@/lib/finance/repository";
+import { listVendorsAwaitingRating } from "@/lib/vendors/rating-repository";
 import { getOrderWithLooksAndItems } from "@/lib/orders/repository";
 import { getMissingMeasurementsForOrder } from "@/lib/item-type-measurement-requirements/repository";
 import { listItemTypes } from "@/lib/item-types/repository";
@@ -67,6 +68,8 @@ import { listVendorsWithStats } from "@/lib/vendors/repository";
 import { MeasurementDrawer } from "@/components/clients/measurement-drawer";
 import { ItemAssignmentDrawer, LookBulkAssignForm } from "@/components/production/assignment-drawer";
 import { OrderWorkspaceNav } from "@/components/orders/order-workspace-nav";
+import { ConsultationNoteFields } from "@/components/orders/consultation-note-fields";
+import { consultationNoteDetailLines } from "@/lib/consultation-notes/templates";
 import { Button } from "@/components/ui/button";
 import { Breadcrumbs } from "@/components/ui/breadcrumbs";
 import { FormDisclosure } from "@/components/ui/form-disclosure";
@@ -513,16 +516,7 @@ export default async function OrderDetailPage({
                 <input type="hidden" name="orderId" value={order.id} />
                 <input type="hidden" name="returnTo" value={orderTabHref("style")} />
                 <div className="grid gap-4 sm:grid-cols-2">
-                  <label className="form-group">
-                    <span>Source</span>
-                    <NativeSelect name="sourceId" defaultValue={consultationNoteSources[0]?.id}>
-                      {consultationNoteSources.map((source) => (
-                        <option key={source.id} value={source.id}>
-                          {source.name}
-                        </option>
-                      ))}
-                    </NativeSelect>
-                  </label>
+                  <ConsultationNoteFields sources={consultationNoteSources} />
                   <label className="form-group">
                     <span>Scope</span>
                     <NativeSelect name="lookId" defaultValue="">
@@ -568,6 +562,9 @@ export default async function OrderDetailPage({
                           {note.lastEditedByName ? ` · Last edited by ${note.lastEditedByName}` : ""}
                           {note.occurredAt ? ` · Occurred ${dateFormatter.format(note.occurredAt)}` : ""}
                         </p>
+                        {consultationNoteDetailLines(note.details).map((line) => (
+                          <p key={line} className="mt-1 text-sm text-kuartz-secondary">{line}</p>
+                        ))}
                       </div>
                       {note.archivedAt ? <span className="text-xs font-semibold text-kuartz-muted">Archived</span> : null}
                     </div>
@@ -578,16 +575,11 @@ export default async function OrderDetailPage({
                       <input type="hidden" name="noteId" value={note.id} />
                       <input type="hidden" name="version" value={note.version} />
                       <div className="grid gap-4 sm:grid-cols-2">
-                        <label className="form-group">
-                          <span>Source</span>
-                          <NativeSelect name="sourceId" defaultValue={note.sourceId}>
-                            {consultationNoteSources.map((source) => (
-                              <option key={source.id} value={source.id}>
-                                {source.name}
-                              </option>
-                            ))}
-                          </NativeSelect>
-                        </label>
+                        <ConsultationNoteFields
+                          sources={consultationNoteSources}
+                          initialSourceId={note.sourceId}
+                          initialDetails={note.details}
+                        />
                         <label className="form-group">
                           <span>
                             Occurred at <span className="font-normal text-kuartz-secondary">(optional)</span>
@@ -621,6 +613,9 @@ export default async function OrderDetailPage({
                                 {revision.sourceName} · {revision.authorName} · {dateFormatter.format(revision.authoredAt)}
                               </p>
                               <p>{revision.body}</p>
+                              {consultationNoteDetailLines(revision.details).map((line) => (
+                                <p key={line}>{line}</p>
+                              ))}
                             </div>
                           ))}
                         </div>

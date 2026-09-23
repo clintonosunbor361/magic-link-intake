@@ -123,6 +123,7 @@ export async function getVendorBriefContext(
       .select({
         id: consultationNotes.id,
         body: consultationNotes.body,
+        details: consultationNotes.details,
         sourceLabel: consultationNoteSources.name,
         occurredAt: consultationNotes.occurredAt,
         createdAt: consultationNotes.createdAt,
@@ -190,6 +191,7 @@ export async function getVendorBriefContext(
       id: row.id,
       sourceLabel: row.sourceLabel,
       body: row.body,
+      details: row.details,
       recordedOn: (row.occurredAt ?? row.createdAt).toISOString().slice(0, 10),
     })),
     images: imageRows.map((row) => ({

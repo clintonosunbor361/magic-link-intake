@@ -16,6 +16,7 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { FormDisclosure } from "@/components/ui/form-disclosure";
 import { Input } from "@/components/ui/input";
 import { NativeSelect } from "@/components/ui/native-select";
+import { Textarea } from "@/components/ui/textarea";
 import { requireStaffSession } from "@/lib/auth/session";
 import { listConfirmationsForSubject } from "@/lib/client-confirmations/repository";
 import { mayArchive, mayRestore } from "@/lib/domain/record-lifecycle";
@@ -28,9 +29,6 @@ import { listFittingHistory, listFittingNotes, listFittingSessionsForOrder } fro
 import { getOrderWithLooksAndItems } from "@/lib/orders/repository";
 
 const dateTimeFormatter = new Intl.DateTimeFormat("en-NG", { dateStyle: "medium", timeStyle: "short" });
-const textareaClass =
-  "min-h-[3.5rem] w-full rounded-[0.8rem] border border-kuartz-control bg-white/70 px-3.5 py-3 text-sm text-kuartz-ink outline-none focus:border-[#88925f] focus:bg-white focus:ring-4 focus:ring-kuartz-lime/20";
-
 function toDateTimeLocalValue(date: Date): string {
   return date.toISOString().slice(0, 16);
 }
@@ -161,7 +159,7 @@ export async function OrderFittingsWorkspace({ orderId: id, error, embedded = fa
                         Fitting summary (optional){" "}
                         <span className="font-normal text-kuartz-secondary">(internal only)</span>
                       </span>
-                      <textarea name="clientSummary" defaultValue={fitting.clientSummary} className={textareaClass} />
+                      <Textarea name="clientSummary" defaultValue={fitting.clientSummary} />
                     </label>
                     <Button type="submit" variant="outline">
                       Save summary

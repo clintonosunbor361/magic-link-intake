@@ -28,8 +28,9 @@ arrive during that hour; it is not an exact-minute appointment reminder. The end
 
 Keep secrets out of commits and logs. Production configuration changes take effect on the next
 deployment. The production CRON_SECRET was added to the linked Vercel project during this review.
-Apply additive migrations 0034 and 0035 before deploying this release. Neither deletes existing data.
-Migration 0035 uses Drizzle's custom-migration workflow because older custom migrations left stale
+Migrations 0034 and 0035 have been applied to the deployment database, as confirmed September 9, 2026.
+Migration 0036 adds Consultation Note templates and structured details without deleting existing data.
+The custom-migration workflow is required because older custom migrations left stale
 schema snapshots; a generic `db:generate` currently attempts to recreate retired Enquiries tables.
 Do not accept that generated diff or run database resets against hosted data.
 

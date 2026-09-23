@@ -1,16 +1,16 @@
 # Kuartz CRM Build and Test Checklist
 
-Last updated: September 9, 2026
+Last updated: September 10, 2026
 
 Release verification is recorded in [docs/release-verification.md](docs/release-verification.md).
 Notification delivery follows the agreed single-overdue-email policy with bounded failure retries;
-the authorized provider test was delivered. Production migration, deployment, and scheduled-run
-verification remain pending and are not implied by implementation checkmarks.
+the authorized provider test was delivered. Production migration, deployment, R2, capability,
+and scheduled invocation are verified; remaining live gaps are stated precisely below.
 
 Legend:
 
 - `[x]` Implemented in current codebase
-- `[~]` Partially implemented or needs UX alignment
+- `[~]` Partially complete or has a precisely documented live dependency
 - `[ ]` Not built yet or not confirmed
 
 ## Build Checklist
@@ -27,8 +27,8 @@ Legend:
 - [x] Server actions and repository/service pattern
 - [x] Audit log foundation
 - [x] PWA manifest/offline shell
-- [~] Responsive behavior across all screens
-- [ ] Final production hosting/env setup review
+- [x] Responsive behavior across representative Client, Order, Production, and finance screens
+- [~] Production is deployed on Vercel with migrations, R2, capability isolation, and deployed PDF exports verified; password recovery and a verified Resend sender domain remain below
 
 ### Clients / Intake
 
@@ -44,8 +44,8 @@ Legend:
 - [x] Client profile page
 - [x] Client to-dos with note field
 - [x] Client measurements accessible from profile
-- [~] Remove/retire old Enquiries UI from navigation/code path if no longer needed
-- [ ] Smooth final “client without order” UX review
+- [x] Retired Enquiries UI and navigation while preserving migrated Client data
+- [x] Lightweight “client without order” UX with a clear New Order path
 
 ### Orders
 
@@ -75,8 +75,8 @@ Legend:
 - [x] Looks are displayed as compact workspace cards instead of always-open edit forms
 - [x] Measurements tab inside Order workspace can view and edit Client profile measurements
 - [x] Style Direction tab
-- [~] Vendors tab; currently routes assignment work through Looks & Items and Vendor directory
-- [~] Production tab; currently links to Production workspace and Item assignments
+- [x] Vendors tab with individual and Look-level assignment workflows
+- [x] Production tab with status controls and assignment detail links
 - [x] Accessories tab embeds the shared sourcing workspace
 - [x] Fittings tab embeds the shared appointment workspace
 - [x] Payments tab embeds the shared invoice and payment workspace
@@ -93,9 +93,9 @@ Legend:
 - [x] Approval batches
 - [x] Magic approval links
 - [x] Approval decision page
-- [~] Approved/rejected/revision status is tracked; final "approved version highlighted" UX should be reviewed
-- [~] Currently appears inside long Order page, not a dedicated tab
-- [ ] Final UX polish for Style Direction tab
+- [x] Approved/rejected/revision status and current approved revision are visually identified
+- [x] Dedicated Style Direction Order workspace tab
+- [x] Style Direction tab responsive and workflow UX review
 
 ### Measurements
 
@@ -106,8 +106,8 @@ Legend:
 - [x] Measurement confirmation magic link
 - [x] Measurement requirement rules by item type
 - [x] Vendor brief blocker for missing required measurements
-- [ ] Add/edit measurements directly from Order workspace
-- [ ] UX for missing measurements inside Order workspace
+- [x] Add/edit measurements directly from Order workspace
+- [x] Missing measurements shown per Item inside Order workspace
 
 ### Vendors / Production
 
@@ -129,8 +129,8 @@ Legend:
 - [x] Vendor brief field visibility selection
 - [x] Vendor brief review/edit before PDF export
 - [x] Vendor brief export metadata
-- [~] Vendor tab inside Order workspace not built as tab
-- [ ] Final vendor assignment UX review
+- [x] Vendor tab inside Order workspace
+- [x] Vendor assignment UX review
 
 ### Payments / Invoices
 
@@ -144,8 +144,8 @@ Legend:
 - [x] Automatic balance calculations
 - [x] Payment gate blocking order completion
 - [x] Super Admin override for payment gate
-- [~] Payments exist, but not yet organized as Order workspace tab
-- [ ] Final finance UX review
+- [x] Payments organized as an Order workspace tab
+- [x] Finance UX review
 
 ### Accessories
 
@@ -156,9 +156,9 @@ Legend:
 - [x] Configurable accessory statuses
 - [x] Accessories can link to order/look
 - [x] Accessory delivery date follows linked Look date logic
-- [~] Accessory item fields exist, but confirm UX covers assigned staff, supplier, budget, purchase date, delivery date/look due date, and status clearly
-- [~] Accessory workflow still needs final business grilling
-- [~] Exists as separate page, not Order workspace tab yet
+- [x] Accessory UX covers assigned staff, supplier, minor-unit budget, purchase date, linked Look due date, and status
+- [x] Accessory workflow matches the confirmed Phase 1 release decisions
+- [x] Accessories workflow is embedded in the Order workspace tab and remains available on its detail route
 
 ### Fittings
 
@@ -166,9 +166,9 @@ Legend:
 - [x] Fitting notes
 - [x] Client fitting confirmation link
 - [x] Fitting reminders foundation
-- [~] Fitting correction/adjustment notes exist; final vendor-sharing workflow for fitting corrections needs review
-- [~] Fitting workflow still needs final grilling
-- [~] Exists as separate page, not Order workspace tab yet
+- [x] Fitting correction/adjustment notes remain internal; vendor sharing/export is deferred from Phase 1
+- [x] Fitting workflow matches the confirmed appointment-confirmation scope
+- [x] Fittings workflow is embedded in the Order workspace tab and remains available on its detail route
 
 ### Vendor Ratings
 
@@ -176,7 +176,7 @@ Legend:
 - [x] Rating criteria: quality, timeliness, communication
 - [x] Overall score logic
 - [x] Rating prompts after completion foundation
-- [~] Vendor rating UX still needs final review
+- [x] Vendor rating UX supports one rating per Item assignment and useful Vendor context
 
 ### Notifications / Dashboard
 
@@ -190,9 +190,10 @@ Legend:
 - [x] Notification records
 - [x] Cron route for notifications
 - [x] Email/dashboard notification architecture
-- [~] SMS reminders are in the original workflow document but deferred from the current product architecture
-- [~] Client to-dos should show all open to-dos sorted by closest due date, confirm current behavior
-- [ ] Final notification delivery test with Resend/live env
+- [x] SMS reminders explicitly deferred from Phase 1
+- [x] Client to-dos show all open to-dos sorted by closest due date
+- [x] Authorized Resend provider test delivered successfully
+- [~] Deployed cron authentication, dry run, and an actual scheduled invocation are verified; the scheduled run persisted two reminders whose Resend deliveries failed because no sender domain is registered
 
 ### Settings
 
@@ -206,15 +207,13 @@ Legend:
 - [x] Accessory types
 - [x] Accessory statuses
 
-### Open Decisions Still Not Final
+### Confirmed Release Decisions / Deferred Scope
 
-- [ ] Delete strategy: soft delete / hard delete / auto purge
-- [ ] Real-time freshness strategy
-- [ ] Multiple active orders per client warning/block behavior
-- [ ] Final hosting choice if Vercel Free is reconsidered
-- [ ] Final Stage 5 accessory details
-- [ ] Final Stage 6 fitting details
-- [ ] Final Stage 7 vendor rating details
+- [x] Operational records archive/restore; permanent deletion and automatic purging are unavailable
+- [x] Refresh after saves and page return, with manual refresh; live subscriptions are deferred
+- [x] Multiple active Orders are allowed with a warning showing existing active Orders
+- [x] Accessory, Fitting, and Vendor Rating behavior is limited to the confirmed Phase 1 scope
+- [x] Vercel remains the Phase 1 host; alternative hosting is deferred
 
 ## Test Checklist
 
@@ -222,228 +221,229 @@ Legend:
 
 - [x] Super Admin can sign in
 - [x] Admin Assistant can sign in
-- [ ] Password reset works locally and in production
-- [ ] Super Admin-only settings are blocked for Admin Assistant
-- [ ] Admin Assistant cannot perform restricted destructive actions
+- [~] Password reset implementation and local route behavior are covered; complete production recovery remains to be observed with the dedicated test account
+- [x] Super Admin-only settings are blocked for Admin Assistant
+- [x] Admin Assistant cannot perform restricted destructive actions
 - [x] Sign out works
-- [ ] Unauthenticated users are redirected correctly
+- [x] Unauthenticated users are redirected correctly
 
 ### Clients / Intake
 
 - [x] Generate intake link
 - [x] Copy intake link
-- [ ] Generated intake link history shows active, used, and expired states correctly
+- [x] Generated intake link history shows active, used, and expired states correctly
 - [x] Expired intake link shows inactive page
 - [x] External client can submit intake form
 - [x] Submitted intake creates Client contact
 - [x] Manual Add Client works
 - [x] Duplicate phone/email warning appears
-- [ ] Same-name clients can be distinguished by phone/email
-- [ ] Client list filters by all / with orders / without orders
-- [ ] Archived client filter works
-- [ ] Client profile displays correct details
-- [ ] Client to-do can be created
-- [ ] Client to-do can be marked done
-- [ ] Client to-do note saves correctly
+- [x] Same-name clients can be distinguished by phone/email and Order context
+- [x] Client list filters by all / with orders / without orders
+- [x] Archived client filter works
+- [x] Client profile displays correct details
+- [x] Client to-do can be created
+- [x] Client to-do can be marked done
+- [x] Client to-do note saves correctly
 
 ### Orders / Looks / Items
 
-- [ ] Create order from Client profile
-- [ ] Create order from Orders section by selecting Client
-- [ ] Final agreed price is required
-- [ ] Order cannot be created without at least one Look
-- [ ] Multiple Looks can be added before creating Order
-- [ ] Order creation only asks for order basics and Look names
-- [ ] FF discount amount appears only after FF discount is selected
-- [ ] Look date and Look notes are not shown in first-entry order creation
-- [ ] Removed Look does not submit
-- [ ] Created Order lands in correct workspace/page
-- [ ] Add Item after Order creation
-- [ ] Edit Look
-- [ ] Archive/restore Look
-- [ ] Cannot archive the last active Look
-- [ ] Add/edit/archive Item
-- [ ] Item quantity saves and displays correctly
-- [ ] Order details can be sent to client for confirmation
-- [ ] Client can confirm order details
-- [ ] Client can request correction on order details with required comment
-- [ ] Order list shows correct Look count
+- [x] Create order from Client profile
+- [x] Create order from Orders section by selecting Client
+- [x] Final agreed price is required
+- [x] Order cannot be created without at least one Look
+- [x] Multiple Looks can be added before creating Order
+- [x] Order creation only asks for order basics and Look names
+- [x] FF discount amount appears only after FF discount is selected
+- [x] Look date and Look notes are not shown in first-entry order creation
+- [x] Removed Look does not submit
+- [x] Created Order lands in correct workspace/page
+- [x] Add Item after Order creation
+- [x] Edit Look
+- [x] Archive/restore Look
+- [x] Cannot archive the last active Look
+- [x] Add/edit/archive Item
+- [x] Item quantity saves and displays correctly
+- [x] Order details can be sent to client for confirmation
+- [x] Client can confirm order details
+- [x] Client can request correction on order details with required comment
+- [x] Order list shows correct Look count
 
 ### Order Workspace UX
 
-- [ ] Tabs render correctly
-- [ ] Overview tab is default landing tab
-- [ ] Looks & Items tab contains only Looks/Items work
+- [x] Tabs render correctly
+- [x] Overview tab is default landing tab
+- [x] Looks & Items tab contains only Looks/Items work
 - [x] Measurements tab can edit Client measurements
-- [ ] Style Direction tab contains creative/reference work only
-- [ ] Vendors tab handles assignment work
-- [ ] Production tab handles status/deadline tracking
-- [ ] Accessories tab handles accessory sourcing
-- [ ] Fittings tab handles fitting sessions
-- [ ] Payments tab handles invoice/payment work
-- [ ] Tabs are usable on mobile
+- [x] Style Direction tab contains creative/reference work only
+- [x] Vendors tab handles assignment work
+- [x] Production tab handles status/deadline tracking
+- [x] Accessories tab handles accessory sourcing
+- [x] Fittings tab handles fitting sessions
+- [x] Payments tab handles invoice/payment work
+- [x] Tabs are usable on mobile
 
 ### Style Direction
 
-- [ ] Add consultation note
-- [ ] Source selection changes input fields if applicable
-- [ ] Call/WhatsApp/sketch/colour reference sources can be captured as consultation inputs
-- [ ] Upload moodboard/sketch/fabric/colour reference
-- [ ] Attach file to whole order
-- [ ] Attach file to specific Look
-- [ ] Upload new revision
-- [ ] Mark file as requiring approval
-- [ ] Create approval batch
-- [ ] Copy approval link
-- [ ] Client can approve file
-- [ ] Client must comment for rejected / with revisions
-- [ ] Approved file/revision is visually clear to Kuartz
-- [ ] Old approval link becomes inactive after resend
-- [ ] Client cannot upload files
+- [x] Add consultation note
+- [x] Source selection changes source-specific input fields while preserving entered details
+- [x] Call/WhatsApp/sketch/colour reference sources can be captured as consultation inputs
+- [x] Upload moodboard/sketch/fabric/colour reference
+- [x] Attach file to whole order
+- [x] Attach file to specific Look
+- [x] Upload new revision
+- [x] Mark file as requiring approval
+- [x] Create approval batch
+- [x] Copy approval link
+- [x] Client can approve file
+- [x] Client must comment for rejected / with revisions
+- [x] Approved file/revision is visually clear to Kuartz
+- [x] Old approval link becomes inactive after resend
+- [x] Client cannot upload files
 
 ### Measurements
 
-- [ ] Add measurements from Client profile
-- [ ] Edit measurements from Client profile
-- [ ] Measurement history records previous/new value
-- [ ] Add/edit measurements from Order workspace
-- [ ] Order workspace edits save to Client profile
-- [ ] Add custom measurement field
-- [ ] Configure measurement requirements by item type
-- [ ] Missing required measurements are detected per item
-- [ ] Vendor brief export is blocked when required measurements are missing
-- [ ] Super Admin override works with reason
-- [ ] Client measurement confirmation link works
-- [ ] Client cannot upload measurement files
+- [x] Add measurements from Client profile
+- [x] Edit measurements from Client profile
+- [x] Measurement history records previous/new value
+- [x] Add/edit measurements from Order workspace
+- [x] Order workspace edits save to Client profile
+- [x] Add custom measurement field
+- [x] Configure measurement requirements by item type
+- [x] Missing required measurements are detected per item
+- [x] Vendor brief export is blocked when required measurements are missing
+- [x] Super Admin override works with reason
+- [x] Client measurement confirmation link works
+- [x] Client cannot upload measurement files
 
 ### Vendor Assignment / Production
 
-- [ ] Create Vendor
-- [ ] Quick-create Vendor during assignment
-- [ ] Assign vendor to one Item
-- [ ] Bulk assign vendor to Look
-- [ ] Vendor assignment deadline is required/works
-- [ ] Production status can be changed
-- [ ] Status history records change
-- [ ] Deadline urgency colors/states work
-- [ ] Production filters work
-- [ ] Production view groups by Client -> Order -> Look -> Item
-- [ ] Production note can be added
-- [ ] Vendor brief preview generates
-- [ ] Vendor brief is prefilled from earlier intake/order/style/measurement data
-- [ ] Kuartz can edit vendor brief before exporting
-- [ ] Visible fields can be chosen before export
-- [ ] Vendor brief PDF exports
-- [ ] Export metadata updates
+- [x] Create Vendor
+- [x] Quick-create Vendor during assignment
+- [x] Assign vendor to one Item
+- [x] Bulk assign vendor to Look
+- [x] Vendor assignment deadline is required/works
+- [x] Production status can be changed
+- [x] Status history records change
+- [x] Deadline urgency colors/states work
+- [x] Production filters work
+- [x] Production view groups by Client -> Order -> Look -> Item
+- [x] Production note can be added
+- [x] Vendor brief preview generates
+- [x] Vendor brief is prefilled from earlier intake/order/style/measurement data
+- [x] Kuartz can edit vendor brief before exporting
+- [x] Visible fields can be chosen before export
+- [x] Vendor brief PDF exports locally and from the deployed application
+- [x] Export metadata updates
 
 ### Payments / Invoices
 
-- [ ] Create invoice with manual line items
-- [ ] Invoice total calculates correctly
-- [ ] Mark invoice sent
-- [ ] Record client payment
-- [ ] Order balance calculates correctly
-- [ ] Overpayment/mismatch warning appears
-- [ ] Vendor agreed cost can be entered
-- [ ] Vendor payment can be recorded
-- [ ] Vendor balance calculates correctly
-- [ ] Receipt upload works
-- [ ] Order completion blocked when client balance remains
-- [ ] Super Admin override completion block works
-- [ ] Override is audited
-- [ ] Invoice PDF exports
+- [x] Create invoice with manual line items
+- [x] Invoice total calculates correctly
+- [x] Mark invoice sent
+- [x] Record client payment
+- [x] Order balance calculates correctly
+- [x] Overpayment/mismatch warning appears
+- [x] Vendor agreed cost can be entered
+- [x] Vendor payment can be recorded
+- [x] Vendor balance calculates correctly
+- [x] Receipt upload works in the configured storage adapter
+- [x] Order completion blocked when client balance remains
+- [x] Super Admin override completion block works
+- [x] Override is audited
+- [x] Invoice PDF exports locally and from the deployed application for the Admin Assistant release identity; anonymous access is rejected
 
 ### Accessories
 
-- [ ] Add accessory item
-- [ ] Link accessory to whole order
-- [ ] Link accessory to specific Look
-- [ ] Accessory delivery date follows Look date
-- [ ] Assigned staff can be selected for accessory item
-- [ ] Supplier can be entered for accessory item
-- [ ] Budget can be entered for accessory item
-- [ ] Purchase date can be entered for accessory item
-- [ ] Accessory status changes
-- [ ] Custom accessory type works
-- [ ] Archived accessory types/statuses no longer appear for new records
-- [ ] Accessory reminders are generated correctly
+- [x] Add accessory item
+- [x] Link accessory to whole order
+- [x] Link accessory to specific Look
+- [x] Accessory delivery date follows linked Look date; whole-Order accessories have no inferred date
+- [x] Assigned staff can be selected for accessory item
+- [x] Supplier can be entered for accessory item
+- [x] Budget can be entered for accessory item
+- [x] Purchase date can be entered for accessory item
+- [x] Accessory status changes
+- [x] Custom accessory type works
+- [x] Archived accessory types/statuses no longer appear for new records
+- [x] Accessory reminders are generated correctly
 
 ### Fittings
 
-- [ ] Create fitting session
-- [ ] Add fitting notes
-- [ ] Add correction/adjustment notes from fitting
-- [ ] Link fitting to Look if needed
-- [ ] Send fitting confirmation link
-- [ ] Client confirms fitting
-- [ ] Client requests correction/comment if applicable
-- [ ] Fitting corrections can be shared/exported for vendor action
-- [ ] Fitting reminders trigger correctly
+- [x] Create fitting session
+- [x] Add fitting notes
+- [x] Add correction/adjustment notes from fitting
+- [x] Link fitting to Look if needed
+- [x] Send fitting appointment confirmation link
+- [x] Client confirms fitting appointment details
+- [x] Client requests correction/comment on appointment details when applicable
+- [x] Fitting corrections remain internal; vendor sharing/export is deferred from Phase 1
+- [x] Fitting reminders trigger correctly
 
 ### Vendor Ratings
 
-- [ ] Completion surfaces vendor rating prompt
-- [ ] Rate Quality out of 5
-- [ ] Rate Timeliness out of 5
-- [ ] Rate Communication out of 5
-- [ ] Overall score calculates correctly
-- [ ] Rating history appears on Vendor
-- [ ] Vendor picker shows useful rating context
+- [x] Completion surfaces one vendor rating prompt per Item assignment without duplicates
+- [x] Rate Quality out of 5
+- [x] Rate Timeliness out of 5
+- [x] Rate Communication out of 5
+- [x] Overall score calculates correctly
+- [x] Rating history appears on Vendor with job context
+- [x] Vendor picker shows useful rating and workload context
 
 ### Dashboard / Notifications
 
-- [ ] Dashboard active client count is correct
-- [ ] Upcoming look dates sort correctly
-- [ ] Delayed work appears correctly
-- [ ] Pending measurement confirmations appear correctly
-- [ ] Pending moodboard approvals appear correctly
-- [ ] Pending sketch approvals appear correctly
-- [ ] Outstanding balances are correct
-- [ ] Vendor payment summaries are correct
-- [ ] Open client to-dos show, closest due first
-- [ ] Dashboard notification created for due reminders
-- [ ] Email notification sends through Resend
-- [ ] Overdue alerts fire after deadline passes
-- [ ] Cron route is protected and works
+- [x] Dashboard active client count is correct
+- [x] Upcoming look dates sort correctly
+- [x] Delayed work appears correctly
+- [x] Pending measurement confirmations appear correctly
+- [x] Pending moodboard approvals appear correctly
+- [x] Pending sketch approvals appear correctly
+- [x] Outstanding balances are correct
+- [x] Vendor payment summaries are correct
+- [x] Open client to-dos show, closest due first
+- [x] Dashboard notification created for due reminders
+- [x] Email notification sends through Resend (authorized provider delivery recorded)
+- [x] Overdue alerts fire once after deadline passes with bounded failure retries
+- [x] Cron route authentication and processing behavior pass automated coverage
+- [~] Production cron rejects unauthorized requests, its authenticated dry run passes, and a scheduled invocation returned 200; two persisted reminder deliveries still need a verified Resend sender domain and successful retry
 
 ### Responsive / UX
 
-- [ ] Sidebar does not cover content on tablet/desktop
-- [ ] Mobile nav opens/closes correctly
-- [ ] Clients list is readable on mobile
-- [ ] Orders list is readable on mobile
-- [ ] Tables do not create page-level horizontal overflow
-- [ ] Forms stack cleanly on mobile
-- [ ] Buttons do not overflow text
-- [ ] Order creation flow feels lightweight
-- [ ] Empty states are clear
-- [ ] Loading/error states are clear
+- [x] Sidebar does not cover content on tablet/desktop
+- [x] Mobile nav opens/closes correctly
+- [x] Clients list is readable on mobile
+- [x] Orders list is readable on mobile
+- [x] Tables do not create page-level horizontal overflow
+- [x] Forms stack cleanly on mobile
+- [x] Buttons do not overflow text
+- [x] Order creation flow feels lightweight
+- [x] Empty states are clear
+- [x] Loading/error states are clear
 
 ### Security / Data Protection
 
-- [ ] RLS policies exist for core tables
-- [ ] Staff can only access their organization data
-- [ ] Magic links use token hashes, not raw stored tokens
-- [ ] Magic links expire
-- [ ] Old magic links become inactive when superseded
-- [ ] Signed file URLs expire
-- [ ] Client-facing pages expose only intended fields
-- [ ] Admin-only actions validate role on server
-- [ ] Audit log records sensitive actions
+- [x] RLS policies exist for core tables
+- [x] Staff can only access their organization data
+- [x] Magic links use token hashes, not raw stored tokens
+- [x] Magic links expire after seven days or completion; completed links no longer reveal their prior context
+- [x] Old magic links become inactive when superseded
+- [x] Production R2 objects are private and signed file URLs expire (live verification recorded)
+- [x] Client-facing pages expose only intended fields in automated and labelled production capability journeys
+- [x] Admin-only actions validate role on server
+- [x] Audit log records sensitive actions
 
 ### Automated Checks
 
-- [ ] `npm run typecheck`
-- [ ] Core unit tests
-- [ ] Database/RLS tests
-- [ ] Order service tests
-- [ ] Measurement tests
-- [ ] Payment/balance tests
-- [ ] Magic link tests
-- [ ] Notification tests
-- [ ] Critical Playwright flows
-- [ ] Production build test
+- [x] `npm run typecheck` — passed in the final September 10, 2026 release gate
+- [x] Core unit tests — current release run: 650 tests across 76 files passed
+- [x] Database/RLS tests — seven local database assertions passed, including migration 0036
+- [x] Order service tests
+- [x] Measurement tests
+- [x] Payment/balance tests
+- [x] Magic link tests
+- [x] Notification tests
+- [x] Critical Playwright flows — eight recorded release journeys passed
+- [x] Production build test — current release build passed
 
-## Current Main Gap
+## Remaining Release Verification
 
-The backend/domain is much further along than the UX. The biggest UI build remaining is the tabbed Order workspace and moving the existing order sections into those tabs cleanly.
+The Phase 1 application and tabbed Order workspace are implemented and the final local release gate passes. Production deployment, migration 0036, R2 privacy/expiry, capability isolation, deployed Invoice and Vendor Brief PDFs, protected cron behavior, and an actual scheduled invocation are verified. Remaining live checks are completing password recovery with the dedicated test account and registering/verifying a Resend sender domain so the two retry-safe scheduled reminder failures can be delivered successfully.

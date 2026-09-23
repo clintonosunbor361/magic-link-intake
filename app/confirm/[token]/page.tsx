@@ -32,7 +32,7 @@ export default async function ConfirmPage({ params, searchParams }: ConfirmPageP
   const selectedDecision = CLIENT_CONFIRMATION_DECISIONS.find((value) => value === decision) ?? "confirmed";
 
   const confirmation = await getConfirmationForToken(token);
-  if (!confirmation || confirmation.status === "Superseded" || confirmation.status === "Expired") {
+  if (!confirmation || confirmation.status !== "Active") {
     return <InactiveLink {...INACTIVE_PROPS} />;
   }
 
@@ -43,8 +43,6 @@ export default async function ConfirmPage({ params, searchParams }: ConfirmPageP
         ? await getFittingSessionConfirmationContent(confirmation.organizationId, confirmation.subjectId)
         : await getOrderDetailConfirmationContent(confirmation.organizationId, confirmation.subjectId);
   if (!content) return <InactiveLink {...INACTIVE_PROPS} />;
-
-  const isCompleted = confirmation.status === "Completed";
 
   return (
     <main className="flex min-h-screen items-center justify-center px-4 py-8 sm:px-6 lg:px-8">
@@ -116,13 +114,7 @@ export default async function ConfirmPage({ params, searchParams }: ConfirmPageP
         </div>
 
         <div className="mt-8">
-          {isCompleted ? (
-            <p className="text-sm text-kuartz-muted">
-              Decision: {formatDecisionLabel(confirmation.decisionStatus)}
-              {confirmation.decisionComment ? `. Comment: "${confirmation.decisionComment}"` : ""}
-            </p>
-          ) : (
-            <form action={`/confirm/${encodeURIComponent(token)}/decide`} method="post" className="flex flex-wrap items-end gap-4">
+          <form action={`/confirm/${encodeURIComponent(token)}/decide`} method="post" className="flex flex-wrap items-end gap-4">
               <label className="block space-y-2">
                 <span className="label">Decision</span>
                 <select name="decision" className="field" defaultValue={selectedDecision}>
@@ -142,8 +134,7 @@ export default async function ConfirmPage({ params, searchParams }: ConfirmPageP
               <button type="submit" className="primary-action">
                 Submit
               </button>
-            </form>
-          )}
+          </form>
         </div>
       </section>
     </main>

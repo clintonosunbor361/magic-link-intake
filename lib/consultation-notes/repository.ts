@@ -48,6 +48,7 @@ export function createConsultationNoteRepository(): ConsultationNoteRepository {
           lookId: input.lookId,
           sourceId: input.sourceId,
           body: input.body,
+          details: input.details ?? {},
           occurredAt: input.occurredAt,
           createdByStaffId: input.createdByStaffId,
         })
@@ -60,6 +61,7 @@ export function createConsultationNoteRepository(): ConsultationNoteRepository {
           id: consultationNotes.id,
           version: consultationNotes.version,
           body: consultationNotes.body,
+          details: consultationNotes.details,
           sourceId: consultationNotes.sourceId,
           occurredAt: consultationNotes.occurredAt,
           createdByStaffId: consultationNotes.createdByStaffId,
@@ -78,6 +80,7 @@ export function createConsultationNoteRepository(): ConsultationNoteRepository {
           .update(consultationNotes)
           .set({
             body: input.fields.body,
+            details: input.fields.details ?? {},
             sourceId: input.fields.sourceId,
             occurredAt: input.fields.occurredAt,
             lastEditedByStaffId: input.editedByStaffId,
@@ -99,6 +102,7 @@ export function createConsultationNoteRepository(): ConsultationNoteRepository {
           organizationId: input.organizationId,
           consultationNoteId: input.noteId,
           body: input.priorSnapshot.body,
+          details: input.priorSnapshot.details,
           sourceId: input.priorSnapshot.sourceId,
           occurredAt: input.priorSnapshot.occurredAt,
           authorStaffId: input.priorSnapshot.authorStaffId,
@@ -146,6 +150,7 @@ export async function listConsultationNotesForOrder(organizationId: string, orde
       sourceId: consultationNotes.sourceId,
       sourceName: consultationNoteSources.name,
       body: consultationNotes.body,
+      details: consultationNotes.details,
       occurredAt: consultationNotes.occurredAt,
       createdByStaffId: consultationNotes.createdByStaffId,
       createdByName: staffProfiles.fullName,
@@ -178,6 +183,7 @@ export async function listConsultationNotesForOrder(organizationId: string, orde
           id: consultationNoteRevisions.id,
           consultationNoteId: consultationNoteRevisions.consultationNoteId,
           body: consultationNoteRevisions.body,
+          details: consultationNoteRevisions.details,
           sourceName: consultationNoteSources.name,
           occurredAt: consultationNoteRevisions.occurredAt,
           authorStaffId: consultationNoteRevisions.authorStaffId,

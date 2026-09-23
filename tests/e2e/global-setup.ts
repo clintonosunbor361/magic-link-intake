@@ -76,15 +76,15 @@ export default async function globalSetup() {
           ('30000000-0000-0000-0000-000000000003', 'Other', 6)
       `;
       await transaction`
-        insert into consultation_note_sources (organization_id, name, sort_order)
+        insert into consultation_note_sources (organization_id, name, template, sort_order)
         values
-          ('30000000-0000-0000-0000-000000000003', 'In-person consultation', 0),
-          ('30000000-0000-0000-0000-000000000003', 'Phone call', 1),
-          ('30000000-0000-0000-0000-000000000003', 'WhatsApp', 2),
-          ('30000000-0000-0000-0000-000000000003', 'Email', 3),
-          ('30000000-0000-0000-0000-000000000003', 'Sketch reference', 4),
-          ('30000000-0000-0000-0000-000000000003', 'Colour reference', 5),
-          ('30000000-0000-0000-0000-000000000003', 'Other', 6)
+          ('30000000-0000-0000-0000-000000000003', 'In-person consultation', 'generic', 0),
+          ('30000000-0000-0000-0000-000000000003', 'Phone call', 'generic', 1),
+          ('30000000-0000-0000-0000-000000000003', 'WhatsApp', 'reference', 2),
+          ('30000000-0000-0000-0000-000000000003', 'Email', 'email', 3),
+          ('30000000-0000-0000-0000-000000000003', 'Sketch reference', 'reference', 4),
+          ('30000000-0000-0000-0000-000000000003', 'Colour reference', 'colour', 5),
+          ('30000000-0000-0000-0000-000000000003', 'Other', 'generic', 6)
       `;
       await transaction`
         insert into measurement_field_definitions (organization_id, name, unit, sort_order)

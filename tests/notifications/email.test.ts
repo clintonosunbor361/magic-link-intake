@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { sendDeadlineEmail } from "@/lib/email/resend";
+import { sendDeadlineEmail, sendStaffInviteEmail } from "@/lib/email/resend";
 const send = vi.hoisted(() => vi.fn());
 vi.mock("resend", () => ({ Resend: class { emails = { send }; } }));
 const input = { to: "staff@example.test", staffName: "<Staff>", title: "A deadline", body: 'Client <script>alert("x")</script> & deadline', url: "https://example.test/notifications?a=1&b=2", idempotencyKey: "notification/test" };
@@ -26,5 +26,23 @@ describe("notification email", () => {
     vi.stubEnv("RESEND_API_KEY", "");
     await expect(sendDeadlineEmail(input)).rejects.toMatchObject({ retrySafe: true });
     expect(send).not.toHaveBeenCalled();
+  });
+
+  it("sends account invitations as Kuartz CRM with a branded HTML and plain-text fallback", async () => {
+    await sendStaffInviteEmail({
+      to: "teni@example.test",
+      staffName: "Teni <Admin>",
+      inviteUrl: "https://kuartz-crm.vercel.app/auth/callback?token_hash=secret&type=invite",
+      idempotencyKey: "auth/invite/staff-2",
+    });
+
+    const [message, options] = send.mock.calls[0];
+    expect(message.from).toBe("Kuartz CRM <mail@example.test>");
+    expect(message.subject).toBe("You’re invited to Kuartz CRM");
+    expect(message.html).toContain("Create your account");
+    expect(message.html).toContain("Teni &lt;Admin&gt;");
+    expect(message.html).not.toContain("Teni <Admin>");
+    expect(message.text).toContain("Create your account:");
+    expect(options.idempotencyKey).toBe("auth/invite/staff-2");
   });
 });

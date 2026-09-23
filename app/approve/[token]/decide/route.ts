@@ -37,5 +37,5 @@ export async function POST(request: NextRequest, { params }: RouteContext) {
     return NextResponse.redirect(approvalUrl, { status: 303 });
   }
 
-  return NextResponse.redirect(new URL(`/approve/${encodeURIComponent(token)}`, request.url), { status: 303 });
+  return NextResponse.redirect(new URL("/approve/completed", request.url), { status: 303 });
 }

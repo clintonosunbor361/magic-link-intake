@@ -44,7 +44,7 @@ export function buildVendorBriefHtml(document: VendorBriefDocument, images: Rend
   if (document.clientName !== null) facts.push(["Client", document.clientName]);
 
   const measurements = document.measurements.length ? `<section><h2>Measurements</h2><table><tbody>${document.measurements.map((measurement) => `<tr><td>${escapeHtml(measurement.label)}</td><td>${escapeHtml(`${measurement.value} ${measurement.unit}`)}</td></tr>`).join("")}</tbody></table></section>` : "";
-  const notes = document.notes.length ? `<section><h2>Consultation notes</h2>${document.notes.map((note) => `<div class="note"><div class="meta">${escapeHtml(note.sourceLabel)} · ${escapeHtml(note.recordedOn)}</div><p>${textWithBreaks(note.body)}</p></div>`).join("")}</section>` : "";
+  const notes = document.notes.length ? `<section><h2>Consultation notes</h2>${document.notes.map((note) => `<div class="note"><div class="meta">${escapeHtml(note.sourceLabel)} · ${escapeHtml(note.recordedOn)}</div>${note.detailLines.map((line) => `<div class="meta">${escapeHtml(line)}</div>`).join("")}<p>${textWithBreaks(note.body)}</p></div>`).join("")}</section>` : "";
   const instructions = document.additionalInstructions ? `<section><h2>Additional instructions</h2><p>${textWithBreaks(document.additionalInstructions)}</p></section>` : "";
   const references = images.length ? `<section class="references"><h2>References</h2>${images.map((image) => `<figure><figcaption>${escapeHtml(image.label)}</figcaption><img alt="" src="data:image/jpeg;base64,${image.data.toString("base64")}"></figure>`).join("")}</section>` : "";
 

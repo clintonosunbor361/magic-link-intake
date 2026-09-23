@@ -260,6 +260,15 @@ Notes can apply to:
 
 Notes are editable. If a note has already been used in a vendor brief, edits keep history. Vendor briefs preserve the data used at export time only when generated, but Phase 1 does not store exported brief snapshots.
 
+Each configured source has one stable input template. The initial templates are:
+
+- Email: optional subject
+- WhatsApp and Sketch reference: optional HTTP/HTTPS reference URL
+- Colour reference: optional colour name and colour code
+- In-person consultation, Phone call, Other, and custom sources: general note fields only
+
+The note body remains required for every template. Changing a source does not discard previously entered structured details. Structured details follow the note revision history and remain internal unless staff explicitly select that note for a Vendor Brief.
+
 ### Style Direction Files
 
 Use one upload system: `Style Direction Files`.

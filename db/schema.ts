@@ -15,6 +15,7 @@ import {
   uniqueIndex,
   uuid,
 } from "drizzle-orm/pg-core";
+import type { ConsultationNoteDetails, ConsultationNoteTemplate } from "@/lib/consultation-notes/templates";
 
 export const staffRole = pgEnum("staff_role", ["super_admin", "admin_assistant"]);
 export const clientTaskStatus = pgEnum("enquiry_task_status", ["open", "done"]);
@@ -417,6 +418,7 @@ export const consultationNoteSources = pgTable(
       .references(() => organizations.id)
       .notNull(),
     name: text("name").notNull(),
+    template: text("template").$type<ConsultationNoteTemplate>().default("generic").notNull(),
     sortOrder: integer("sort_order").default(0).notNull(),
     version: integer("version").default(1).notNull(),
     archivedAt: timestamp("archived_at", { withTimezone: true }),
@@ -452,6 +454,7 @@ export const consultationNotes = pgTable(
       .references(() => consultationNoteSources.id)
       .notNull(),
     body: text("body").notNull(),
+    details: jsonb("details").$type<ConsultationNoteDetails>().default({}).notNull(),
     occurredAt: timestamp("occurred_at", { withTimezone: true }),
     createdByStaffId: uuid("created_by_staff_id")
       .references(() => staffProfiles.id)
@@ -489,6 +492,7 @@ export const consultationNoteRevisions = pgTable(
       .references(() => consultationNotes.id)
       .notNull(),
     body: text("body").notNull(),
+    details: jsonb("details").$type<ConsultationNoteDetails>().default({}).notNull(),
     sourceId: uuid("source_id")
       .references(() => consultationNoteSources.id)
       .notNull(),

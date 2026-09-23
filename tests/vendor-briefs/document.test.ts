@@ -61,6 +61,25 @@ describe("buildVendorBriefDocument", () => {
     expect(document.images.map((i) => i.revisionId)).toEqual(["rev-1"]);
   });
 
+  it("includes structured note details only when the note is selected", () => {
+    const input = sources({
+      notes: [{
+        id: "note-1",
+        sourceLabel: "Email",
+        body: "Confirmed the lapel shape.",
+        details: { subject: "Reception suit" },
+        recordedOn: "2026-08-01",
+      }],
+    });
+
+    expect(buildVendorBriefDocument({ sources: input, selection: defaultBriefSelection(input), edits: emptyBriefEdits() }).notes).toEqual([]);
+    expect(buildVendorBriefDocument({
+      sources: input,
+      selection: { ...defaultBriefSelection(input), noteIds: ["note-1"] },
+      edits: emptyBriefEdits(),
+    }).notes[0]?.detailLines).toEqual(["Subject: Reception suit"]);
+  });
+
   it("omits a commercially sensitive note that was not ticked", () => {
     const document = buildVendorBriefDocument({
       sources: sources(),

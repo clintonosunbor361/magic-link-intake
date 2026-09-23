@@ -12,6 +12,7 @@ import { FormDisclosure } from "@/components/ui/form-disclosure";
 import { Input } from "@/components/ui/input";
 import { MoneyInput } from "@/components/ui/money-input";
 import { NativeSelect } from "@/components/ui/native-select";
+import { Textarea } from "@/components/ui/textarea";
 import { listAccessoryItemsForOrder } from "@/lib/accessories/repository";
 import { listAccessoryStatuses } from "@/lib/accessory-statuses/repository";
 import { listAccessoryTypes } from "@/lib/accessory-types/repository";
@@ -21,9 +22,6 @@ import { mayArchive, mayRestore } from "@/lib/domain/record-lifecycle";
 import { formatMinorUnits } from "@/lib/forms/money";
 import { getOrderWithLooksAndItems } from "@/lib/orders/repository";
 import { listStaffMembers } from "@/lib/team/repository";
-
-const textareaClass =
-  "min-h-[3.5rem] w-full rounded-[0.8rem] border border-kuartz-control bg-white/70 px-3.5 py-3 text-sm text-kuartz-ink outline-none focus:border-[#88925f] focus:bg-white focus:ring-4 focus:ring-kuartz-lime/20";
 
 export async function OrderAccessoriesWorkspace({ orderId: id, error, embedded = false }: { orderId: string; error?: string; embedded?: boolean }) {
   const Heading = embedded ? "h2" : "h1";
@@ -191,7 +189,7 @@ export async function OrderAccessoriesWorkspace({ orderId: id, error, embedded =
                     <span>
                       Notes <span className="font-normal text-kuartz-secondary">(optional)</span>
                     </span>
-                    <textarea name="notes" defaultValue={accessory.notes} className={textareaClass} />
+                    <Textarea name="notes" defaultValue={accessory.notes} />
                   </label>
 
                   {!accessory.archivedAt ? (
@@ -307,7 +305,7 @@ export async function OrderAccessoriesWorkspace({ orderId: id, error, embedded =
                 <span>
                   Notes <span className="font-normal text-kuartz-secondary">(optional)</span>
                 </span>
-                <textarea name="notes" className={textareaClass} />
+                <Textarea name="notes" />
               </label>
               <Button className="w-full" type="submit">
                 Add Accessory
@@ -320,4 +318,3 @@ export async function OrderAccessoriesWorkspace({ orderId: id, error, embedded =
     </div>
   );
 }
-
