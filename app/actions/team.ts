@@ -9,7 +9,6 @@ import { changeStaffRole } from "@/lib/team/service";
 import { addInvitedStaffMember, createStaffRepository } from "@/lib/team/repository";
 import { readFormString } from "@/lib/forms/read-string";
 import { getRequestOrigin } from "@/lib/request-origin";
-import { sendStaffInviteEmail } from "@/lib/email/resend";
 
 function roleValue(formData: FormData): StaffRole {
   const candidate = readFormString(formData, "role");
@@ -22,34 +21,15 @@ export async function inviteStaffMemberAction(formData: FormData) {
   const fullName = readFormString(formData, "fullName");
   const email = readFormString(formData, "email").toLowerCase();
   const role = roleValue(formData);
-  if (!fullName || !email) redirect("/settings/team?error=Name+and+email+are+required.");
+  if (!fullName || !email) redirect("/settings/team?error=Name+and+email+are+required.&modal=invite");
 
   const admin = createSupabaseAdminClient();
   const appUrl = await getRequestOrigin();
-  const { data, error } = await admin.auth.admin.generateLink({
-    type: "invite",
-    email,
-    options: { data: { full_name: fullName } },
+  const { data, error } = await admin.auth.admin.inviteUserByEmail(email, {
+    data: { full_name: fullName },
+    redirectTo: `${appUrl}/auth/invite`,
   });
-  const tokenHash = data?.properties?.hashed_token;
-  if (error || !data?.user || !tokenHash) redirect("/settings/team?error=The+invitation+could+not+be+sent.");
-
-  const inviteUrl = new URL("/auth/callback", appUrl);
-  inviteUrl.searchParams.set("token_hash", tokenHash);
-  inviteUrl.searchParams.set("type", "invite");
-  inviteUrl.searchParams.set("next", "/auth/update-password?context=invite");
-
-  try {
-    await sendStaffInviteEmail({
-      to: email,
-      staffName: fullName,
-      inviteUrl: inviteUrl.toString(),
-      idempotencyKey: `auth/invite/${data.user.id}`,
-    });
-  } catch {
-    await admin.auth.admin.deleteUser(data.user.id);
-    redirect("/settings/team?error=The+invitation+email+could+not+be+sent.");
-  }
+  if (error || !data.user) redirect("/settings/team?error=The+invitation+could+not+be+sent.&modal=invite");
 
   try {
     await addInvitedStaffMember({
@@ -62,7 +42,7 @@ export async function inviteStaffMemberAction(formData: FormData) {
     });
   } catch {
     await admin.auth.admin.deleteUser(data.user.id);
-    redirect("/settings/team?error=The+membership+could+not+be+created.");
+    redirect("/settings/team?error=The+membership+could+not+be+created.&modal=invite");
   }
   revalidatePath("/settings/team");
   redirect("/settings/team?invited=1");

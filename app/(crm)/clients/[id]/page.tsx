@@ -29,7 +29,11 @@ import { MeasurementDrawer } from "@/components/clients/measurement-drawer";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
-const dateFormatter = new Intl.DateTimeFormat("en-NG", { dateStyle: "medium", timeStyle: "short" });
+const dateFormatter = new Intl.DateTimeFormat("en-NG", {
+  dateStyle: "medium",
+  timeStyle: "short",
+  timeZone: "Africa/Lagos",
+});
 
 export default async function ClientDetailPage({
   params,

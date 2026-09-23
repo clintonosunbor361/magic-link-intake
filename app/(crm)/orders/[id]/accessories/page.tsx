@@ -1,9 +1,336 @@
-import { OrderAccessoriesWorkspace } from "@/components/orders/accessories-workspace";
+import Link from "next/link";
+import { notFound } from "next/navigation";
+import {
+  archiveAccessoryItemAction,
+  createAccessoryItemAction,
+  restoreAccessoryItemAction,
+  updateAccessoryItemAction,
+} from "@/app/actions/accessories";
+import { Button } from "@/components/ui/button";
+import { EmptyState } from "@/components/ui/empty-state";
+import { FormModal } from "@/components/ui/form-modal";
+import { Input } from "@/components/ui/input";
+import { MoneyInput } from "@/components/ui/money-input";
+import { NativeSelect } from "@/components/ui/native-select";
+import { listAccessoryItemsForOrder } from "@/lib/accessories/repository";
+import { listAccessoryStatuses } from "@/lib/accessory-statuses/repository";
+import { listAccessoryTypes } from "@/lib/accessory-types/repository";
+import { requireStaffSession } from "@/lib/auth/session";
+import { formatBusinessDate } from "@/lib/domain/business-date";
+import { mayArchive, mayRestore } from "@/lib/domain/record-lifecycle";
+import { formatMinorUnits } from "@/lib/forms/money";
+import { getOrderWithLooksAndItems } from "@/lib/orders/repository";
+import { listStaffMembers } from "@/lib/team/repository";
 
-export default async function OrderAccessoriesPage({ params, searchParams }: {
+const textareaClass =
+  "min-h-[3.5rem] w-full rounded-[0.8rem] border border-kuartz-control bg-white/70 px-3.5 py-3 text-sm text-kuartz-ink outline-none focus:border-[#88925f] focus:bg-white focus:ring-4 focus:ring-kuartz-lime/20";
+
+export default async function OrderAccessoriesPage({
+  params,
+  searchParams,
+}: {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ error?: string }>;
+  searchParams: Promise<{ error?: string; modal?: string }>;
 }) {
-  const [{ id }, { error }] = await Promise.all([params, searchParams]);
-  return <OrderAccessoriesWorkspace orderId={id} error={error} />;
+  const session = await requireStaffSession();
+  const [{ id }, query] = await Promise.all([params, searchParams]);
+
+  const order = await getOrderWithLooksAndItems(session.organizationId, id);
+  if (!order) notFound();
+
+  const [accessories, types, statuses, staffMembers] = await Promise.all([
+    listAccessoryItemsForOrder(session.organizationId, id),
+    listAccessoryTypes(session.organizationId),
+    listAccessoryStatuses(session.organizationId),
+    listStaffMembers(session.organizationId),
+  ]);
+  const liveLooks = order.looks.filter((look) => !look.archivedAt);
+  const canConfigure = types.length > 0 && statuses.length > 0;
+
+  return (
+    <div>
+      <Link
+        href={`/orders/${id}`}
+        className="text-sm font-semibold text-kuartz-secondary underline-offset-4 transition-colors duration-200 hover:text-kuartz-ink hover:underline"
+      >
+        ← {order.title}
+      </Link>
+
+      <header className="mt-4 border-b border-kuartz-line pb-8">
+        <p className="eyebrow">Accessory sourcing</p>
+        <h1 className="page-title">Accessories</h1>
+        <p className="page-description">
+          Track accessories separately from garment production. Accessories use the linked look date when one is available.
+        </p>
+      </header>
+
+      {query.error && !query.modal ? (
+        <p className="form-alert mt-6" role="alert">
+          {query.error}
+        </p>
+      ) : null}
+
+      {!canConfigure ? (
+        <p className="mt-6 border-l-[3px] border-[#88925f] bg-white/70 px-4 py-3.5 text-sm leading-6 text-[#3f4a24]" role="status">
+          A Super Admin needs to configure accessory types and statuses in settings before Accessories
+          can be added.
+        </p>
+      ) : null}
+
+      <section className="mt-9 grid gap-10 xl:grid-cols-[minmax(0,1fr)_22rem]">
+        <div>
+          <h2 className="section-title">Sourced accessories</h2>
+          {accessories.length ? (
+            <div className="mt-4 space-y-6">
+              {accessories.map((accessory) => (
+                <div key={accessory.id} className="border-t border-kuartz-line pt-5">
+                <form
+                  action={updateAccessoryItemAction}
+                  aria-label={accessory.label}
+                  className="space-y-4"
+                >
+                  <input type="hidden" name="orderId" value={id} />
+                  <input type="hidden" name="accessoryItemId" value={accessory.id} />
+                  <input type="hidden" name="version" value={accessory.version} />
+
+                  <div className="flex flex-wrap items-baseline justify-between gap-2">
+                    <h3 className="section-title">{accessory.label}</h3>
+                    <p className="text-sm text-kuartz-muted">
+                      {accessory.deliveryDate.state === "inherited"
+                        ? `Due ${formatBusinessDate(accessory.deliveryDate.date)}${accessory.lookName ? ` | ${accessory.lookName}` : " | earliest Look"}`
+                        : "No date. No dated Look to inherit from."}
+                    </p>
+                  </div>
+
+                  {accessory.archivedAt ? <p className="form-alert">This Accessory is archived.</p> : null}
+
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    <label className="form-group">
+                      <span>Type</span>
+                      <NativeSelect name="accessoryTypeId" defaultValue={accessory.accessoryTypeId}>
+                        {accessory.typeArchived ? (
+                          <option value={accessory.accessoryTypeId}>{accessory.typeName} (archived)</option>
+                        ) : null}
+                        {types.map((type) => (
+                          <option key={type.id} value={type.id}>
+                            {type.name}
+                          </option>
+                        ))}
+                      </NativeSelect>
+                    </label>
+                    <label className="form-group">
+                      <span>Status</span>
+                      <NativeSelect name="accessoryStatusId" defaultValue={accessory.accessoryStatusId}>
+                        {statuses.map((status) => (
+                          <option key={status.id} value={status.id}>
+                            {status.name}
+                          </option>
+                        ))}
+                      </NativeSelect>
+                    </label>
+                    <label className="form-group">
+                      <span>
+                        Label <span className="font-normal text-kuartz-secondary">(optional)</span>
+                      </span>
+                      <Input name="customLabel" defaultValue={accessory.customLabel ?? ""} maxLength={120} />
+                    </label>
+                    <label className="form-group">
+                      <span>
+                        Look <span className="font-normal text-kuartz-secondary">(optional)</span>
+                      </span>
+                      <NativeSelect name="lookId" defaultValue={accessory.lookId ?? ""}>
+                        <option value="">Whole Order</option>
+                        {liveLooks.map((look) => (
+                          <option key={look.id} value={look.id}>
+                            {look.name}
+                          </option>
+                        ))}
+                      </NativeSelect>
+                    </label>
+                    <label className="form-group">
+                      <span>
+                        Assigned staff <span className="font-normal text-kuartz-secondary">(optional)</span>
+                      </span>
+                      <NativeSelect name="assignedToStaffId" defaultValue={accessory.assignedToStaffId ?? ""}>
+                        <option value="">Unassigned</option>
+                        {accessory.assignedToStaffId &&
+                        !staffMembers.some((staff) => staff.userId === accessory.assignedToStaffId) ? (
+                          <option value={accessory.assignedToStaffId}>
+                            {accessory.assignedToName ?? "Former staff member"} (inactive)
+                          </option>
+                        ) : null}
+                        {staffMembers.map((staff) => (
+                          <option key={staff.userId} value={staff.userId}>
+                            {staff.fullName}
+                          </option>
+                        ))}
+                      </NativeSelect>
+                    </label>
+                    <label className="form-group">
+                      <span>
+                        Supplier <span className="font-normal text-kuartz-secondary">(optional)</span>
+                      </span>
+                      <Input name="supplier" defaultValue={accessory.supplier ?? ""} maxLength={160} />
+                    </label>
+                    <label className="form-group">
+                      <span>
+                        Budget <span className="font-normal text-kuartz-secondary">(optional)</span>
+                      </span>
+                      <MoneyInput
+                        name="budget"
+                        defaultValue={accessory.budgetMinor === null ? "" : formatMinorUnits(accessory.budgetMinor)}
+                        aria-describedby={`accessory-budget-${accessory.id}`}
+                      />
+                      <span id={`accessory-budget-${accessory.id}`} className="text-xs font-normal text-kuartz-muted">
+                        Nigerian naira
+                      </span>
+                    </label>
+                    <label className="form-group">
+                      <span>
+                        Purchase date <span className="font-normal text-kuartz-secondary">(optional)</span>
+                      </span>
+                      <Input name="purchaseDate" type="date" defaultValue={accessory.purchaseDate ?? ""} />
+                    </label>
+                  </div>
+
+                  <label className="form-group">
+                    <span>
+                      Notes <span className="font-normal text-kuartz-secondary">(optional)</span>
+                    </span>
+                    <textarea name="notes" defaultValue={accessory.notes} className={textareaClass} />
+                  </label>
+
+                  {!accessory.archivedAt ? (
+                    <Button type="submit" variant="outline">
+                      Save Accessory
+                    </Button>
+                  ) : null}
+                </form>
+
+                {/* Archive and restore are sibling forms, not nested ones — HTML forbids a form
+                    inside a form, so these cannot live in the edit form above. */}
+                {!accessory.archivedAt && mayArchive("accessory_item", session.role) ? (
+                  <form action={archiveAccessoryItemAction} className="mt-3">
+                    <input type="hidden" name="orderId" value={id} />
+                    <input type="hidden" name="accessoryItemId" value={accessory.id} />
+                    <input type="hidden" name="version" value={accessory.version} />
+                    <Button type="submit" variant="outline" aria-label={`Cancel ${accessory.label}`}>
+                      Cancel Accessory
+                    </Button>
+                  </form>
+                ) : null}
+                {accessory.archivedAt && mayRestore("accessory_item", session.role) ? (
+                  <form action={restoreAccessoryItemAction} className="mt-3">
+                    <input type="hidden" name="orderId" value={id} />
+                    <input type="hidden" name="accessoryItemId" value={accessory.id} />
+                    <input type="hidden" name="version" value={accessory.version} />
+                    <Button type="submit" variant="outline" aria-label={`Restore ${accessory.label}`}>
+                      Restore Accessory
+                    </Button>
+                  </form>
+                ) : null}
+                </div>
+              ))}
+            </div>
+          ) : (
+            <EmptyState
+              className="mt-4"
+              title="No Accessories yet"
+              description="Add shoes, watches, or anything else sourced alongside the garments."
+            />
+          )}
+        </div>
+
+        <aside>
+          {canConfigure ? (
+            <FormModal
+              title="Accessories"
+              modalTitle="Add accessory"
+              buttonLabel="Add Accessory"
+              eyebrow="Accessories"
+              formId="add-accessory-form"
+              submitLabel="Add Accessory"
+              pendingLabel="Adding accessory..."
+              size="lg"
+              error={query.modal === "accessory" ? query.error : undefined}
+            >
+            <form id="add-accessory-form" action={createAccessoryItemAction} className="space-y-4">
+              <input type="hidden" name="orderId" value={id} />
+              <label className="form-group">
+                <span>Type <span className="font-normal text-kuartz-secondary">(required)</span></span>
+                <NativeSelect name="accessoryTypeId" required data-modal-autofocus>
+                  {types.map((type) => (
+                    <option key={type.id} value={type.id}>
+                      {type.name}
+                    </option>
+                  ))}
+                </NativeSelect>
+              </label>
+              <label className="form-group">
+                <span>
+                  Assigned staff <span className="font-normal text-kuartz-secondary">(optional)</span>
+                </span>
+                <NativeSelect name="assignedToStaffId" defaultValue="">
+                  <option value="">Unassigned</option>
+                  {staffMembers.map((staff) => (
+                    <option key={staff.userId} value={staff.userId}>
+                      {staff.fullName}
+                    </option>
+                  ))}
+                </NativeSelect>
+              </label>
+              <label className="form-group">
+                <span>
+                  Supplier <span className="font-normal text-kuartz-secondary">(optional)</span>
+                </span>
+                <Input name="supplier" maxLength={160} placeholder="e.g. Lekki Leather Goods" />
+              </label>
+              <label className="form-group">
+                <span>
+                  Budget <span className="font-normal text-kuartz-secondary">(optional)</span>
+                </span>
+                <MoneyInput name="budget" aria-describedby="new-accessory-budget-help" />
+                <span id="new-accessory-budget-help" className="text-xs font-normal text-kuartz-muted">
+                  Nigerian naira
+                </span>
+              </label>
+              <label className="form-group">
+                <span>
+                  Purchase date <span className="font-normal text-kuartz-secondary">(optional)</span>
+                </span>
+                <Input name="purchaseDate" type="date" />
+              </label>
+              <label className="form-group">
+                <span>
+                  Label <span className="font-normal text-kuartz-secondary">(optional)</span>
+                </span>
+                <Input name="customLabel" maxLength={120} placeholder="e.g. Black oxfords, size 44" />
+              </label>
+              <label className="form-group">
+                <span>
+                  Look <span className="font-normal text-kuartz-secondary">(optional)</span>
+                </span>
+                <NativeSelect name="lookId" defaultValue="">
+                  <option value="">Whole Order</option>
+                  {liveLooks.map((look) => (
+                    <option key={look.id} value={look.id}>
+                      {look.name}
+                    </option>
+                  ))}
+                </NativeSelect>
+              </label>
+              <label className="form-group">
+                <span>
+                  Notes <span className="font-normal text-kuartz-secondary">(optional)</span>
+                </span>
+                <textarea name="notes" className={textareaClass} />
+              </label>
+            </form>
+            </FormModal>
+          ) : null}
+        </aside>
+      </section>
+    </div>
+  );
 }
+

@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import { requireStaffSession } from "@/lib/auth/session";
 import { readFormString } from "@/lib/forms/read-string";
 import { parseMoneyToMinorUnits } from "@/lib/forms/money";
+import { safeReturnPath, withReturnError } from "@/lib/forms/return-path";
 import { createAssignmentRepository } from "@/lib/production/assignment-repository";
 import {
   assignVendorToItem,
@@ -34,6 +35,7 @@ function actorFrom(session: { role: "super_admin" | "admin_assistant"; userId: s
 export async function assignVendorAction(formData: FormData) {
   const session = await requireStaffSession();
   const orderId = readFormString(formData, "orderId");
+  const returnTo = safeReturnPath(readFormString(formData, "returnTo"), `/orders/${orderId}?tab=looks`);
 
   try {
     await assignVendorToItem(
@@ -47,16 +49,17 @@ export async function assignVendorAction(formData: FormData) {
       createAssignmentRepository(),
     );
   } catch (error) {
-    return backToOrder(orderId, message(error, "The Vendor could not be assigned."));
+    return backTo(returnTo, message(error, "The Vendor could not be assigned."));
   }
 
   revalidateProduction(orderId);
-  redirect(`/orders/${orderId}?tab=vendors`);
+  redirect(returnTo);
 }
 
 export async function bulkAssignVendorAction(formData: FormData) {
   const session = await requireStaffSession();
   const orderId = readFormString(formData, "orderId");
+  const returnTo = safeReturnPath(readFormString(formData, "returnTo"), `/orders/${orderId}?tab=looks`);
   let notice: string;
 
   try {
@@ -74,16 +77,17 @@ export async function bulkAssignVendorAction(formData: FormData) {
     // exactly what this design avoids.
     notice = result.message;
   } catch (error) {
-    return backToOrder(orderId, message(error, "The Items could not be assigned."));
+    return backTo(returnTo, message(error, "The Items could not be assigned."));
   }
 
   revalidateProduction(orderId);
-  redirect(`/orders/${orderId}?tab=vendors&notice=${encodeURIComponent(notice)}`);
+  redirect(withNotice(returnTo, notice));
 }
 
 export async function updateAssignmentTermsAction(formData: FormData) {
   const session = await requireStaffSession();
   const orderId = readFormString(formData, "orderId");
+  const returnTo = safeReturnPath(readFormString(formData, "returnTo"), `/orders/${orderId}?tab=looks`);
 
   try {
     await updateAssignmentTerms(
@@ -97,16 +101,17 @@ export async function updateAssignmentTermsAction(formData: FormData) {
       createAssignmentRepository(),
     );
   } catch (error) {
-    return backToOrder(orderId, message(error, "The assignment could not be updated."));
+    return backTo(returnTo, message(error, "The assignment could not be updated."));
   }
 
   revalidateProduction(orderId);
-  redirect(`/orders/${orderId}?tab=vendors`);
+  redirect(returnTo);
 }
 
 export async function reassignVendorAction(formData: FormData) {
   const session = await requireStaffSession();
   const orderId = readFormString(formData, "orderId");
+  const returnTo = safeReturnPath(readFormString(formData, "returnTo"), `/orders/${orderId}?tab=looks`);
 
   try {
     await reassignVendor(
@@ -122,13 +127,11 @@ export async function reassignVendorAction(formData: FormData) {
       createAssignmentRepository(),
     );
   } catch (error) {
-    return backToOrder(orderId, message(error, "The Item could not be reassigned."));
+    return backTo(returnTo, message(error, "The Item could not be reassigned."));
   }
 
   revalidateProduction(orderId);
-  redirect(
-    `/orders/${orderId}?tab=vendors&notice=${encodeURIComponent("Reassigned. The previous Vendor's production history and notes stay with their assignment.")}`,
-  );
+  redirect(withNotice(returnTo, "Reassigned. The previous Vendor's production history and notes stay with their assignment."));
 }
 
 export async function changeProductionStatusAction(formData: FormData) {
@@ -184,12 +187,13 @@ function revalidateProduction(orderId: string) {
   revalidatePath("/vendors");
 }
 
-function backToOrder(orderId: string, error: string): never {
-  redirect(`/orders/${orderId}?tab=vendors&error=${encodeURIComponent(error)}`);
+function backTo(path: string, error: string): never {
+  redirect(withReturnError(path, error));
 }
 
-function backTo(path: string, error: string): never {
-  redirect(`${path}${path.includes("?") ? "&" : "?"}error=${encodeURIComponent(error)}`);
+function withNotice(path: string, notice: string): string {
+  const separator = path.includes("?") ? "&" : "?";
+  return `${path}${separator}notice=${encodeURIComponent(notice)}`;
 }
 
 function message(error: unknown, fallback: string): string {

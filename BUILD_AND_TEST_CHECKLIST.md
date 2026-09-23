@@ -72,7 +72,9 @@ Legend:
 - [x] Mobile Order workspace selector replaces crowded tabs on small screens
 - [x] Overview tab with next actions
 - [x] Looks & Items tab
-- [x] Looks are displayed as compact workspace cards instead of always-open edit forms
+- [x] Looks use collapsible workspace sections with persistent open state
+- [x] Item rows show compact summaries and reveal edit fields only when opened
+- [x] Add Item form opens beside the Items section heading
 - [x] Measurements tab inside Order workspace can view and edit Client profile measurements
 - [x] Style Direction tab
 - [x] Vendors tab with individual and Look-level assignment workflows
@@ -270,9 +272,11 @@ Legend:
 
 ### Order Workspace UX
 
-- [x] Tabs render correctly
-- [x] Overview tab is default landing tab
-- [x] Looks & Items tab contains only Looks/Items work
+- [ ] Tabs render correctly
+- [ ] Overview tab is default landing tab
+- [ ] Looks & Items tab contains only Looks/Items work
+- [x] Look sections expand, collapse, and restore their browser-session state
+- [x] Add Item disclosure opens without navigating away from the Look
 - [x] Measurements tab can edit Client measurements
 - [x] Style Direction tab contains creative/reference work only
 - [x] Vendors tab handles assignment work

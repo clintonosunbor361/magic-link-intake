@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { redirect } from "next/navigation";
 import {
   archiveConsultationNoteSourceAction,
@@ -11,8 +10,7 @@ import { listConsultationNoteSources } from "@/lib/consultation-note-sources/rep
 import { Button } from "@/components/ui/button";
 import { FormDisclosure } from "@/components/ui/form-disclosure";
 import { Input } from "@/components/ui/input";
-import { NativeSelect } from "@/components/ui/native-select";
-import { CONSULTATION_NOTE_TEMPLATES, CONSULTATION_NOTE_TEMPLATE_LABELS } from "@/lib/consultation-notes/templates";
+import { SettingsNav } from "@/components/settings-nav";
 
 export default async function ConsultationNoteSourcesPage({
   searchParams,
@@ -37,23 +35,7 @@ export default async function ConsultationNoteSourcesPage({
         </p>
       </header>
 
-      <nav className="mt-6 flex gap-4 text-sm font-semibold">
-        <Link href="/settings/team" className="text-kuartz-secondary hover:text-kuartz-ink">
-          Team
-        </Link>
-        <Link href="/settings/item-types" className="text-kuartz-secondary hover:text-kuartz-ink">
-          Item types
-        </Link>
-        <Link href="/settings/consultation-note-sources" className="text-kuartz-ink underline">
-          Consultation note sources
-        </Link>
-        <Link href="/settings/measurement-fields" className="text-kuartz-secondary hover:text-kuartz-ink">
-          Measurement fields
-        </Link>
-        <Link href="/settings/measurement-requirements" className="text-kuartz-secondary hover:text-kuartz-ink">
-          Measurement requirements
-        </Link>
-      </nav>
+      <SettingsNav current="/settings/consultation-note-sources" />
 
       {params.error ? (
         <p className="form-alert mt-6" role="alert">
@@ -74,7 +56,6 @@ export default async function ConsultationNoteSourcesPage({
               >
                 <div>
                   <p className="font-semibold text-kuartz-ink">{source.name}</p>
-                  <p className="mt-1 text-sm text-kuartz-secondary">{CONSULTATION_NOTE_TEMPLATE_LABELS[source.template]}</p>
                   {source.archivedAt ? <p className="mt-1 text-sm text-kuartz-muted">Archived</p> : null}
                 </div>
                 <form action={source.archivedAt ? restoreConsultationNoteSourceAction : archiveConsultationNoteSourceAction}>
@@ -99,14 +80,6 @@ export default async function ConsultationNoteSourcesPage({
             <label className="form-group">
               <span>Name</span>
               <Input name="name" required />
-            </label>
-            <label className="form-group">
-              <span>Input template</span>
-              <NativeSelect name="template" defaultValue="generic">
-                {CONSULTATION_NOTE_TEMPLATES.map((template) => (
-                  <option key={template} value={template}>{CONSULTATION_NOTE_TEMPLATE_LABELS[template]}</option>
-                ))}
-              </NativeSelect>
             </label>
             <Button className="w-full" type="submit">
               Add source

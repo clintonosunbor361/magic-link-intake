@@ -12,9 +12,14 @@ import {
 import { requireStaffSession } from "@/lib/auth/session";
 import { parseMoneyToMinorUnits } from "@/lib/forms/money";
 import { readFormString } from "@/lib/forms/read-string";
+import { safeReturnPath, withReturnError, withReturnErrorContext } from "@/lib/forms/return-path";
 
 function accessoriesPath(orderId: string): string {
   return `/orders/${orderId}/accessories`;
+}
+
+function readReturnTo(formData: FormData, orderId: string): string {
+  return safeReturnPath(readFormString(formData, "returnTo"), accessoriesPath(orderId));
 }
 
 function readOptionalBudget(formData: FormData): number | null {
@@ -25,6 +30,7 @@ function readOptionalBudget(formData: FormData): number | null {
 export async function createAccessoryItemAction(formData: FormData) {
   const session = await requireStaffSession();
   const orderId = readFormString(formData, "orderId");
+  const returnTo = readReturnTo(formData, orderId);
 
   try {
     await createAccessoryItem(
@@ -46,17 +52,18 @@ export async function createAccessoryItemAction(formData: FormData) {
     );
   } catch (error) {
     const message = error instanceof Error ? error.message : "The Accessory could not be added.";
-    redirect(`${accessoriesPath(orderId)}?error=${encodeURIComponent(message)}`);
+    redirect(withReturnErrorContext(returnTo, message, "accessory"));
   }
 
   revalidatePath(accessoriesPath(orderId));
   revalidatePath(`/orders/${orderId}`);
-  redirect(accessoriesPath(orderId));
+  redirect(returnTo);
 }
 
 export async function updateAccessoryItemAction(formData: FormData) {
   const session = await requireStaffSession();
   const orderId = readFormString(formData, "orderId");
+  const returnTo = readReturnTo(formData, orderId);
 
   try {
     await updateAccessoryItem(
@@ -80,17 +87,18 @@ export async function updateAccessoryItemAction(formData: FormData) {
     );
   } catch (error) {
     const message = error instanceof Error ? error.message : "The Accessory could not be updated.";
-    redirect(`${accessoriesPath(orderId)}?error=${encodeURIComponent(message)}`);
+    redirect(withReturnError(returnTo, message));
   }
 
   revalidatePath(accessoriesPath(orderId));
   revalidatePath(`/orders/${orderId}`);
-  redirect(accessoriesPath(orderId));
+  redirect(returnTo);
 }
 
 export async function archiveAccessoryItemAction(formData: FormData) {
   const session = await requireStaffSession();
   const orderId = readFormString(formData, "orderId");
+  const returnTo = readReturnTo(formData, orderId);
 
   try {
     await archiveAccessoryItem(
@@ -104,17 +112,18 @@ export async function archiveAccessoryItemAction(formData: FormData) {
     );
   } catch (error) {
     const message = error instanceof Error ? error.message : "The Accessory could not be updated.";
-    redirect(`${accessoriesPath(orderId)}?error=${encodeURIComponent(message)}`);
+    redirect(withReturnError(returnTo, message));
   }
 
   revalidatePath(accessoriesPath(orderId));
   revalidatePath(`/orders/${orderId}`);
-  redirect(accessoriesPath(orderId));
+  redirect(returnTo);
 }
 
 export async function restoreAccessoryItemAction(formData: FormData) {
   const session = await requireStaffSession();
   const orderId = readFormString(formData, "orderId");
+  const returnTo = readReturnTo(formData, orderId);
 
   try {
     await restoreAccessoryItem(
@@ -128,10 +137,10 @@ export async function restoreAccessoryItemAction(formData: FormData) {
     );
   } catch (error) {
     const message = error instanceof Error ? error.message : "The Accessory could not be updated.";
-    redirect(`${accessoriesPath(orderId)}?error=${encodeURIComponent(message)}`);
+    redirect(withReturnError(returnTo, message));
   }
 
   revalidatePath(accessoriesPath(orderId));
   revalidatePath(`/orders/${orderId}`);
-  redirect(accessoriesPath(orderId));
+  redirect(returnTo);
 }

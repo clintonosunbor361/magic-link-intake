@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { redirect } from "next/navigation";
 import { archiveItemTypeAction, createItemTypeAction, restoreItemTypeAction } from "@/app/actions/item-types";
 import { requireStaffSession } from "@/lib/auth/session";
@@ -7,6 +6,7 @@ import { listItemTypes } from "@/lib/item-types/repository";
 import { Button } from "@/components/ui/button";
 import { FormDisclosure } from "@/components/ui/form-disclosure";
 import { Input } from "@/components/ui/input";
+import { SettingsNav } from "@/components/settings-nav";
 
 export default async function ItemTypesPage({
   searchParams,
@@ -33,23 +33,7 @@ export default async function ItemTypesPage({
         </p>
       </header>
 
-      <nav className="mt-6 flex gap-4 text-sm font-semibold">
-        <Link href="/settings/team" className="text-kuartz-secondary hover:text-kuartz-ink">
-          Team
-        </Link>
-        <Link href="/settings/item-types" className="text-kuartz-ink underline">
-          Item types
-        </Link>
-        <Link href="/settings/consultation-note-sources" className="text-kuartz-secondary hover:text-kuartz-ink">
-          Consultation note sources
-        </Link>
-        <Link href="/settings/measurement-fields" className="text-kuartz-secondary hover:text-kuartz-ink">
-          Measurement fields
-        </Link>
-        <Link href="/settings/measurement-requirements" className="text-kuartz-secondary hover:text-kuartz-ink">
-          Measurement requirements
-        </Link>
-      </nav>
+      <SettingsNav current="/settings/item-types" />
 
       {params.error ? (
         <p className="form-alert mt-6" role="alert">

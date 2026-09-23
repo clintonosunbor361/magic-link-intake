@@ -19,6 +19,7 @@ import {
 } from "@/lib/finance/repository";
 import { parseMoneyToMinorUnits } from "@/lib/forms/money";
 import { readFormString } from "@/lib/forms/read-string";
+import { safeReturnPath, withReturnError, withReturnErrorContext } from "@/lib/forms/return-path";
 
 function readPayment(formData: FormData) {
   return {
@@ -28,9 +29,18 @@ function readPayment(formData: FormData) {
   };
 }
 
+function invoicePath(orderId: string): string {
+  return `/orders/${orderId}/invoice`;
+}
+
+function readInvoiceReturnTo(formData: FormData, orderId: string): string {
+  return safeReturnPath(readFormString(formData, "returnTo"), invoicePath(orderId));
+}
+
 export async function recordClientPaymentAction(formData: FormData) {
   const session = await requireStaffSession();
   const orderId = readFormString(formData, "orderId");
+  const returnTo = readInvoiceReturnTo(formData, orderId);
 
   try {
     await recordClientPayment(
@@ -44,17 +54,18 @@ export async function recordClientPaymentAction(formData: FormData) {
     );
   } catch (error) {
     const message = error instanceof Error ? error.message : "The payment could not be recorded.";
-    redirect(`/orders/${orderId}/invoice?error=${encodeURIComponent(message)}`);
+    redirect(withReturnErrorContext(returnTo, message, "payment"));
   }
 
-  revalidatePath(`/orders/${orderId}/invoice`);
+  revalidatePath(invoicePath(orderId));
   revalidatePath(`/orders/${orderId}`);
-  redirect(`/orders/${orderId}/invoice`);
+  redirect(returnTo);
 }
 
 export async function editClientPaymentAction(formData: FormData) {
   const session = await requireStaffSession();
   const orderId = readFormString(formData, "orderId");
+  const returnTo = readInvoiceReturnTo(formData, orderId);
 
   try {
     await editClientPayment(
@@ -69,17 +80,18 @@ export async function editClientPaymentAction(formData: FormData) {
     );
   } catch (error) {
     const message = error instanceof Error ? error.message : "The payment could not be updated.";
-    redirect(`/orders/${orderId}/invoice?error=${encodeURIComponent(message)}`);
+    redirect(withReturnError(returnTo, message));
   }
 
-  revalidatePath(`/orders/${orderId}/invoice`);
+  revalidatePath(invoicePath(orderId));
   revalidatePath(`/orders/${orderId}`);
-  redirect(`/orders/${orderId}/invoice`);
+  redirect(returnTo);
 }
 
 export async function voidClientPaymentAction(formData: FormData) {
   const session = await requireStaffSession();
   const orderId = readFormString(formData, "orderId");
+  const returnTo = readInvoiceReturnTo(formData, orderId);
 
   try {
     await voidClientPayment(
@@ -94,12 +106,12 @@ export async function voidClientPaymentAction(formData: FormData) {
     );
   } catch (error) {
     const message = error instanceof Error ? error.message : "The payment could not be voided.";
-    redirect(`/orders/${orderId}/invoice?error=${encodeURIComponent(message)}`);
+    redirect(withReturnError(returnTo, message));
   }
 
-  revalidatePath(`/orders/${orderId}/invoice`);
+  revalidatePath(invoicePath(orderId));
   revalidatePath(`/orders/${orderId}`);
-  redirect(`/orders/${orderId}/invoice`);
+  redirect(returnTo);
 }
 
 export async function recordVendorPaymentAction(formData: FormData) {
@@ -131,7 +143,7 @@ export async function recordVendorPaymentAction(formData: FormData) {
     );
   } catch (error) {
     const message = error instanceof Error ? error.message : "The Vendor payment could not be recorded.";
-    redirect(`/production/${assignmentId}?error=${encodeURIComponent(message)}`);
+    redirect(`/production/${assignmentId}?error=${encodeURIComponent(message)}&modal=vendor-payment`);
   }
 
   revalidatePath(`/production/${assignmentId}`);

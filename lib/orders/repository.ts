@@ -1,6 +1,6 @@
 import "server-only";
 
-import { and, desc, eq, isNotNull, isNull, ne, sql } from "drizzle-orm";
+import { and, asc, desc, eq, isNotNull, isNull, ne, sql } from "drizzle-orm";
 import { getDatabase } from "@/db";
 import { auditEntries, clients, items, itemTypes, looks, orders, productionStatuses, vendorAssignments } from "@/db/schema";
 import type { BusinessDate } from "@/lib/domain/business-date";
@@ -277,10 +277,20 @@ export function createItemRepository(): ItemRepository {
 
 export const ORDERS_PAGE_SIZE = 25;
 export type OrderStatusFilter = "all" | "active" | "completed" | "delayed";
+export type OrderSort = "order" | "client" | "event" | "looks" | "created";
+export type SortDirection = "asc" | "desc";
 
 export async function listOrders(
   organizationId: string,
-  options: { includeArchived?: boolean; search?: string; page?: number; status?: OrderStatusFilter; today?: BusinessDate } = {},
+  options: {
+    includeArchived?: boolean;
+    search?: string;
+    page?: number;
+    status?: OrderStatusFilter;
+    today?: BusinessDate;
+    sort?: OrderSort;
+    direction?: SortDirection;
+  } = {},
 ) {
   const db = getDatabase();
   const conditions = [eq(orders.organizationId, organizationId)];
@@ -313,6 +323,20 @@ export async function listOrders(
   }
 
   const page = Math.max(1, options.page ?? 1);
+  const lookCount = sql<number>`(
+    select count(*) from looks l where l.order_id = ${orders.id} and l.archived_at is null
+  )`;
+  const sortColumn =
+    options.sort === "order"
+      ? orders.title
+      : options.sort === "client"
+        ? clients.fullName
+        : options.sort === "event"
+          ? orders.eventType
+          : options.sort === "looks"
+            ? lookCount
+            : orders.createdAt;
+  const sortExpression = options.direction === "asc" ? asc(sortColumn) : desc(sortColumn);
   const rows = await db
     .select({
       id: orders.id,
@@ -323,14 +347,12 @@ export async function listOrders(
       createdAt: orders.createdAt,
       clientId: clients.id,
       clientFullName: clients.fullName,
-      lookCount: sql<number>`(
-        select count(*) from looks l where l.order_id = ${orders.id} and l.archived_at is null
-      )`,
+      lookCount,
     })
     .from(orders)
     .innerJoin(clients, eq(clients.id, orders.clientId))
     .where(and(...conditions))
-    .orderBy(desc(orders.createdAt))
+    .orderBy(sortExpression, desc(orders.createdAt))
     .limit(ORDERS_PAGE_SIZE + 1)
     .offset((page - 1) * ORDERS_PAGE_SIZE);
 

@@ -19,9 +19,13 @@ import { TRIGGER_LABELS } from "@/lib/notifications/triggers";
 import { getOrganizationTimezone } from "@/lib/organizations/repository";
 import { listPendingRatingPrompts } from "@/lib/vendors/rating-repository";
 
-const dateFormatter = new Intl.DateTimeFormat("en-NG", { dateStyle: "medium" });
-const dateTimeFormatter = new Intl.DateTimeFormat("en-NG", { dateStyle: "medium", timeStyle: "short" });
-const timeFormatter = new Intl.DateTimeFormat("en-NG", { timeStyle: "short" });
+const dateFormatter = new Intl.DateTimeFormat("en-NG", { dateStyle: "medium", timeZone: "Africa/Lagos" });
+const dateTimeFormatter = new Intl.DateTimeFormat("en-NG", {
+  dateStyle: "medium",
+  timeStyle: "short",
+  timeZone: "Africa/Lagos",
+});
+const timeFormatter = new Intl.DateTimeFormat("en-NG", { timeStyle: "short", timeZone: "Africa/Lagos" });
 const PANEL_LIMIT = 5;
 
 type UpcomingLook = Awaited<ReturnType<typeof listUpcomingLookDates>>[number];

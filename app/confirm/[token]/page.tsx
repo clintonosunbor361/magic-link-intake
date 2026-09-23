@@ -11,9 +11,11 @@ import { formatMinorUnits } from "@/lib/forms/money";
 
 export const dynamic = "force-dynamic";
 
+const dateFormatter = new Intl.DateTimeFormat("en-NG", { dateStyle: "medium", timeZone: "Africa/Lagos" });
+
 type ConfirmPageProps = {
   params: Promise<{ token: string }>;
-  searchParams: Promise<{ error?: string; decision?: string }>;
+  searchParams: Promise<{ error?: string }>;
 };
 
 function formatDecisionLabel(decision: string): string {
@@ -28,11 +30,10 @@ const INACTIVE_PROPS = {
 
 export default async function ConfirmPage({ params, searchParams }: ConfirmPageProps) {
   const { token } = await params;
-  const { error, decision } = await searchParams;
-  const selectedDecision = CLIENT_CONFIRMATION_DECISIONS.find((value) => value === decision) ?? "confirmed";
+  const { error } = await searchParams;
 
   const confirmation = await getConfirmationForToken(token);
-  if (!confirmation || confirmation.status !== "Active") {
+  if (!confirmation || confirmation.status === "Superseded" || confirmation.status === "Expired") {
     return <InactiveLink {...INACTIVE_PROPS} />;
   }
 
@@ -43,6 +44,8 @@ export default async function ConfirmPage({ params, searchParams }: ConfirmPageP
         ? await getFittingSessionConfirmationContent(confirmation.organizationId, confirmation.subjectId)
         : await getOrderDetailConfirmationContent(confirmation.organizationId, confirmation.subjectId);
   if (!content) return <InactiveLink {...INACTIVE_PROPS} />;
+
+  const isCompleted = confirmation.status === "Completed";
 
   return (
     <main className="flex min-h-screen items-center justify-center px-4 py-8 sm:px-6 lg:px-8">
@@ -58,23 +61,23 @@ export default async function ConfirmPage({ params, searchParams }: ConfirmPageP
         <p className="mt-2 text-sm text-kuartz-muted">{content.clientFullName}</p>
 
         {error ? (
-          <div role="alert" className="mt-6 rounded-2xl border border-kuartz-line bg-white/70 px-4 py-3 text-sm font-semibold text-kuartz-navy shadow-sm">
+          <div className="mt-6 rounded-2xl border border-kuartz-line bg-white/70 px-4 py-3 text-sm font-semibold text-kuartz-navy shadow-sm">
             {error}
           </div>
         ) : null}
 
         <div className="mt-8">
-          {"scheduledAt" in content ? (
+          {"clientSummary" in content ? (
             <div className="space-y-4">
               <p className="font-semibold text-kuartz-navy">{content.orderTitle}</p>
               <p className="text-sm text-kuartz-muted">
-                Appointment: {new Intl.DateTimeFormat("en-NG", { dateStyle: "full", timeStyle: "short", timeZone: "Africa/Lagos" }).format(content.scheduledAt)} (Lagos time)
+                Fitting on {dateFormatter.format(content.scheduledAt)}
                 {content.lookName ? ` · ${content.lookName}` : ""}
               </p>
-              {content.location ? (
-                <p className="whitespace-pre-line text-sm leading-6 text-kuartz-navy">{content.location}</p>
+              {content.clientSummary ? (
+                <p className="whitespace-pre-line text-sm leading-6 text-kuartz-navy">{content.clientSummary}</p>
               ) : (
-                <p className="text-sm text-kuartz-muted">Location will be confirmed by Kuartz.</p>
+                <p className="text-sm text-kuartz-muted">No summary was recorded for this fitting.</p>
               )}
             </div>
           ) : "fields" in content ? (
@@ -114,10 +117,16 @@ export default async function ConfirmPage({ params, searchParams }: ConfirmPageP
         </div>
 
         <div className="mt-8">
-          <form action={`/confirm/${encodeURIComponent(token)}/decide`} method="post" className="flex flex-wrap items-end gap-4">
+          {isCompleted ? (
+            <p className="text-sm text-kuartz-muted">
+              Decision: {formatDecisionLabel(confirmation.decisionStatus)}
+              {confirmation.decisionComment ? `. Comment: "${confirmation.decisionComment}"` : ""}
+            </p>
+          ) : (
+            <form action={`/confirm/${encodeURIComponent(token)}/decide`} method="post" className="flex flex-wrap items-end gap-4">
               <label className="block space-y-2">
                 <span className="label">Decision</span>
-                <select name="decision" className="field" defaultValue={selectedDecision}>
+                <select name="decision" className="field" defaultValue="confirmed">
                   {CLIENT_CONFIRMATION_DECISIONS.map((decision) => (
                     <option key={decision} value={decision}>
                       {formatDecisionLabel(decision)}
@@ -134,7 +143,8 @@ export default async function ConfirmPage({ params, searchParams }: ConfirmPageP
               <button type="submit" className="primary-action">
                 Submit
               </button>
-          </form>
+            </form>
+          )}
         </div>
       </section>
     </main>

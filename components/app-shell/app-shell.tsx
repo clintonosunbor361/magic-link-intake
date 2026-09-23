@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 export function AppShell({ session, children }: { session: StaffSession; children: React.ReactNode }) {
   const initials = session.fullName.split(/\s+/).slice(0, 2).map((part) => part[0]).join("").toUpperCase();
   return (
-    <div className="min-h-[100dvh] min-w-0 overflow-x-hidden bg-kuartz-canvas lg:pl-[17rem]">
+    <div className="min-h-[100dvh] min-w-0 overflow-x-clip bg-kuartz-canvas lg:pl-[17rem]">
       <a className="skip-link" href="#main-content">Skip to main content</a>
       <Navigation
         canManageTeam={canManageTeam(session.role)}

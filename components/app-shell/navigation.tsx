@@ -6,8 +6,10 @@ import { useEffect, useRef, useState } from "react";
 import {
   Bell,
   BriefcaseBusiness,
+  ChevronDown,
   Factory,
   House,
+  Link2,
   Menu,
   Settings,
   Store,
@@ -17,11 +19,22 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
-type NavItem = { href: string; label: string; icon: typeof House; activePrefix?: string };
+type NavItem = {
+  href: string;
+  label: string;
+  icon: typeof House;
+  activePrefix?: string;
+  children?: { href: string; label: string; icon: typeof House }[];
+};
 
 const operationalNavigation: NavItem[] = [
   { href: "/", label: "Overview", icon: House },
-  { href: "/clients", label: "Clients", icon: UsersRound },
+  {
+    href: "/clients",
+    label: "Clients",
+    icon: UsersRound,
+    children: [{ href: "/clients/intake-links", label: "Generated Links", icon: Link2 }],
+  },
   { href: "/orders", label: "Orders", icon: BriefcaseBusiness },
   // Vendors sits between Orders and Production because that is the workflow order: you assign a
   // Vendor, then you track what they are making. It is top-level rather than under Settings because
@@ -33,6 +46,9 @@ const operationalNavigation: NavItem[] = [
 export function Navigation({ canManageTeam, canManageFinance }: { canManageTeam: boolean; canManageFinance: boolean }) {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
+  const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>(() => ({
+    "/clients": pathname.startsWith("/clients/intake-links"),
+  }));
   const triggerRef = useRef<HTMLButtonElement>(null);
   const closeRef = useRef<HTMLButtonElement>(null);
   const asideRef = useRef<HTMLElement>(null);
@@ -72,6 +88,11 @@ export function Navigation({ canManageTeam, canManageFinance }: { canManageTeam:
 
   useEffect(() => setOpen(false), [pathname]);
 
+  useEffect(() => {
+    if (!pathname.startsWith("/clients/intake-links")) return;
+    setExpandedGroups((current) => ({ ...current, "/clients": true }));
+  }, [pathname]);
+
   return (
     <>
       <Button ref={triggerRef} variant="ghost" className="mobile-menu-button" type="button" onClick={() => setOpen(true)} aria-label="Open navigation" aria-expanded={open}>
@@ -84,9 +105,57 @@ export function Navigation({ canManageTeam, canManageFinance }: { canManageTeam:
           <Button ref={closeRef} variant="ghost" className="text-white/70 hover:bg-white/10 hover:text-white lg:hidden" type="button" onClick={() => { setOpen(false); triggerRef.current?.focus(); }} aria-label="Close navigation"><X size={20} /></Button>
         </div>
         <nav className="mt-7 flex-1 space-y-1 px-3">
-          {links.map(({ href, label, icon: Icon, activePrefix }) => {
-            const active = href === "/" ? pathname === href : pathname.startsWith(activePrefix ?? href);
-            return <Link key={href} href={href} onClick={() => setOpen(false)} className={`nav-link ${active ? "nav-link-active" : ""}`}><Icon size={18} strokeWidth={1.8} /><span>{label}</span></Link>;
+          {links.map(({ href, label, icon: Icon, activePrefix, children }) => {
+            const childActive = children?.some((child) => pathname.startsWith(child.href)) ?? false;
+            const active = href === "/" ? pathname === href : !childActive && pathname.startsWith(activePrefix ?? href);
+            const expanded = expandedGroups[href] ?? false;
+            return (
+              <div key={href}>
+                <div className={children ? "grid grid-cols-[minmax(0,1fr)_2.75rem] items-stretch" : undefined}>
+                  <Link href={href} onClick={() => setOpen(false)} className={`nav-link ${active ? "nav-link-active" : ""}`}>
+                    <Icon size={18} strokeWidth={1.8} />
+                    <span>{label}</span>
+                  </Link>
+                  {children ? (
+                    <button
+                      type="button"
+                      aria-label={`${expanded ? "Collapse" : "Expand"} ${label} submenu`}
+                      aria-expanded={expanded}
+                      aria-controls={`nav-children-${label.toLowerCase().replaceAll(" ", "-")}`}
+                      className="flex min-h-11 cursor-pointer items-center justify-center rounded-[0.65rem] text-white/60 transition-colors hover:bg-white/10 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-kuartz-lime"
+                      onClick={() => setExpandedGroups((current) => ({ ...current, [href]: !expanded }))}
+                    >
+                      <ChevronDown
+                        size={17}
+                        strokeWidth={1.8}
+                        aria-hidden="true"
+                        className={`transition-transform duration-200 ${expanded ? "rotate-180" : ""}`}
+                      />
+                    </button>
+                  ) : null}
+                </div>
+                {children && expanded ? <div id={`nav-children-${label.toLowerCase().replaceAll(" ", "-")}`}>{children.map((child) => {
+                  const ChildIcon = child.icon;
+                  const isActive = pathname.startsWith(child.href);
+                  return (
+                    <Link
+                      key={child.href}
+                      href={child.href}
+                      onClick={() => setOpen(false)}
+                      aria-current={isActive ? "page" : undefined}
+                      className={`ml-9 mt-1 flex min-h-9 items-center gap-2 border-l-2 px-3 py-2 text-xs transition-colors focus-visible:outline-none ${
+                        isActive
+                          ? "border-kuartz-lime font-bold text-kuartz-lime"
+                          : "border-white/15 font-medium text-white/60 hover:border-kuartz-lime/50 hover:text-white focus-visible:border-kuartz-lime/50 focus-visible:text-white"
+                      }`}
+                    >
+                      <ChildIcon size={15} strokeWidth={1.8} />
+                      <span>{child.label}</span>
+                    </Link>
+                  );
+                })}</div> : null}
+              </div>
+            );
           })}
         </nav>
         <div className="border-t border-white/10 p-4">
