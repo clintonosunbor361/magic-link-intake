@@ -69,7 +69,7 @@ import {
   detectPaymentMismatches,
   INVOICE_STATUS_LABELS,
 } from "@/lib/finance/invoice";
-import { getInvoiceForOrder, listVendorsAwaitingRating } from "@/lib/finance/repository";
+import { getInvoiceForOrder } from "@/lib/finance/repository";
 import { getOrderWithLooksAndItems } from "@/lib/orders/repository";
 import { getMissingMeasurementsForOrder } from "@/lib/item-type-measurement-requirements/repository";
 import { listItemTypes } from "@/lib/item-types/repository";
@@ -93,6 +93,7 @@ import { getOrganizationTimezone } from "@/lib/organizations/repository";
 import { createMeasurementProfileRepository, listMeasurementProfileSnapshot } from "@/lib/measurement-profiles/repository";
 import { getOrCreateMeasurementProfile } from "@/lib/measurement-profiles/service";
 import { getLiveAssignmentDetailForItem } from "@/lib/production/assignment-repository";
+import { listVendorsAwaitingRating } from "@/lib/vendors/rating-repository";
 import { listVendorsWithStats } from "@/lib/vendors/repository";
 import { listStaffMembers } from "@/lib/team/repository";
 import { InvoiceLineItemsFields } from "@/components/finance/invoice-line-items-fields";

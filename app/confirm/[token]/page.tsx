@@ -67,18 +67,14 @@ export default async function ConfirmPage({ params, searchParams }: ConfirmPageP
         ) : null}
 
         <div className="mt-8">
-          {"clientSummary" in content ? (
+          {"scheduledAt" in content ? (
             <div className="space-y-4">
               <p className="font-semibold text-kuartz-navy">{content.orderTitle}</p>
               <p className="text-sm text-kuartz-muted">
                 Fitting on {dateFormatter.format(content.scheduledAt)}
                 {content.lookName ? ` · ${content.lookName}` : ""}
               </p>
-              {content.clientSummary ? (
-                <p className="whitespace-pre-line text-sm leading-6 text-kuartz-navy">{content.clientSummary}</p>
-              ) : (
-                <p className="text-sm text-kuartz-muted">No summary was recorded for this fitting.</p>
-              )}
+              {content.location ? <p className="text-sm leading-6 text-kuartz-navy">{content.location}</p> : null}
             </div>
           ) : "fields" in content ? (
             <div className="space-y-3">

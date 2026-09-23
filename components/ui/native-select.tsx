@@ -7,6 +7,7 @@ import { cn } from "@/lib/utils";
 
 type NativeSelectProps = React.ComponentProps<"select"> & {
   submitOnChange?: boolean;
+  onValueChange?: (value: string) => void;
 };
 
 type SelectOption = {
@@ -23,6 +24,7 @@ export function NativeSelect({
   required,
   disabled,
   submitOnChange = false,
+  onValueChange,
   "aria-label": ariaLabel,
 }: NativeSelectProps) {
   const id = React.useId();
@@ -102,6 +104,7 @@ export function NativeSelect({
       return;
     }
     setSelected(option.value);
+    onValueChange?.(option.value);
     setOpen(false);
     setJustSelected(true);
     window.setTimeout(() => setJustSelected(false), 360);
