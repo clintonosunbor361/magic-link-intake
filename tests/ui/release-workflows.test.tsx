@@ -23,11 +23,11 @@ describe("release workspace workflows", () => {
     await user.click(screen.getAllByRole("button", { name: "Remove" })[1]);
     expect(new FormData(container.querySelector("form")!).getAll("lookName")).toEqual(["Ceremony"]);
   });
-  it("refreshes on request and return to the window", () => {
+  it("refreshes on return to the window without rendering a header button", () => {
     render(<RefreshWorkspace />);
-    fireEvent.click(screen.getByRole("button", { name: "Refresh workspace" }));
+    expect(screen.queryByRole("button", { name: "Refresh workspace" })).toBeNull();
     fireEvent.focus(window);
-    expect(refresh).toHaveBeenCalledTimes(2);
+    expect(refresh).toHaveBeenCalledTimes(1);
   });
   it("warns about active Orders without blocking selection", () => {
     const { container } = render(<form><ClientPicker required fieldName="clientId" initialSelected={{ id: "client-1", fullName: "Tayo", primaryPhone: "08012345678", email: null, latestOrderTitle: "Wedding", activeOrders: [{ id: "order-1", title: "Wedding" }] }} /></form>);
