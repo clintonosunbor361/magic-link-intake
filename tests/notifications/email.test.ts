@@ -13,6 +13,7 @@ describe("notification email", () => {
   it("escapes dynamic HTML, includes plain text, and forwards provider idempotency", async () => {
     expect(await sendDeadlineEmail(input)).toEqual({ id: "provider-id" });
     const [message, options] = send.mock.calls[0];
+    expect(message.from).toBe("Kuartz Styling <mail@example.test>");
     expect(message.html).toContain("&lt;Staff&gt;");
     expect(message.html).not.toContain("<script>");
     expect(message.text).toContain(input.body);
@@ -28,7 +29,7 @@ describe("notification email", () => {
     expect(send).not.toHaveBeenCalled();
   });
 
-  it("sends account invitations as Kuartz CRM with a branded HTML and plain-text fallback", async () => {
+  it("sends account invitations as Kuartz Styling with a branded HTML and plain-text fallback", async () => {
     await sendStaffInviteEmail({
       to: "teni@example.test",
       staffName: "Teni <Admin>",
@@ -37,8 +38,9 @@ describe("notification email", () => {
     });
 
     const [message, options] = send.mock.calls[0];
-    expect(message.from).toBe("Kuartz CRM <mail@example.test>");
-    expect(message.subject).toBe("You’re invited to Kuartz CRM");
+    expect(message.from).toBe("Kuartz Styling <mail@example.test>");
+    expect(message.subject).toBe("You’re invited to Kuartz Styling");
+    expect(message.html).toContain("KUARTZ STYLING");
     expect(message.html).toContain("Create your account");
     expect(message.html).toContain("Teni &lt;Admin&gt;");
     expect(message.html).not.toContain("Teni <Admin>");

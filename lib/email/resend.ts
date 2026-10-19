@@ -11,6 +11,7 @@ function requireEnv(name: string): string {
 }
 
 let client: Resend | null = null;
+const EMAIL_BRAND_NAME = "Kuartz Styling";
 
 function getResendClient(): Resend {
   if (!client) client = new Resend(requireEnv("RESEND_API_KEY"));
@@ -19,7 +20,7 @@ function getResendClient(): Resend {
 
 function brandedSender(configured: string): string {
   const bracketedAddress = configured.match(/<([^<>]+)>/)?.[1]?.trim();
-  return `Kuartz CRM <${bracketedAddress ?? configured.trim()}>`;
+  return `${EMAIL_BRAND_NAME} <${bracketedAddress ?? configured.trim()}>`;
 }
 
 function authEmailHtml(input: {
@@ -34,7 +35,7 @@ function authEmailHtml(input: {
 <html lang="en"><body style="margin:0;background:#f4f0e8;color:#171714;font-family:Arial,sans-serif">
 <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background:#f4f0e8;padding:32px 16px"><tr><td align="center">
 <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width:600px;background:#fff;border:1px solid #ddd5c7">
-<tr><td style="padding:26px 32px;background:#171714;color:#fff;font-size:20px;font-weight:700;letter-spacing:.08em">KUARTZ CRM</td></tr>
+<tr><td style="padding:26px 32px;background:#171714;color:#fff;font-size:20px;font-weight:700;letter-spacing:.08em">KUARTZ STYLING</td></tr>
 <tr><td style="padding:36px 32px">
 <p style="margin:0 0 12px;color:#8a6a2f;font-size:12px;font-weight:700;letter-spacing:.14em;text-transform:uppercase">${escape(input.eyebrow)}</p>
 <h1 style="margin:0 0 20px;font-family:Georgia,serif;font-size:30px;line-height:1.2;font-weight:500">${escape(input.heading)}</h1>
@@ -56,10 +57,10 @@ export async function sendStaffInviteEmail(input: {
   const { error } = await getResendClient().emails.send({
     from: brandedSender(requireEnv("RESEND_FROM_EMAIL")),
     to: input.to,
-    subject: "You’re invited to Kuartz CRM",
+    subject: `You’re invited to ${EMAIL_BRAND_NAME}`,
     html: authEmailHtml({
       eyebrow: "Your staff access is ready",
-      heading: "Welcome to Kuartz CRM",
+      heading: `Welcome to ${EMAIL_BRAND_NAME}`,
       greeting: `Hi ${input.staffName},`,
       body: "You’ve been invited to join the Kuartz team workspace. Create your password to securely access clients, orders, and production workflows.",
       actionLabel: "Create your account",
@@ -78,16 +79,16 @@ export async function sendPasswordResetEmail(input: {
   const { error } = await getResendClient().emails.send({
     from: brandedSender(requireEnv("RESEND_FROM_EMAIL")),
     to: input.to,
-    subject: "Reset your Kuartz CRM password",
+    subject: `Reset your ${EMAIL_BRAND_NAME} password`,
     html: authEmailHtml({
       eyebrow: "Account recovery",
       heading: "Choose a new password",
       greeting: "Hello,",
-      body: "We received a request to reset the password for your Kuartz CRM staff account.",
+      body: `We received a request to reset the password for your ${EMAIL_BRAND_NAME} staff account.`,
       actionLabel: "Reset password",
       actionUrl: input.resetUrl,
     }),
-    text: `We received a request to reset your Kuartz CRM password.\n\nReset password: ${input.resetUrl}\n\nThis secure link expires in 60 minutes and can only be used once.`,
+    text: `We received a request to reset your ${EMAIL_BRAND_NAME} password.\n\nReset password: ${input.resetUrl}\n\nThis secure link expires in 60 minutes and can only be used once.`,
   }, { idempotencyKey: input.idempotencyKey });
   if (error) throw new Error("The password reset email could not be sent.");
 }
@@ -99,7 +100,7 @@ export async function sendApprovalBatchEmail(input: {
   clientName: string;
 }): Promise<void> {
   const { error } = await getResendClient().emails.send({
-    from: requireEnv("RESEND_FROM_EMAIL"),
+    from: brandedSender(requireEnv("RESEND_FROM_EMAIL")),
     to: input.to,
     subject: `Style direction ready for your review — ${input.orderTitle}`,
     html: `<p>Hi ${escape(input.clientName)},</p><p>Please review the style direction for <strong>${escape(input.orderTitle)}</strong>:</p><p><a href="${escape(input.approvalUrl)}">Review style direction</a></p><p>This link stays active for 7 days.</p>`,
@@ -121,7 +122,7 @@ export async function sendDeadlineEmail(input: {
     throw new NotificationDeliveryError("Notification email is not configured.", true);
   }
   const { data, error } = await getResendClient().emails.send({
-    from: requireEnv("RESEND_FROM_EMAIL"),
+    from: brandedSender(requireEnv("RESEND_FROM_EMAIL")),
     to: input.to,
     subject: input.title,
     html: `<p>Hi ${escape(input.staffName)},</p><p>${escape(input.body)}</p><p><a href="${escape(input.url)}">Open in Kuartz</a></p>`,
@@ -143,7 +144,7 @@ export async function sendConfirmationEmail(input: {
   clientName: string;
 }): Promise<void> {
   const { error } = await getResendClient().emails.send({
-    from: requireEnv("RESEND_FROM_EMAIL"),
+    from: brandedSender(requireEnv("RESEND_FROM_EMAIL")),
     to: input.to,
     subject: `Please confirm your ${input.subjectLabel}`,
     html: `<p>Hi ${escape(input.clientName)},</p><p>Please confirm your ${escape(input.subjectLabel)}:</p><p><a href="${escape(input.confirmationUrl)}">Review confirmation</a></p><p>This link stays active for 7 days.</p>`,
